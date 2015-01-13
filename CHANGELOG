@@ -1,3 +1,8 @@
 
+Version 1.0.1
+- Replaced one more occurence of a pointer with an std::shared_ptr
+- Re-added OpenCL class constructor exception test
+- Updated license information
+
 Version 1.0.0
 - Initial release to GitHub
