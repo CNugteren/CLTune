@@ -66,13 +66,10 @@ Tuner::Tuner(int platform_id, int device_id):
     argument_counter_(0) {
 }
 
-// Deletes all the reference output arrays
+// End of the tuner
 Tuner::~Tuner() {
   for (auto &reference_output: reference_outputs_) {
     delete[] (int*)reference_output;
-  }
-  if (has_reference_) {
-    delete reference_kernel_;
   }
   if (!suppress_output_) {
     fprintf(stdout, "\n%s End of the tuning process\n\n", kMessageFull.c_str());
@@ -106,7 +103,7 @@ void Tuner::SetReference(const std::string filename, const std::string kernel_na
                          const cl::NDRange global, const cl::NDRange local) {
   has_reference_ = true;
   std::string source = LoadFile(filename);
-  reference_kernel_ = new KernelInfo(kernel_name, source);
+  reference_kernel_.reset(new KernelInfo(kernel_name, source));
   reference_kernel_->set_global_base(global);
   reference_kernel_->set_local_base(local);
 }

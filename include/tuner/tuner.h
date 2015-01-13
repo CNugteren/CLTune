@@ -202,7 +202,7 @@ class Tuner {
   std::vector<std::pair<int,int>> arguments_scalar_;
 
   // Storage for the reference kernel and output
-  KernelInfo* reference_kernel_;
+  std::shared_ptr<KernelInfo> reference_kernel_;
   std::vector<void*> reference_outputs_;
 
   // List of tuning results
