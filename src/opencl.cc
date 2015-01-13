@@ -35,12 +35,10 @@ namespace cltune {
 
 // Gets a list of all platforms/devices and chooses the selected ones. Initializes OpenCL and also
 // downloads properties of the device for later use.
-// TODO: Move initialization and exceptions to a separate function - this is not something we should
-// do in the constructor.
-OpenCL::OpenCL(const int platform_id, const int device_id):
+OpenCL::OpenCL(const size_t platform_id, const size_t device_id):
     suppress_output_(false) {
   if (!suppress_output_) {
-    fprintf(stdout, "\n%s New tuner on platform %d device %d\n",
+    fprintf(stdout, "\n%s New tuner on platform %lu device %lu\n",
             Tuner::kMessageFull.c_str(), platform_id, device_id);
   }
 
@@ -50,7 +48,7 @@ OpenCL::OpenCL(const int platform_id, const int device_id):
   if (platforms.size() == 0) {
     throw std::runtime_error("No OpenCL platforms found");
   }
-  if (platform_id >= static_cast<int>(platforms.size())) {
+  if (platform_id >= platforms.size()) {
     throw std::runtime_error("Invalid OpenCL platform number: " + ToString(platform_id));
   }
   platform_ = platforms[platform_id];
@@ -61,7 +59,7 @@ OpenCL::OpenCL(const int platform_id, const int device_id):
   if (devices.size() == 0) {
     throw std::runtime_error("No OpenCL devices found on platform " + ToString(platform_id));
   }
-  if (device_id >= static_cast<int>(devices.size())) {
+  if (device_id >= devices.size()) {
     throw std::runtime_error("Invalid OpenCL device number: " + ToString(device_id));
   }
   device_ = devices[device_id];
@@ -95,7 +93,7 @@ size_t OpenCL::VerifyThreadSizes(const cl::NDRange global, const cl::NDRange loc
     local_size *= local[i];
     if (local[i] > max_local_sizes_[i]) {
       throw std::runtime_error("Local size in dimension "+ToString(i)+
-                           " larger than "+ToString(max_local_sizes_[i]));
+                               " larger than "+ToString(max_local_sizes_[i]));
     }
   }
   if (local_size > max_local_threads_) {

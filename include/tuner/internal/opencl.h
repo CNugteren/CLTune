@@ -48,7 +48,7 @@ class OpenCL {
   const cl_device_type kDeviceType = CL_DEVICE_TYPE_ALL;
 
   // Initializes the OpenCL platform, device, and creates a context and a queue
-  explicit OpenCL(const int platform_id, const int device_id);
+  explicit OpenCL(const size_t platform_id, const size_t device_id);
 
   // Accessors
   cl::Device device() const { return device_; }

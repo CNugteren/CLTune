@@ -104,16 +104,9 @@ TEST_F(TunerTest, InitOpenCL) {
   tuner0.SuppressOutput();
 
   // Invalid behaviour, expect an exception
-  // TODO: Re-implement this after exception throwing is removed from the constructor
-  //cltune::Tuner tuner1(0, 99);
-  //cltune::Tuner tuner2(99, 0);
-  //cltune::Tuner tuner3(99, 99);
-  //tuner1.SuppressOutput();
-  //tuner2.SuppressOutput();
-  //tuner3.SuppressOutput();
-  //ASSERT_THROW(tuner1.InitOpenCL(), cltune::Tuner::TunerException);
-  //ASSERT_THROW(tuner2.InitOpenCL(), cltune::Tuner::TunerException);
-  //ASSERT_THROW(tuner3.InitOpenCL(), cltune::Tuner::TunerException);
+  ASSERT_THROW(new cltune::Tuner(0, 99), std::runtime_error);
+  ASSERT_THROW(new cltune::Tuner(99, 0), std::runtime_error);
+  ASSERT_THROW(new cltune::Tuner(99, 99), std::runtime_error);
 }
 
 // =================================================================================================
