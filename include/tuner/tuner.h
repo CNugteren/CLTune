@@ -48,8 +48,8 @@ namespace cltune {
 // See comment at top of file for a description of the class
 class Tuner {
  public:
-  const double kMaxL2Norm = 1e-4; // This is the threshold for 'correctness'
-  const int kNumRuns = 1; // This is used for more-accurate kernel execution time measurement
+  static constexpr double kMaxL2Norm = 1e-4; // This is the threshold for 'correctness'
+  static constexpr int kNumRuns = 1; // This is used for more-accurate execution time measurement
 
   // Messages printed to stdout (in colours)
   static const std::string kMessageFull;
