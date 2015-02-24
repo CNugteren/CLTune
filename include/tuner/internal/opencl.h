@@ -57,14 +57,14 @@ class OpenCL {
 
   // Checks whether the global and local thread-sizes, and local memory size are compatible with the
   // current device
-  size_t VerifyThreadSizes(const cl::NDRange global, const cl::NDRange local);
-  void VerifyLocalMemory(const size_t local_memory);
+  size_t VerifyThreadSizes(const cl::NDRange &global, const cl::NDRange &local) const;
+  void VerifyLocalMemory(const size_t local_memory) const;
   
  private:
 
   // Converts an unsigned integer to a string by first casting it to a long long integer. This is
   // required for older compilers that do not fully implement std::to_string (part of C++11).
-  std::string ToString(int value) { return std::to_string(static_cast<long long>(value)); }
+  std::string ToString(int value) const { return std::to_string(static_cast<long long>(value)); }
 
   // Settings
   bool suppress_output_;
