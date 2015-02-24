@@ -62,7 +62,7 @@ template <typename T>
 void Memory<T>::UploadToDevice() {
   auto status = opencl_->queue().enqueueWriteBuffer(*device_, CL_TRUE, 0,
                                                     size_*sizeof(T), host_.data());
-  if (status != CL_SUCCESS) { throw OpenCLException("Write buffer error", status); }
+  if (status != CL_SUCCESS) { throw OpenCL::Exception("Write buffer error", status); }
 }
 
 // Uses the OpenCL C++ function enqueueReadBuffer to download the data from the device
@@ -70,7 +70,7 @@ template <typename T>
 void Memory<T>::DownloadFromDevice() {
   auto status = opencl_->queue().enqueueReadBuffer(*device_, CL_TRUE, 0,
                                                     size_*sizeof(T), host_.data());
-  if (status != CL_SUCCESS) { throw OpenCLException("Write buffer error", status); }
+  if (status != CL_SUCCESS) { throw OpenCL::Exception("Write buffer error", status); }
 }
 
 // =================================================================================================

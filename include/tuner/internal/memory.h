@@ -46,15 +46,6 @@ namespace cltune {
 // Enumeration of currently supported data-types by this class
 enum class MemType { kInt, kFloat, kDouble };
 
-// OpenCL-related exception, prints not only a message but also an OpenCL error code. This class is
-// added to this file because it is only used by the Memory class.
-class OpenCLException : public std::runtime_error {
- public:
-  OpenCLException(const std::string &message, cl_int status)
-                  : std::runtime_error(message+
-                  " [code: "+std::to_string(static_cast<long long>(status))+"]") { };
-};
-
 // See comment at top of file for a description of the class
 template <typename T>
 class Memory {

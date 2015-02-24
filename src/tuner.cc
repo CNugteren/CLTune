@@ -371,7 +371,7 @@ Tuner::TunerResult Tuner::RunKernel(const std::string &source, const KernelInfo 
     throw TunerException("OpenCL compiler error/warning:\n" + message);
   }
   if (status != CL_SUCCESS) {
-    throw OpenCLException("Program build error", status);
+    throw OpenCL::Exception("Program build error", status);
   }
 
   // Sets the output buffer(s) to zero
@@ -400,23 +400,23 @@ Tuner::TunerResult Tuner::RunKernel(const std::string &source, const KernelInfo 
   // Obtains and verifies the local memory usage of the kernel
   size_t local_memory = 0;
   status = tune_kernel.getWorkGroupInfo(opencl_->device(), CL_KERNEL_LOCAL_MEM_SIZE, &local_memory);
-  if (status != CL_SUCCESS) { throw OpenCLException("Get kernel information error", status); }
+  if (status != CL_SUCCESS) { throw OpenCL::Exception("Get kernel information error", status); }
   opencl_->VerifyLocalMemory(local_memory);
 
   // Prepares the kernel
   status = opencl_->queue().finish();
-  if (status != CL_SUCCESS) { throw OpenCLException("Command queue error", status); }
+  if (status != CL_SUCCESS) { throw OpenCL::Exception("Command queue error", status); }
 
   // Runs the kernel (this is the timed part)
   fprintf(stdout, "%s Running %s\n", kMessageRun.c_str(), kernel.name().c_str());
   std::vector<cl::Event> events(kNumRuns);
   for (int t=0; t<kNumRuns; ++t) {
     status = opencl_->queue().enqueueNDRangeKernel(tune_kernel, cl::NullRange, global, local, NULL, &events[t]);
-    if (status != CL_SUCCESS) { throw OpenCLException("Kernel launch error", status); }
+    if (status != CL_SUCCESS) { throw OpenCL::Exception("Kernel launch error", status); }
     status = events[t].wait();
     if (status != CL_SUCCESS) {
       fprintf(stdout, "%s Kernel %s failed\n", kMessageFailure.c_str(), kernel.name().c_str());
-      throw OpenCLException("Kernel error", status);
+      throw OpenCL::Exception("Kernel error", status);
     }
   }
   opencl_->queue().finish();
@@ -451,7 +451,7 @@ void Tuner::ResetMemArgument(MemArgument &argument) {
   int bytes = sizeof(T)*argument.size;
   cl_int status = opencl_->queue().enqueueWriteBuffer(argument.buffer, CL_TRUE, 0, bytes,
                                                       buffer.data());
-  if (status != CL_SUCCESS) { throw OpenCLException("Write buffer error", status); }
+  if (status != CL_SUCCESS) { throw OpenCL::Exception("Write buffer error", status); }
 }
 
 // =================================================================================================
@@ -544,14 +544,6 @@ std::string Tuner::LoadFile(const std::string &filename) {
   std::stringstream file_contents;
   file_contents << file.rdbuf();
   return file_contents.str();
-}
-
-// =================================================================================================
-
-// Converts an unsigned integer to a string by first casting it to a long long integer. This is
-// required for older compilers that do not fully implement std::to_string (part of C++11).
-std::string Tuner::ToString(const int value) const {
-  return std::to_string(static_cast<long long>(value));
 }
 
 // =================================================================================================

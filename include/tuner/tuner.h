@@ -86,14 +86,6 @@ class Tuner {
                    : std::runtime_error(message) { };
   };
 
-  // OpenCL-related exception
-  class OpenCLException : public std::runtime_error {
-   public:
-    OpenCLException(const std::string &message, cl_int status)
-                    : std::runtime_error(message+
-                    " [code: "+std::to_string(static_cast<long long>(status))+"]") { };
-  };
-
   // Initialize either with platform 0 and device 0 or with a custom platform/device
   explicit Tuner();
   explicit Tuner(int platform_id, int device_id);
@@ -180,9 +172,6 @@ class Tuner {
 
   // Loads a file from disk into a string
   std::string LoadFile(const std::string &filename);
-
-  // Converts an unsigned integer into a string
-  std::string ToString(const int value) const;
 
   // Prints a header of a new section in the tuning process
   void PrintHeader(const std::string &header_name) const;

@@ -44,6 +44,20 @@ namespace cltune {
 class OpenCL {
  public:
 
+  // Converts an unsigned integer to a string by first casting it to a long long integer. This is
+  // required for older compilers that do not fully implement std::to_string (part of C++11).
+  static std::string ToString(int value) {
+    return std::to_string(static_cast<long long>(value));
+  }
+
+  // OpenCL-related exception, prints not only a message but also an OpenCL error code.
+  class Exception : public std::runtime_error {
+   public:
+    Exception(const std::string &message, cl_int status):
+        std::runtime_error(message+" [code: "+ToString(status)+"]") {
+    };
+  };
+
   // Types of devices to consider
   const cl_device_type kDeviceType = CL_DEVICE_TYPE_ALL;
 
@@ -61,10 +75,6 @@ class OpenCL {
   void VerifyLocalMemory(const size_t local_memory) const;
   
  private:
-
-  // Converts an unsigned integer to a string by first casting it to a long long integer. This is
-  // required for older compilers that do not fully implement std::to_string (part of C++11).
-  std::string ToString(int value) const { return std::to_string(static_cast<long long>(value)); }
 
   // Settings
   bool suppress_output_;
