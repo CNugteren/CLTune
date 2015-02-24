@@ -42,21 +42,21 @@ class TunerTest : public testing::Test {
   };
 
   // Test parameters
-  const int kNumKernelAdditions = 1;
-  const int kNumParameters = 2;
-  const int kNumParameterAdditions = 3;
+  static constexpr auto kNumKernelAdditions = 1;
+  static constexpr auto kNumParameters = 2;
+  static constexpr auto kNumParameterAdditions = 3;
 
   // Test kernels (taken from the samples folder)
-  const int kNumKernels = 2;
+  static constexpr auto kNumKernels = 2;
   const std::vector<CLKernel> kKernelFiles = {
     {"../samples/simple_reference.opencl","matvec_reference"},
     {"../samples/simple_unroll.opencl","matvec_unroll"}
   };
 
   // Test matrix sizes
-  const int kSizeM = 128;
-  const int kSizeN = 512;
-  const int kSizeK = 256;
+  static constexpr auto kSizeM = 128;
+  static constexpr auto kSizeN = 512;
+  static constexpr auto kSizeK = 256;
 
   // Constructor
   explicit TunerTest() :
@@ -72,9 +72,9 @@ class TunerTest : public testing::Test {
     local_ = cl::NDRange(8, 1);
 
     // Adds example parameters
-    for (int k=0; k<kNumParameters; k++) {
-      std::string parameter = "TEST_PARAM_"+std::to_string(static_cast<long long>(k));
-      std::initializer_list<int> values = {5, 1, 999};
+    for (auto k=0; k<kNumParameters; ++k) {
+      auto parameter = "TEST_PARAM_"+std::to_string(static_cast<long long>(k));
+      auto values = {5, 1, 999};
       cltune::StringRange string_range = {parameter, parameter};
       parameter_list_.push_back(parameter);
       values_list_.push_back(values);
@@ -113,10 +113,10 @@ TEST_F(TunerTest, InitOpenCL) {
 
 // Checks whether AddKernel returns an incrementing ID
 TEST_F(TunerTest, AddKernel) {
-  int counter = 0;
+  auto counter = 0;
   for (auto &kernel_file: kKernelFiles) {
-    for (int i=0; i<kNumKernelAdditions; i++) {
-      int id = tuner_->AddKernel(kernel_file.filename, kernel_file.kernel_name, global_, local_);
+    for (auto i=0; i<kNumKernelAdditions; ++i) {
+      auto id = tuner_->AddKernel(kernel_file.filename, kernel_file.kernel_name, global_, local_);
       EXPECT_EQ(counter, id);
       counter++;
     }
@@ -127,17 +127,17 @@ TEST_F(TunerTest, AddKernel) {
 TEST_F(TunerTest, AddParameter) {
 
   // Adds parameters for invalid kernels, expecting a crash
-  for (int k=0; k<kNumParameters; k++) {
+  for (auto k=0; k<kNumParameters; ++k) {
     ASSERT_THROW(tuner_->AddParameter(k, parameter_list_[k], values_list_[k]),
                  cltune::Tuner::Exception);
   }
 
   // Adds a new kernel and then adds parameters
   for (auto &kernel_file: kKernelFiles) {
-    for (int i=0; i<kNumKernelAdditions; i++) {
-      int id = tuner_->AddKernel(kernel_file.filename, kernel_file.kernel_name, global_, local_);
-      for (int k=0; k<kNumParameters; k++) {
-        for (int j=0; j<kNumParameterAdditions; j++) {
+    for (auto i=0; i<kNumKernelAdditions; ++i) {
+      auto id = tuner_->AddKernel(kernel_file.filename, kernel_file.kernel_name, global_, local_);
+      for (auto k=0; k<kNumParameters; ++k) {
+        for (auto j=0; j<kNumParameterAdditions; ++j) {
           if (j == 0) {
             tuner_->AddParameter(id, parameter_list_[k], values_list_[k]);
           }
@@ -152,11 +152,11 @@ TEST_F(TunerTest, AddParameter) {
 }
 
 // Tests whether the {Mul/Div}{Global/Local}Size functions return assertions when used with invalid
-// kernel IDs. Also check if they don't crash for valid kernels
+// kernel IDs. Also check if they don't crash for valid kernels.
 TEST_F(TunerTest, ModifyThreadSize) {
 
   // Modifies parameters for invalid kernels, expecting a crash
-  for (int k=0; k<kNumParameters; k++) {
+  for (auto k=0; k<kNumParameters; ++k) {
     ASSERT_THROW(tuner_->MulGlobalSize(k, string_ranges_[k]), cltune::Tuner::Exception);
     ASSERT_THROW(tuner_->DivGlobalSize(k, string_ranges_[k]), cltune::Tuner::Exception);
     ASSERT_THROW(tuner_->MulLocalSize(k, string_ranges_[k]), cltune::Tuner::Exception);
@@ -165,9 +165,9 @@ TEST_F(TunerTest, ModifyThreadSize) {
 
   // Adds a new kernel and then modifies the thread-sizes
   for (auto &kernel_file: kKernelFiles) {
-    for (int i=0; i<kNumKernelAdditions; i++) {
-      int id = tuner_->AddKernel(kernel_file.filename, kernel_file.kernel_name, global_, local_);
-      for (int k=0; k<kNumParameters; k++) {
+    for (auto i=0; i<kNumKernelAdditions; ++i) {
+      auto id = tuner_->AddKernel(kernel_file.filename, kernel_file.kernel_name, global_, local_);
+      for (auto k=0; k<kNumParameters; ++k) {
         tuner_->MulGlobalSize(id, string_ranges_[k]);
         tuner_->DivGlobalSize(id, string_ranges_[k]);
         tuner_->MulLocalSize(id, string_ranges_[k]);
