@@ -37,11 +37,11 @@
 // Basic example showing how to tune OpenCL kernels. We take a matrix-vector multiplication as an
 // example. Provided is reference code, a version with manual unrolling, and one with tiling in the
 // local memory.
-int main(int argc, char* argv[]) {
+int main() {
 
   // Matrix size
-  const int kSizeM = 2048;
-  const int kSizeN = 4096;
+  constexpr auto kSizeM = 2048;
+  constexpr auto kSizeN = 4096;
 
   // Creates data structures
   std::vector<float> mat_a(kSizeN*kSizeM); // Assumes matrix A is transposed
@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
   std::vector<float> vec_y(kSizeM);
 
   // Populates input data structures
-  srand(time(NULL));
+  srand(time(nullptr));
   for (auto &item: mat_a) { item = (float)rand() / (float)RAND_MAX; }
   for (auto &item: vec_x) { item = (float)rand() / (float)RAND_MAX; }
   for (auto &item: vec_y) { item = 0.0; }
@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
   // Adds a kernel which supports unrolling through the UNROLL parameter. Note that the kernel
   // itself needs to implement the UNROLL parameter and (in this case) only accepts a limited
   // amount of values.
-  size_t id = tuner.AddKernel("../samples/simple_unroll.opencl", "matvec_unroll", {kSizeM}, {128});
+  auto id = tuner.AddKernel("../samples/simple_unroll.opencl", "matvec_unroll", {kSizeM}, {128});
   tuner.AddParameter(id, "UNROLL", {1, 2, 4});
 
   // Adds another kernel and its parameters. This kernel caches the input vector X into local
@@ -77,11 +77,11 @@ int main(int argc, char* argv[]) {
 
   // Sets the function's arguments. Note that all kernels have to accept (but not necessarily use)
   // all input arguments.
-  tuner.AddArgumentScalar<int>(kSizeM);
-  tuner.AddArgumentScalar<int>(kSizeN);
-  tuner.AddArgumentInput<float>(mat_a);
-  tuner.AddArgumentInput<float>(vec_x);
-  tuner.AddArgumentOutput<float>(vec_y);
+  tuner.AddArgumentScalar(kSizeM);
+  tuner.AddArgumentScalar(kSizeN);
+  tuner.AddArgumentInput(mat_a);
+  tuner.AddArgumentInput(vec_x);
+  tuner.AddArgumentOutput(vec_y);
 
   // Starts the tuner
   tuner.Tune();
