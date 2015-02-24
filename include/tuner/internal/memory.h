@@ -62,8 +62,8 @@ class Memory {
   const static MemType type;
 
   // Initializes the host and device data (with zeroes or based on a source-vector)
-  explicit Memory(const size_t size, cl::Context context, cl::CommandQueue queue);
-  explicit Memory(const size_t size, cl::Context context, cl::CommandQueue queue,
+  explicit Memory(const size_t size, const cl::Context &context, cl::CommandQueue queue);
+  explicit Memory(const size_t size, const cl::Context &context, cl::CommandQueue queue,
                   std::vector<T> &source);
 
   // Accessors to the host/device data
@@ -83,7 +83,6 @@ class Memory {
 
   // Pointers to the memory's context and command queue
   // TODO: Pass these objects by reference instead of creating copies
-  cl::Context context_;
   cl::CommandQueue queue_;
 };
 

@@ -39,23 +39,20 @@ template <> const MemType Memory<double>::type = MemType::kDouble;
 // Initializes the memory class, creating a host array with zeroes and an uninitialized device
 // buffer.
 template <typename T>
-Memory<T>::Memory(const size_t size, cl::Context context, cl::CommandQueue queue):
+Memory<T>::Memory(const size_t size, const cl::Context &context, cl::CommandQueue queue):
     size_(size),
-    host_(size),
+    host_(size, static_cast<T>(0)),
     device_(new cl::Buffer(context, CL_MEM_READ_WRITE, size*sizeof(T))),
-    context_(context),
     queue_(queue) {
-  for (auto &item: host_) { item = static_cast<T>(0); }
 }
 
 // As above, but now initializes to a specific value based on a source vector.
 template <typename T>
-Memory<T>::Memory(const size_t size, cl::Context context, cl::CommandQueue queue,
+Memory<T>::Memory(const size_t size, const cl::Context &context, cl::CommandQueue queue,
                   std::vector<T> &source):
     size_(size),
     host_(source),
     device_(new cl::Buffer(context, CL_MEM_READ_WRITE, size*sizeof(T))),
-    context_(context),
     queue_(queue) {
 }
 
@@ -64,14 +61,14 @@ Memory<T>::Memory(const size_t size, cl::Context context, cl::CommandQueue queue
 // Uses the OpenCL C++ function enqueueWriteBuffer to upload the data to the device
 template <typename T>
 void Memory<T>::UploadToDevice() {
-  cl_int status = queue_.enqueueWriteBuffer(*device_, CL_TRUE, 0, size_*sizeof(T), host_.data());
+  auto status = queue_.enqueueWriteBuffer(*device_, CL_TRUE, 0, size_*sizeof(T), host_.data());
   if (status != CL_SUCCESS) { throw OpenCLException("Write buffer error", status); }
 }
 
 // Uses the OpenCL C++ function enqueueReadBuffer to download the data from the device
 template <typename T>
 void Memory<T>::DownloadFromDevice() {
-  cl_int status = queue_.enqueueReadBuffer(*device_, CL_TRUE, 0, size_*sizeof(T), host_.data());
+  auto status = queue_.enqueueReadBuffer(*device_, CL_TRUE, 0, size_*sizeof(T), host_.data());
   if (status != CL_SUCCESS) { throw OpenCLException("Write buffer error", status); }
 }
 
