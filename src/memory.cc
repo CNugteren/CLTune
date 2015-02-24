@@ -32,9 +32,9 @@ namespace cltune {
 
 // Specific implementations of the helper structure to get the memory-type based on a template
 // argument. Supports all enumerations of MemType.
-template <> const MemType Memory<int>::type = kInt;
-template <> const MemType Memory<float>::type = kFloat;
-template <> const MemType Memory<double>::type = kDouble;
+template <> const MemType Memory<int>::type = MemType::kInt;
+template <> const MemType Memory<float>::type = MemType::kFloat;
+template <> const MemType Memory<double>::type = MemType::kDouble;
 
 // Initializes the memory class, creating a host array with zeroes and an uninitialized device
 // buffer.

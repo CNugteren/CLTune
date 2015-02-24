@@ -42,7 +42,7 @@ namespace cltune {
 // =================================================================================================
 
 // Enumeration of currently supported data-types by this class
-enum MemType { kInt, kFloat, kDouble };
+enum class MemType { kInt, kFloat, kDouble };
 
 // OpenCL-related exception, prints not only a message but also an OpenCL error code. This class is
 // added to this file because it is only used by the Memory class.
