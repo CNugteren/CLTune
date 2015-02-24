@@ -181,7 +181,7 @@ void Tuner::AddConstraint(const size_t id, const std::string parameter_1, const 
 // vector of data. Then, upload it to the device and store the argument in a list.
 template <typename T>
 void Tuner::AddArgumentInput(std::vector<T> &source) {
-  Memory<T> buffer(source.size(), opencl_->context(), opencl_->queue(), source);
+  Memory<T> buffer(source.size(), opencl_, source);
   buffer.UploadToDevice();
   MemArgument argument = {argument_counter_++, source.size(), buffer.type, *buffer.device()};
   arguments_input_.push_back(argument);
@@ -193,7 +193,7 @@ template void Tuner::AddArgumentInput<double>(std::vector<double>&);
 // As above, but now marked as output buffer
 template <typename T>
 void Tuner::AddArgumentOutput(std::vector<T> &source) {
-  Memory<T> buffer(source.size(), opencl_->context(), opencl_->queue(), source);
+  Memory<T> buffer(source.size(), opencl_, source);
   MemArgument argument = {argument_counter_++, source.size(), buffer.type, *buffer.device()};
   arguments_output_.push_back(argument);
 }

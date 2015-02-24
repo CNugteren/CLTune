@@ -36,6 +36,8 @@
 #include <memory>
 
 // The C++ OpenCL wrapper
+#include "tuner/internal/opencl.h"
+
 #include "cl.hpp"
 
 namespace cltune {
@@ -62,9 +64,8 @@ class Memory {
   const static MemType type;
 
   // Initializes the host and device data (with zeroes or based on a source-vector)
-  explicit Memory(const size_t size, const cl::Context &context, cl::CommandQueue queue);
-  explicit Memory(const size_t size, const cl::Context &context, cl::CommandQueue queue,
-                  std::vector<T> &source);
+  explicit Memory(const size_t size, std::shared_ptr<OpenCL> opencl);
+  explicit Memory(const size_t size, std::shared_ptr<OpenCL> opencl, std::vector<T> &source);
 
   // Accessors to the host/device data
   std::vector<T> host() const { return host_; }
@@ -81,9 +82,8 @@ class Memory {
   std::vector<T> host_;
   std::shared_ptr<cl::Buffer> device_;
 
-  // Pointers to the memory's context and command queue
-  // TODO: Pass these objects by reference instead of creating copies
-  cl::CommandQueue queue_;
+  // Pointer to the OpenCL context and command queue
+  std::shared_ptr<OpenCL> opencl_;
 };
 
 
