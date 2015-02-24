@@ -48,7 +48,7 @@ OpenCL kernel (first argument), the name of the kernel (second argument), a list
 dimensions (third argument), and a list of local thread or workgroup dimensions (fourth argument).
 Here is an example:
 
-    int id = my_tuner.AddKernel("path/to/kernel.opencl", "my_kernel", {1024,512}, {16,8});
+    auto id = my_tuner.AddKernel("path/to/kernel.opencl", "my_kernel", {1024,512}, {16,8});
 
 Notice that the AddKernel function returns an integer: it is the ID of the added kernel. We'll need
 this ID when we want to add tuning parameters to this kernel. Let's say that our kernel has two
@@ -68,13 +68,13 @@ The tuner also needs to know which arguments the kernels take. Scalar arguments 
 as-is and are passed-by-value, whereas arrays have to be provided as C++ `std::vector`s. That's
 right, we won't have to create OpenCL buffers, CLTune will handle that for us! Here is an example:
 
-    int my_variable = 900;
+    auto my_variable = 900;
     std::vector<float> input_vector(8192);
     std::vector<float> output_vector(8192);
-    my_tuner.AddArgumentScalar<int>(my_variable);
-    my_tuner.AddArgumentScalar<float>(3.7);
-    my_tuner.AddArgumentInput<float>(input_vector);
-    my_tuner.AddArgumentOutput<float>(output_vector);
+    my_tuner.AddArgumentScalar(my_variable);
+    my_tuner.AddArgumentScalar(3.7);
+    my_tuner.AddArgumentInput(input_vector);
+    my_tuner.AddArgumentOutput(output_vector);
 
 Now that we've configured the tuner, it is time to start it and ask it to report the results:
 

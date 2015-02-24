@@ -80,15 +80,15 @@ Tuner::~Tuner() {
 
 // Loads the OpenCL source-code from a file and creates a new variable of type KernelInfo to store
 // all the kernel-information.
-int Tuner::AddKernel(const std::string filename, const std::string kernel_name,
-                      const cl::NDRange global, const cl::NDRange local) {
+int Tuner::AddKernel(const std::string &filename, const std::string &kernel_name,
+                      const cl::NDRange &global, const cl::NDRange &local) {
 
   // Loads the source-code and adds the kernel
-  std::string source = LoadFile(filename);
+  auto source = LoadFile(filename);
   kernels_.push_back(KernelInfo(kernel_name, source));
 
   // Sets the global and local thread sizes
-  int id = kernels_.size() - 1;
+  auto id = kernels_.size() - 1;
   kernels_[id].set_global_base(global);
   kernels_[id].set_local_base(local);
   return id;
@@ -99,10 +99,10 @@ int Tuner::AddKernel(const std::string filename, const std::string kernel_name,
 // Sets the reference kernel (source-code location, kernel name, global/local thread-sizes) and
 // sets a flag to indicate that there is now a reference. Calling this function again will simply
 // overwrite the old reference.
-void Tuner::SetReference(const std::string filename, const std::string kernel_name,
-                         const cl::NDRange global, const cl::NDRange local) {
+void Tuner::SetReference(const std::string &filename, const std::string &kernel_name,
+                         const cl::NDRange &global, const cl::NDRange &local) {
   has_reference_ = true;
-  std::string source = LoadFile(filename);
+  auto source = LoadFile(filename);
   reference_kernel_.reset(new KernelInfo(kernel_name, source));
   reference_kernel_->set_global_base(global);
   reference_kernel_->set_local_base(local);
@@ -113,9 +113,9 @@ void Tuner::SetReference(const std::string filename, const std::string kernel_na
 // Adds parameters for a kernel to tune. Also checks whether this parameter already exists.
 void Tuner::AddParameter(const size_t id, const std::string parameter_name,
                          const std::initializer_list<int> values) {
-  if (id >= kernels_.size()) { throw TunerException("Invalid kernel ID"); }
+  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
   if (kernels_[id].ParameterExists(parameter_name)) {
-    throw TunerException("Parameter already exists");
+    throw Exception("Parameter already exists");
   }
   kernels_[id].AddParameter(parameter_name, values);
 }
@@ -125,19 +125,19 @@ void Tuner::AddParameter(const size_t id, const std::string parameter_name,
 // These functions forward their work (adding a modifier to global/local thread-sizes) to an object
 // of KernelInfo class
 void Tuner::MulGlobalSize(const size_t id, const StringRange range) {
-  if (id >= kernels_.size()) { throw TunerException("Invalid kernel ID"); }
+  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
   kernels_[id].AddModifier(range, kGlobalMul);
 }
 void Tuner::DivGlobalSize(const size_t id, const StringRange range) {
-  if (id >= kernels_.size()) { throw TunerException("Invalid kernel ID"); }
+  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
   kernels_[id].AddModifier(range, kGlobalDiv);
 }
 void Tuner::MulLocalSize(const size_t id, const StringRange range) {
-  if (id >= kernels_.size()) { throw TunerException("Invalid kernel ID"); }
+  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
   kernels_[id].AddModifier(range, kLocalMul);
 }
 void Tuner::DivLocalSize(const size_t id, const StringRange range) {
-  if (id >= kernels_.size()) { throw TunerException("Invalid kernel ID"); }
+  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
   kernels_[id].AddModifier(range, kLocalDiv);
 }
 
@@ -145,9 +145,9 @@ void Tuner::DivLocalSize(const size_t id, const StringRange range) {
 // kernel exists and whether the parameters exist.
 void Tuner::AddConstraint(const size_t id, const std::string parameter_1, const ConstraintType type,
                           const std::string parameter_2) {
-  if (id >= kernels_.size()) { throw TunerException("Invalid kernel ID"); }
-  if (!kernels_[id].ParameterExists(parameter_1)) { throw TunerException("Invalid parameter (1)"); }
-  if (!kernels_[id].ParameterExists(parameter_2)) { throw TunerException("Invalid parameter (2)"); }
+  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
+  if (!kernels_[id].ParameterExists(parameter_1)) { throw Exception("Invalid parameter (1)"); }
+  if (!kernels_[id].ParameterExists(parameter_2)) { throw Exception("Invalid parameter (2)"); }
   kernels_[id].AddConstraint(parameter_1, type, parameter_2);
 }
 
@@ -155,10 +155,10 @@ void Tuner::AddConstraint(const size_t id, const std::string parameter_1, const 
 void Tuner::AddConstraint(const size_t id, const std::string parameter_1, const ConstraintType type,
                           const std::string parameter_2, const OperatorType op,
                           const std::string parameter_3) {
-  if (id >= kernels_.size()) { throw TunerException("Invalid kernel ID"); }
-  if (!kernels_[id].ParameterExists(parameter_1)) { throw TunerException("Invalid parameter (1)"); }
-  if (!kernels_[id].ParameterExists(parameter_2)) { throw TunerException("Invalid parameter (2)"); }
-  if (!kernels_[id].ParameterExists(parameter_3)) { throw TunerException("Invalid parameter (3)"); }
+  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
+  if (!kernels_[id].ParameterExists(parameter_1)) { throw Exception("Invalid parameter (1)"); }
+  if (!kernels_[id].ParameterExists(parameter_2)) { throw Exception("Invalid parameter (2)"); }
+  if (!kernels_[id].ParameterExists(parameter_3)) { throw Exception("Invalid parameter (3)"); }
   kernels_[id].AddConstraint(parameter_1, type, parameter_2, op, parameter_3);
 }
 
@@ -167,11 +167,11 @@ void Tuner::AddConstraint(const size_t id, const std::string parameter_1, const 
                           const std::string parameter_2, const OperatorType op_1,
                           const std::string parameter_3, const OperatorType op_2,
                           const std::string parameter_4) {
-  if (id >= kernels_.size()) { throw TunerException("Invalid kernel ID"); }
-  if (!kernels_[id].ParameterExists(parameter_1)) { throw TunerException("Invalid parameter (1)"); }
-  if (!kernels_[id].ParameterExists(parameter_2)) { throw TunerException("Invalid parameter (2)"); }
-  if (!kernels_[id].ParameterExists(parameter_3)) { throw TunerException("Invalid parameter (3)"); }
-  if (!kernels_[id].ParameterExists(parameter_4)) { throw TunerException("Invalid parameter (4)"); }
+  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
+  if (!kernels_[id].ParameterExists(parameter_1)) { throw Exception("Invalid parameter (1)"); }
+  if (!kernels_[id].ParameterExists(parameter_2)) { throw Exception("Invalid parameter (2)"); }
+  if (!kernels_[id].ParameterExists(parameter_3)) { throw Exception("Invalid parameter (3)"); }
+  if (!kernels_[id].ParameterExists(parameter_4)) { throw Exception("Invalid parameter (4)"); }
   kernels_[id].AddConstraint(parameter_1, type, parameter_2, op_1, parameter_3, op_2, parameter_4);
 }
 
@@ -181,7 +181,7 @@ void Tuner::AddConstraint(const size_t id, const std::string parameter_1, const 
 // vector of data. Then, upload it to the device and store the argument in a list.
 template <typename T>
 void Tuner::AddArgumentInput(std::vector<T> &source) {
-  Memory<T> buffer(source.size(), opencl_->context(), opencl_->queue(), source);
+  Memory<T> buffer(source.size(), opencl_, source);
   buffer.UploadToDevice();
   MemArgument argument = {argument_counter_++, source.size(), buffer.type, *buffer.device()};
   arguments_input_.push_back(argument);
@@ -193,7 +193,7 @@ template void Tuner::AddArgumentInput<double>(std::vector<double>&);
 // As above, but now marked as output buffer
 template <typename T>
 void Tuner::AddArgumentOutput(std::vector<T> &source) {
-  Memory<T> buffer(source.size(), opencl_->context(), opencl_->queue(), source);
+  Memory<T> buffer(source.size(), opencl_, source);
   MemArgument argument = {argument_counter_++, source.size(), buffer.type, *buffer.device()};
   arguments_output_.push_back(argument);
 }
@@ -233,7 +233,7 @@ void Tuner::Tune() {
     if (kernel.parameters().size() == 0) {
 
         // Compiles and runs the kernel
-      TunerResult tuning_result = RunKernel(kernel.source(), kernel, 0, 1);
+      auto tuning_result = RunKernel(kernel.source(), kernel, 0, 1);
       tuning_result.status = VerifyOutput();
 
       // Stores the result of the tuning
@@ -246,12 +246,12 @@ void Tuner::Tune() {
       kernel.SetConfigurationList();
 
       // Iterates over all possible configurations (the permutations of the tuning parameters)
-      int num_configurations = kernel.configuration_list().size();
-      for (int p=0; p<num_configurations; p++) {
+      auto num_configurations = kernel.configuration_list().size();
+      for (auto p=0; p<num_configurations; ++p) {
         auto permutation = kernel.configuration_list()[p];
 
         // Adds the parameters to the source-code string as defines
-        std::string source = "";
+        auto source = std::string{};
         for (auto &config: permutation) {
           source += config.GetDefine();
         }
@@ -261,7 +261,7 @@ void Tuner::Tune() {
         kernel.ComputeRanges(permutation);
 
         // Compiles and runs the kernel
-        TunerResult tuning_result = RunKernel(source, kernel, p, num_configurations);
+        auto tuning_result = RunKernel(source, kernel, p, num_configurations);
         tuning_result.status = VerifyOutput();
 
         // Stores the parameters and the timing-result
@@ -281,7 +281,7 @@ double Tuner::PrintToScreen() const {
 
   // Finds the best result
   TunerResult best_result;
-  double best_time = std::numeric_limits<double>::max();
+  auto best_time = std::numeric_limits<double>::max();
   for (auto &tuning_result: tuning_results_) {
     if (tuning_result.status && best_time >= tuning_result.time) {
       best_result = tuning_result;
@@ -310,13 +310,13 @@ double Tuner::PrintToScreen() const {
 // Same as PrintToScreen, but now outputs into a file and does not mark the best-case
 void Tuner::PrintToFile(const std::string &filename) const {
   PrintHeader("Printing results to file: "+filename);
-  FILE* file = fopen(filename.c_str(), "w");
+  auto file = fopen(filename.c_str(), "w");
   std::vector<std::string> processed_kernels;
   for (auto &tuning_result: tuning_results_) {
     if (tuning_result.status) {
 
       // Checks whether this is a kernel which hasn't been encountered yet
-      bool new_kernel = true;
+      auto new_kernel = true;
       for (auto &kernel_name: processed_kernels) {
         if (kernel_name == tuning_result.kernel_name) { new_kernel = false; break; }
       }
@@ -364,14 +364,14 @@ Tuner::TunerResult Tuner::RunKernel(const std::string &source, const KernelInfo 
 
   // Compiles the kernel and prints the compiler errors/warnings
   cl::Program program(opencl_->context(), sources);
-  std::string options = "";
-  cl_int status = program.build({opencl_->device()}, options.c_str());
+  auto options = std::string{};
+  auto status = program.build({opencl_->device()}, options.c_str());
   if (status == CL_BUILD_PROGRAM_FAILURE || status == CL_INVALID_BINARY) {
-    std::string message = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(opencl_->device());
-    throw TunerException("OpenCL compiler error/warning:\n" + message);
+    auto message = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(opencl_->device());
+    throw Exception("OpenCL compiler error/warning:\n" + message);
   }
   if (status != CL_SUCCESS) {
-    throw OpenCLException("Program build error", status);
+    throw OpenCL::Exception("Program build error", status);
   }
 
   // Sets the output buffer(s) to zero
@@ -380,52 +380,52 @@ Tuner::TunerResult Tuner::RunKernel(const std::string &source, const KernelInfo 
       case MemType::kInt: ResetMemArgument<int>(output); break;
       case MemType::kFloat: ResetMemArgument<float>(output); break;
       case MemType::kDouble: ResetMemArgument<double>(output); break;
-      default: throw TunerException("Unsupported reference output data-type");
+      default: throw Exception("Unsupported reference output data-type");
     }
   }
 
   // Sets the kernel and its arguments
-  cl::Kernel tune_kernel = cl::Kernel(program, kernel.name().c_str());
+  auto tune_kernel = cl::Kernel(program, kernel.name().c_str());
   for (auto &i: arguments_input_)  { tune_kernel.setArg(i.index, i.buffer); }
   for (auto &i: arguments_output_) { tune_kernel.setArg(i.index, i.buffer); }
   for (auto &i: arguments_scalar_) { tune_kernel.setArg(i.first, i.second); }
 
   // Sets the global and local thread-sizes
-  cl::NDRange global = kernel.global();
-  cl::NDRange local = kernel.local();
+  auto global = kernel.global();
+  auto local = kernel.local();
 
   // Verifies the global/local thread-sizes against device properties
-  size_t local_threads = opencl_->VerifyThreadSizes(global, local);
+  auto local_threads = opencl_->VerifyThreadSizes(global, local);
 
   // Obtains and verifies the local memory usage of the kernel
-  size_t local_memory = 0;
+  auto local_memory = static_cast<size_t>(0);
   status = tune_kernel.getWorkGroupInfo(opencl_->device(), CL_KERNEL_LOCAL_MEM_SIZE, &local_memory);
-  if (status != CL_SUCCESS) { throw OpenCLException("Get kernel information error", status); }
+  if (status != CL_SUCCESS) { throw OpenCL::Exception("Get kernel information error", status); }
   opencl_->VerifyLocalMemory(local_memory);
 
   // Prepares the kernel
   status = opencl_->queue().finish();
-  if (status != CL_SUCCESS) { throw OpenCLException("Command queue error", status); }
+  if (status != CL_SUCCESS) { throw OpenCL::Exception("Command queue error", status); }
 
   // Runs the kernel (this is the timed part)
   fprintf(stdout, "%s Running %s\n", kMessageRun.c_str(), kernel.name().c_str());
   std::vector<cl::Event> events(kNumRuns);
-  for (int t=0; t<kNumRuns; ++t) {
+  for (auto t=0; t<kNumRuns; ++t) {
     status = opencl_->queue().enqueueNDRangeKernel(tune_kernel, cl::NullRange, global, local, NULL, &events[t]);
-    if (status != CL_SUCCESS) { throw OpenCLException("Kernel launch error", status); }
+    if (status != CL_SUCCESS) { throw OpenCL::Exception("Kernel launch error", status); }
     status = events[t].wait();
     if (status != CL_SUCCESS) {
       fprintf(stdout, "%s Kernel %s failed\n", kMessageFailure.c_str(), kernel.name().c_str());
-      throw OpenCLException("Kernel error", status);
+      throw OpenCL::Exception("Kernel error", status);
     }
   }
   opencl_->queue().finish();
 
   // Collects the timing information
-  double elapsed_time = std::numeric_limits<double>::max();
-  for (int t=0; t<kNumRuns; ++t) {
-    cl_ulong start_time = events[t].getProfilingInfo<CL_PROFILING_COMMAND_START>(&status);
-    cl_ulong end_time = events[t].getProfilingInfo<CL_PROFILING_COMMAND_END>(&status);
+  auto elapsed_time = std::numeric_limits<double>::max();
+  for (auto t=0; t<kNumRuns; ++t) {
+    auto start_time = events[t].getProfilingInfo<CL_PROFILING_COMMAND_START>(&status);
+    auto end_time = events[t].getProfilingInfo<CL_PROFILING_COMMAND_END>(&status);
     elapsed_time = std::min(elapsed_time, (end_time - start_time) / (1000.0 * 1000.0));
   }
   fprintf(stdout, "%s Completed %s (%.0lf ms) - %d out of %d\n",
@@ -444,14 +444,13 @@ template <typename T>
 void Tuner::ResetMemArgument(MemArgument &argument) {
 
   // Create an array with zeroes
-  std::vector<T> buffer(argument.size);
-  for (auto &item: buffer) { item = static_cast<T>(0); }
+  std::vector<T> buffer(argument.size, static_cast<T>(0));
 
   // Copy the new array to the OpenCL buffer on the device
-  int bytes = sizeof(T)*argument.size;
-  cl_int status = opencl_->queue().enqueueWriteBuffer(argument.buffer, CL_TRUE, 0, bytes,
-                                                      buffer.data());
-  if (status != CL_SUCCESS) { throw OpenCLException("Write buffer error", status); }
+  auto bytes = sizeof(T)*argument.size;
+  auto status = opencl_->queue().enqueueWriteBuffer(argument.buffer, CL_TRUE, 0, bytes,
+                                                    buffer.data());
+  if (status != CL_SUCCESS) { throw OpenCL::Exception("Write buffer error", status); }
 }
 
 // =================================================================================================
@@ -465,13 +464,13 @@ void Tuner::StoreReferenceOutput() {
       case MemType::kInt: DownloadReference<int>(output_buffer); break;
       case MemType::kFloat: DownloadReference<float>(output_buffer); break;
       case MemType::kDouble: DownloadReference<double>(output_buffer); break;
-      default: throw TunerException("Unsupported reference output data-type");
+      default: throw Exception("Unsupported reference output data-type");
     }
   }
 }
 template <typename T> void Tuner::DownloadReference(const MemArgument &device_buffer) {
   T* host_buffer = new T[device_buffer.size];
-  int bytes = sizeof(T)*device_buffer.size;
+  auto bytes = sizeof(T)*device_buffer.size;
   opencl_->queue().enqueueReadBuffer(device_buffer.buffer, CL_TRUE, 0, bytes, host_buffer);
   reference_outputs_.push_back(host_buffer);
 }
@@ -483,15 +482,15 @@ template <typename T> void Tuner::DownloadReference(const MemArgument &device_bu
 // compares the results to the reference output. This function is specialised for different
 // data-types. These functions return "true" if everything is OK, and "false" if there is a warning.
 bool Tuner::VerifyOutput() {
-  bool status = true;
+  auto status = true;
   if (has_reference_) {
-    for (size_t i=0; i<arguments_output_.size(); ++i) {
-      MemArgument output_buffer = arguments_output_[i];
+    for (auto i=0; i<arguments_output_.size(); ++i) {
+      auto output_buffer = arguments_output_[i];
       switch (output_buffer.type) {
         case MemType::kInt: status &= DownloadAndCompare<int>(output_buffer, i); break;
         case MemType::kFloat: status &= DownloadAndCompare<float>(output_buffer, i); break;
         case MemType::kDouble: status &= DownloadAndCompare<double>(output_buffer, i); break;
-        default: throw TunerException("Unsupported output data-type");
+        default: throw Exception("Unsupported output data-type");
       }
     }
   }
@@ -501,16 +500,16 @@ bool Tuner::VerifyOutput() {
 // See above comment
 template <typename T>
 bool Tuner::DownloadAndCompare(const MemArgument &device_buffer, const size_t i) {
-  double l2_norm = 0.0;
+  auto l2_norm = 0.0;
 
   // Downloads the results to the host
   std::vector<T> host_buffer(device_buffer.size);
-  int bytes = sizeof(T)*device_buffer.size;
+  auto bytes = sizeof(T)*device_buffer.size;
   opencl_->queue().enqueueReadBuffer(device_buffer.buffer, CL_TRUE, 0, bytes, host_buffer.data());
 
   // Compares the results (L2 norm)
   T* reference_output = (T*)reference_outputs_[i];
-  for (size_t j=0; j<device_buffer.size; ++j) {
+  for (auto j=0; j<device_buffer.size; ++j) {
     l2_norm += fabs((double)reference_output[j] - (double)host_buffer[j]);
   }
 
@@ -540,18 +539,10 @@ void Tuner::PrintResult(FILE* fp, const TunerResult &result, const std::string &
 // Loads a file into a stringstream and returns the result as a string
 std::string Tuner::LoadFile(const std::string &filename) {
   std::ifstream file(filename);
-  if (file.fail()) { throw TunerException("Could not open kernel file: "+filename); }
+  if (file.fail()) { throw Exception("Could not open kernel file: "+filename); }
   std::stringstream file_contents;
   file_contents << file.rdbuf();
   return file_contents.str();
-}
-
-// =================================================================================================
-
-// Converts an unsigned integer to a string by first casting it to a long long integer. This is
-// required for older compilers that do not fully implement std::to_string (part of C++11).
-std::string Tuner::ToString(const int value) const {
-  return std::to_string(static_cast<long long>(value));
 }
 
 // =================================================================================================

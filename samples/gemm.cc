@@ -38,12 +38,12 @@
 
 // Example showing how to tune an OpenCL SGEMM matrix-multiplication kernel. This assumes that
 // matrix B is pre-transposed, alpha equals 1 and beta equals 0: C = A * B^T
-int main(int argc, char* argv[]) {
+int main() {
 
   // Creates data structures
-  const int kSizeM = 256;
-  const int kSizeN = 512;
-  const int kSizeK = 1024;
+  constexpr auto kSizeM = 256;
+  constexpr auto kSizeN = 512;
+  constexpr auto kSizeK = 1024;
 
   // Creates input matrices
   std::vector<float> mat_a(kSizeM*kSizeK);
@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
   std::vector<float> mat_c(kSizeM*kSizeN);
 
   // Populates input data structures
-  srand(time(NULL));
+  srand(time(nullptr));
   for (auto &item: mat_a) { item = (float)rand() / (float)RAND_MAX; }
   for (auto &item: mat_b) { item = (float)rand() / (float)RAND_MAX; }
   for (auto &item: mat_c) { item = 0.0; }
@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
   
   // Adds a heavily tuneable kernel and some example parameter values. Others can be added, but for
   // this example this already leads to plenty of kernels to test.
-  size_t id = tuner.AddKernel("../samples/gemm_fast.opencl", "gemm_fast", {kSizeM, kSizeN}, {1, 1});
+  auto id = tuner.AddKernel("../samples/gemm_fast.opencl", "gemm_fast", {kSizeM, kSizeN}, {1, 1});
   tuner.AddParameter(id, "MWG", {64, 128});
   tuner.AddParameter(id, "NWG", {64, 128});
   tuner.AddParameter(id, "KWG", {16});
@@ -109,22 +109,22 @@ int main(int argc, char* argv[]) {
 
   // Sets the function's arguments. Note that all kernels have to accept (but not necessarily use)
   // all input arguments.
-  tuner.AddArgumentScalar<int>(kSizeM);
-  tuner.AddArgumentScalar<int>(kSizeN);
-  tuner.AddArgumentScalar<int>(kSizeK);
-  tuner.AddArgumentInput<float>(mat_a);
-  tuner.AddArgumentInput<float>(mat_b);
-  tuner.AddArgumentOutput<float>(mat_c);
+  tuner.AddArgumentScalar(kSizeM);
+  tuner.AddArgumentScalar(kSizeN);
+  tuner.AddArgumentScalar(kSizeK);
+  tuner.AddArgumentInput(mat_a);
+  tuner.AddArgumentInput(mat_b);
+  tuner.AddArgumentOutput(mat_c);
 
   // Starts the tuner
   tuner.Tune();
 
   // Prints the results to screen and to file
-  double time_ms = tuner.PrintToScreen();
+  auto time_ms = tuner.PrintToScreen();
   tuner.PrintToFile("output.csv");
 
   // Also prints the performance of the best-case in terms of GFLOPS
-  const double kGFLOP = ((long)kSizeM * (long)kSizeN * (long)kSizeK * 2) / (1000.0*1000.0*1000.0);
+  constexpr double kGFLOP = (2*(long)kSizeM*(long)kSizeN*(long)kSizeK) / (1000.0*1000.0*1000.0);
   if (time_ms != 0.0) {
     printf("[ -------> ] %.1lf ms or %.3lf GFLOPS\n", time_ms, 1000*kGFLOP/time_ms);
   }

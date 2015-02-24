@@ -48,8 +48,8 @@ namespace cltune {
 // See comment at top of file for a description of the class
 class Tuner {
  public:
-  const double kMaxL2Norm = 1e-4; // This is the threshold for 'correctness'
-  const int kNumRuns = 1; // This is used for more-accurate kernel execution time measurement
+  static constexpr double kMaxL2Norm = 1e-4; // This is the threshold for 'correctness'
+  static constexpr auto kNumRuns = 1; // This is used for more-accurate execution time measurement
 
   // Messages printed to stdout (in colours)
   static const std::string kMessageFull;
@@ -80,18 +80,10 @@ class Tuner {
   };
 
   // Exception of the tuner itself
-  class TunerException : public std::runtime_error {
+  class Exception : public std::runtime_error {
    public:
-    TunerException(const std::string &message)
+    Exception(const std::string &message)
                    : std::runtime_error(message) { };
-  };
-
-  // OpenCL-related exception
-  class OpenCLException : public std::runtime_error {
-   public:
-    OpenCLException(const std::string &message, cl_int status)
-                    : std::runtime_error(message+
-                    " [code: "+std::to_string(static_cast<long long>(status))+"]") { };
   };
 
   // Initialize either with platform 0 and device 0 or with a custom platform/device
@@ -101,13 +93,13 @@ class Tuner {
 
   // Adds a new kernel to the list of tuning-kernels and returns a unique ID (to be used when
   // adding tuning parameters)
-  int AddKernel(const std::string filename, const std::string kernel_name,
-                const cl::NDRange global, const cl::NDRange local);
+  int AddKernel(const std::string &filename, const std::string &kernel_name,
+                const cl::NDRange &global, const cl::NDRange &local);
 
   // Sets the reference kernel. Same as the AddKernel function, but in this case there is only one
   // reference kernel. Calling this function again will overwrite the previous reference kernel.
-  void SetReference(const std::string filename, const std::string kernel_name,
-                    const cl::NDRange global, const cl::NDRange local);
+  void SetReference(const std::string &filename, const std::string &kernel_name,
+                    const cl::NDRange &global, const cl::NDRange &local);
 
   // Adds a new tuning parameter for a kernel with a specific ID. The parameter has a name, the
   // number of values, and a list of values.
@@ -180,9 +172,6 @@ class Tuner {
 
   // Loads a file from disk into a string
   std::string LoadFile(const std::string &filename);
-
-  // Converts an unsigned integer into a string
-  std::string ToString(const int value) const;
 
   // Prints a header of a new section in the tuning process
   void PrintHeader(const std::string &header_name) const;

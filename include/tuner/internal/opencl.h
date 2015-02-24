@@ -44,6 +44,20 @@ namespace cltune {
 class OpenCL {
  public:
 
+  // Converts an unsigned integer to a string by first casting it to a long long integer. This is
+  // required for older compilers that do not fully implement std::to_string (part of C++11).
+  static std::string ToString(int value) {
+    return std::to_string(static_cast<long long>(value));
+  }
+
+  // OpenCL-related exception, prints not only a message but also an OpenCL error code.
+  class Exception : public std::runtime_error {
+   public:
+    Exception(const std::string &message, cl_int status):
+        std::runtime_error(message+" [code: "+ToString(status)+"]") {
+    };
+  };
+
   // Types of devices to consider
   const cl_device_type kDeviceType = CL_DEVICE_TYPE_ALL;
 
@@ -51,20 +65,16 @@ class OpenCL {
   explicit OpenCL(const size_t platform_id, const size_t device_id);
 
   // Accessors
-  cl::Device device() const { return device_; }
-  cl::Context context() const { return context_; }
-  cl::CommandQueue queue() const { return queue_; }
+  const cl::Device& device() const { return device_; }
+  const cl::Context& context() const { return context_; }
+  const cl::CommandQueue& queue() const { return queue_; }
 
   // Checks whether the global and local thread-sizes, and local memory size are compatible with the
   // current device
-  size_t VerifyThreadSizes(const cl::NDRange global, const cl::NDRange local);
-  void VerifyLocalMemory(const size_t local_memory);
+  size_t VerifyThreadSizes(const cl::NDRange &global, const cl::NDRange &local) const;
+  void VerifyLocalMemory(const size_t local_memory) const;
   
  private:
-
-  // Converts an unsigned integer to a string by first casting it to a long long integer. This is
-  // required for older compilers that do not fully implement std::to_string (part of C++11).
-  std::string ToString(int value) { return std::to_string(static_cast<long long>(value)); }
 
   // Settings
   bool suppress_output_;
