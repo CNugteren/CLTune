@@ -49,7 +49,7 @@ namespace cltune {
 class Tuner {
  public:
   static constexpr double kMaxL2Norm = 1e-4; // This is the threshold for 'correctness'
-  static constexpr int kNumRuns = 1; // This is used for more-accurate execution time measurement
+  static constexpr auto kNumRuns = 1; // This is used for more-accurate execution time measurement
 
   // Messages printed to stdout (in colours)
   static const std::string kMessageFull;
@@ -80,9 +80,9 @@ class Tuner {
   };
 
   // Exception of the tuner itself
-  class TunerException : public std::runtime_error {
+  class Exception : public std::runtime_error {
    public:
-    TunerException(const std::string &message)
+    Exception(const std::string &message)
                    : std::runtime_error(message) { };
   };
 
@@ -93,13 +93,13 @@ class Tuner {
 
   // Adds a new kernel to the list of tuning-kernels and returns a unique ID (to be used when
   // adding tuning parameters)
-  int AddKernel(const std::string filename, const std::string kernel_name,
-                const cl::NDRange global, const cl::NDRange local);
+  int AddKernel(const std::string &filename, const std::string &kernel_name,
+                const cl::NDRange &global, const cl::NDRange &local);
 
   // Sets the reference kernel. Same as the AddKernel function, but in this case there is only one
   // reference kernel. Calling this function again will overwrite the previous reference kernel.
-  void SetReference(const std::string filename, const std::string kernel_name,
-                    const cl::NDRange global, const cl::NDRange local);
+  void SetReference(const std::string &filename, const std::string &kernel_name,
+                    const cl::NDRange &global, const cl::NDRange &local);
 
   // Adds a new tuning parameter for a kernel with a specific ID. The parameter has a name, the
   // number of values, and a list of values.

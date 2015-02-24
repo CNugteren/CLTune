@@ -80,8 +80,8 @@ Tuner::~Tuner() {
 
 // Loads the OpenCL source-code from a file and creates a new variable of type KernelInfo to store
 // all the kernel-information.
-int Tuner::AddKernel(const std::string filename, const std::string kernel_name,
-                      const cl::NDRange global, const cl::NDRange local) {
+int Tuner::AddKernel(const std::string &filename, const std::string &kernel_name,
+                      const cl::NDRange &global, const cl::NDRange &local) {
 
   // Loads the source-code and adds the kernel
   auto source = LoadFile(filename);
@@ -99,8 +99,8 @@ int Tuner::AddKernel(const std::string filename, const std::string kernel_name,
 // Sets the reference kernel (source-code location, kernel name, global/local thread-sizes) and
 // sets a flag to indicate that there is now a reference. Calling this function again will simply
 // overwrite the old reference.
-void Tuner::SetReference(const std::string filename, const std::string kernel_name,
-                         const cl::NDRange global, const cl::NDRange local) {
+void Tuner::SetReference(const std::string &filename, const std::string &kernel_name,
+                         const cl::NDRange &global, const cl::NDRange &local) {
   has_reference_ = true;
   auto source = LoadFile(filename);
   reference_kernel_.reset(new KernelInfo(kernel_name, source));
@@ -113,9 +113,9 @@ void Tuner::SetReference(const std::string filename, const std::string kernel_na
 // Adds parameters for a kernel to tune. Also checks whether this parameter already exists.
 void Tuner::AddParameter(const size_t id, const std::string parameter_name,
                          const std::initializer_list<int> values) {
-  if (id >= kernels_.size()) { throw TunerException("Invalid kernel ID"); }
+  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
   if (kernels_[id].ParameterExists(parameter_name)) {
-    throw TunerException("Parameter already exists");
+    throw Exception("Parameter already exists");
   }
   kernels_[id].AddParameter(parameter_name, values);
 }
@@ -125,19 +125,19 @@ void Tuner::AddParameter(const size_t id, const std::string parameter_name,
 // These functions forward their work (adding a modifier to global/local thread-sizes) to an object
 // of KernelInfo class
 void Tuner::MulGlobalSize(const size_t id, const StringRange range) {
-  if (id >= kernels_.size()) { throw TunerException("Invalid kernel ID"); }
+  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
   kernels_[id].AddModifier(range, kGlobalMul);
 }
 void Tuner::DivGlobalSize(const size_t id, const StringRange range) {
-  if (id >= kernels_.size()) { throw TunerException("Invalid kernel ID"); }
+  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
   kernels_[id].AddModifier(range, kGlobalDiv);
 }
 void Tuner::MulLocalSize(const size_t id, const StringRange range) {
-  if (id >= kernels_.size()) { throw TunerException("Invalid kernel ID"); }
+  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
   kernels_[id].AddModifier(range, kLocalMul);
 }
 void Tuner::DivLocalSize(const size_t id, const StringRange range) {
-  if (id >= kernels_.size()) { throw TunerException("Invalid kernel ID"); }
+  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
   kernels_[id].AddModifier(range, kLocalDiv);
 }
 
@@ -145,9 +145,9 @@ void Tuner::DivLocalSize(const size_t id, const StringRange range) {
 // kernel exists and whether the parameters exist.
 void Tuner::AddConstraint(const size_t id, const std::string parameter_1, const ConstraintType type,
                           const std::string parameter_2) {
-  if (id >= kernels_.size()) { throw TunerException("Invalid kernel ID"); }
-  if (!kernels_[id].ParameterExists(parameter_1)) { throw TunerException("Invalid parameter (1)"); }
-  if (!kernels_[id].ParameterExists(parameter_2)) { throw TunerException("Invalid parameter (2)"); }
+  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
+  if (!kernels_[id].ParameterExists(parameter_1)) { throw Exception("Invalid parameter (1)"); }
+  if (!kernels_[id].ParameterExists(parameter_2)) { throw Exception("Invalid parameter (2)"); }
   kernels_[id].AddConstraint(parameter_1, type, parameter_2);
 }
 
@@ -155,10 +155,10 @@ void Tuner::AddConstraint(const size_t id, const std::string parameter_1, const 
 void Tuner::AddConstraint(const size_t id, const std::string parameter_1, const ConstraintType type,
                           const std::string parameter_2, const OperatorType op,
                           const std::string parameter_3) {
-  if (id >= kernels_.size()) { throw TunerException("Invalid kernel ID"); }
-  if (!kernels_[id].ParameterExists(parameter_1)) { throw TunerException("Invalid parameter (1)"); }
-  if (!kernels_[id].ParameterExists(parameter_2)) { throw TunerException("Invalid parameter (2)"); }
-  if (!kernels_[id].ParameterExists(parameter_3)) { throw TunerException("Invalid parameter (3)"); }
+  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
+  if (!kernels_[id].ParameterExists(parameter_1)) { throw Exception("Invalid parameter (1)"); }
+  if (!kernels_[id].ParameterExists(parameter_2)) { throw Exception("Invalid parameter (2)"); }
+  if (!kernels_[id].ParameterExists(parameter_3)) { throw Exception("Invalid parameter (3)"); }
   kernels_[id].AddConstraint(parameter_1, type, parameter_2, op, parameter_3);
 }
 
@@ -167,11 +167,11 @@ void Tuner::AddConstraint(const size_t id, const std::string parameter_1, const 
                           const std::string parameter_2, const OperatorType op_1,
                           const std::string parameter_3, const OperatorType op_2,
                           const std::string parameter_4) {
-  if (id >= kernels_.size()) { throw TunerException("Invalid kernel ID"); }
-  if (!kernels_[id].ParameterExists(parameter_1)) { throw TunerException("Invalid parameter (1)"); }
-  if (!kernels_[id].ParameterExists(parameter_2)) { throw TunerException("Invalid parameter (2)"); }
-  if (!kernels_[id].ParameterExists(parameter_3)) { throw TunerException("Invalid parameter (3)"); }
-  if (!kernels_[id].ParameterExists(parameter_4)) { throw TunerException("Invalid parameter (4)"); }
+  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
+  if (!kernels_[id].ParameterExists(parameter_1)) { throw Exception("Invalid parameter (1)"); }
+  if (!kernels_[id].ParameterExists(parameter_2)) { throw Exception("Invalid parameter (2)"); }
+  if (!kernels_[id].ParameterExists(parameter_3)) { throw Exception("Invalid parameter (3)"); }
+  if (!kernels_[id].ParameterExists(parameter_4)) { throw Exception("Invalid parameter (4)"); }
   kernels_[id].AddConstraint(parameter_1, type, parameter_2, op_1, parameter_3, op_2, parameter_4);
 }
 
@@ -368,7 +368,7 @@ Tuner::TunerResult Tuner::RunKernel(const std::string &source, const KernelInfo 
   auto status = program.build({opencl_->device()}, options.c_str());
   if (status == CL_BUILD_PROGRAM_FAILURE || status == CL_INVALID_BINARY) {
     auto message = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(opencl_->device());
-    throw TunerException("OpenCL compiler error/warning:\n" + message);
+    throw Exception("OpenCL compiler error/warning:\n" + message);
   }
   if (status != CL_SUCCESS) {
     throw OpenCL::Exception("Program build error", status);
@@ -380,7 +380,7 @@ Tuner::TunerResult Tuner::RunKernel(const std::string &source, const KernelInfo 
       case MemType::kInt: ResetMemArgument<int>(output); break;
       case MemType::kFloat: ResetMemArgument<float>(output); break;
       case MemType::kDouble: ResetMemArgument<double>(output); break;
-      default: throw TunerException("Unsupported reference output data-type");
+      default: throw Exception("Unsupported reference output data-type");
     }
   }
 
@@ -464,7 +464,7 @@ void Tuner::StoreReferenceOutput() {
       case MemType::kInt: DownloadReference<int>(output_buffer); break;
       case MemType::kFloat: DownloadReference<float>(output_buffer); break;
       case MemType::kDouble: DownloadReference<double>(output_buffer); break;
-      default: throw TunerException("Unsupported reference output data-type");
+      default: throw Exception("Unsupported reference output data-type");
     }
   }
 }
@@ -490,7 +490,7 @@ bool Tuner::VerifyOutput() {
         case MemType::kInt: status &= DownloadAndCompare<int>(output_buffer, i); break;
         case MemType::kFloat: status &= DownloadAndCompare<float>(output_buffer, i); break;
         case MemType::kDouble: status &= DownloadAndCompare<double>(output_buffer, i); break;
-        default: throw TunerException("Unsupported output data-type");
+        default: throw Exception("Unsupported output data-type");
       }
     }
   }
@@ -539,7 +539,7 @@ void Tuner::PrintResult(FILE* fp, const TunerResult &result, const std::string &
 // Loads a file into a stringstream and returns the result as a string
 std::string Tuner::LoadFile(const std::string &filename) {
   std::ifstream file(filename);
-  if (file.fail()) { throw TunerException("Could not open kernel file: "+filename); }
+  if (file.fail()) { throw Exception("Could not open kernel file: "+filename); }
   std::stringstream file_contents;
   file_contents << file.rdbuf();
   return file_contents.str();
