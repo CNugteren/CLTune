@@ -46,14 +46,14 @@
 namespace cltune {
 // =================================================================================================
 
-// Enumeration of modifiers to global/local thread-sizes
-enum ThreadSizeModifierType { kGlobalMul, kGlobalDiv, kLocalMul, kLocalDiv };
-
 // =================================================================================================
 
 // See comment at top of file for a description of the class
 class KernelInfo {
  public:
+
+  // Enumeration of modifiers to global/local thread-sizes
+  enum class ThreadSizeModifierType { kGlobalMul, kGlobalDiv, kLocalMul, kLocalDiv };
 
   // Helper structure holding a parameter name and a list of all values
   struct Parameter {

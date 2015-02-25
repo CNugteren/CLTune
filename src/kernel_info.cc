@@ -104,10 +104,10 @@ void KernelInfo::ComputeRanges(const std::vector<Configuration> &configuration) 
       for (auto &parameter: configuration) {
         if (modifier_string == parameter.name) {
           switch (modifier.type) {
-            case kGlobalMul: global_values[dim] *= parameter.value; break;
-            case kGlobalDiv: global_values[dim] /= parameter.value; break;
-            case kLocalMul: local_values[dim] *= parameter.value; break;
-            case kLocalDiv: local_values[dim] /= parameter.value; break;
+            case ThreadSizeModifierType::kGlobalMul: global_values[dim] *= parameter.value; break;
+            case ThreadSizeModifierType::kGlobalDiv: global_values[dim] /= parameter.value; break;
+            case ThreadSizeModifierType::kLocalMul: local_values[dim] *= parameter.value; break;
+            case ThreadSizeModifierType::kLocalDiv: local_values[dim] /= parameter.value; break;
             default: assert(0 && "Invalid modifier type");
           }
           found_string = true;

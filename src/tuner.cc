@@ -126,19 +126,19 @@ void Tuner::AddParameter(const size_t id, const std::string parameter_name,
 // of KernelInfo class
 void Tuner::MulGlobalSize(const size_t id, const StringRange range) {
   if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
-  kernels_[id].AddModifier(range, kGlobalMul);
+  kernels_[id].AddModifier(range, KernelInfo::ThreadSizeModifierType::kGlobalMul);
 }
 void Tuner::DivGlobalSize(const size_t id, const StringRange range) {
   if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
-  kernels_[id].AddModifier(range, kGlobalDiv);
+  kernels_[id].AddModifier(range, KernelInfo::ThreadSizeModifierType::kGlobalDiv);
 }
 void Tuner::MulLocalSize(const size_t id, const StringRange range) {
   if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
-  kernels_[id].AddModifier(range, kLocalMul);
+  kernels_[id].AddModifier(range, KernelInfo::ThreadSizeModifierType::kLocalMul);
 }
 void Tuner::DivLocalSize(const size_t id, const StringRange range) {
   if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
-  kernels_[id].AddModifier(range, kLocalDiv);
+  kernels_[id].AddModifier(range, KernelInfo::ThreadSizeModifierType::kLocalDiv);
 }
 
 // Adds a contraint to the list of constraints for a particular kernel. First checks whether the
