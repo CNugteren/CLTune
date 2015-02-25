@@ -48,7 +48,7 @@ OpenCL kernel (first argument), the name of the kernel (second argument), a list
 dimensions (third argument), and a list of local thread or workgroup dimensions (fourth argument).
 Here is an example:
 
-    int id = my_tuner.AddKernel("path/to/kernel.opencl", "my_kernel", {1024,512}, {16,8});
+    auto id = my_tuner.AddKernel("path/to/kernel.opencl", "my_kernel", {1024,512}, {16,8});
 
 Notice that the AddKernel function returns an integer: it is the ID of the added kernel. We'll need
 this ID when we want to add tuning parameters to this kernel. Let's say that our kernel has two
@@ -68,13 +68,13 @@ The tuner also needs to know which arguments the kernels take. Scalar arguments 
 as-is and are passed-by-value, whereas arrays have to be provided as C++ `std::vector`s. That's
 right, we won't have to create OpenCL buffers, CLTune will handle that for us! Here is an example:
 
-    int my_variable = 900;
+    auto my_variable = 900;
     std::vector<float> input_vector(8192);
     std::vector<float> output_vector(8192);
-    my_tuner.AddArgumentScalar<int>(my_variable);
-    my_tuner.AddArgumentScalar<float>(3.7);
-    my_tuner.AddArgumentInput<float>(input_vector);
-    my_tuner.AddArgumentOutput<float>(output_vector);
+    my_tuner.AddArgumentScalar(my_variable);
+    my_tuner.AddArgumentScalar(3.7);
+    my_tuner.AddArgumentInput(input_vector);
+    my_tuner.AddArgumentOutput(output_vector);
 
 Now that we've configured the tuner, it is time to start it and ask it to report the results:
 
@@ -85,9 +85,9 @@ Other examples
 -------------
 
 Two examples are included as part of the CLTune distribution. They illustrate some more advanced
-features, such as modifying the thread dimensions based on the parameters and adding parameter
-constraints. The examples are compiled when providing `-ENABLE_SAMPLES=ON` to CMake (default option
-currently). The two included examples are:
+features, such as modifying the thread dimensions based on the parameters and adding user-defined
+parameter constraints. The examples are compiled when providing `-ENABLE_SAMPLES=ON` to CMake
+(default option). The two included examples are:
 
 * `simple.cc` providing a basic example of matrix-vector multiplication
 * `gemm.cc` providing a more advanced and heavily tuned implementation of matrix-matrix
@@ -98,7 +98,8 @@ Development and tests
 
 The CLTune project follows the Google C++ styleguide (with some exceptions) and uses a tab-size of
 two spaces and a max-width of 100 characters per line. It is furthermore based on practises from the
-third edition of Effective C++. The project is licensed under the MIT license by SURFsara, (c) 2014.The contributing authors so far are:
+third edition of Effective C++ and the first edition of Effective Modern C++. The project is
+licensed under the MIT license by SURFsara, (c) 2014. The contributing authors so far are:
 
 * Cedric Nugteren
 

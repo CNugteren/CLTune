@@ -1,6 +1,11 @@
 
+Version 1.1.0
+- User-defined parameter constraints are now fully customizable by accepting arbitrary functions on
+  an arbitrary combination of parameters.
+- Re-factored the code to use more C++11 features: auto, smart pointers, constexpr, class enums, ...
+
 Version 1.0.1
-- Replaced one more occurence of a pointer with an std::shared_ptr
+- Replaced one more occurrence of a pointer with an std::shared_ptr
 - Re-added OpenCL class constructor exception test
 - Updated license information
 

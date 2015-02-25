@@ -36,22 +36,15 @@
 #include <memory>
 
 // The C++ OpenCL wrapper
+#include "tuner/internal/opencl.h"
+
 #include "cl.hpp"
 
 namespace cltune {
 // =================================================================================================
 
 // Enumeration of currently supported data-types by this class
-enum MemType { kInt, kFloat, kDouble };
-
-// OpenCL-related exception, prints not only a message but also an OpenCL error code. This class is
-// added to this file because it is only used by the Memory class.
-class OpenCLException : public std::runtime_error {
- public:
-  OpenCLException(const std::string &message, cl_int status)
-                  : std::runtime_error(message+
-                  " [code: "+std::to_string(static_cast<long long>(status))+"]") { };
-};
+enum class MemType { kInt, kFloat, kDouble };
 
 // See comment at top of file for a description of the class
 template <typename T>
@@ -62,9 +55,8 @@ class Memory {
   const static MemType type;
 
   // Initializes the host and device data (with zeroes or based on a source-vector)
-  explicit Memory(const size_t size, cl::Context context, cl::CommandQueue queue);
-  explicit Memory(const size_t size, cl::Context context, cl::CommandQueue queue,
-                  std::vector<T> &source);
+  explicit Memory(const size_t size, std::shared_ptr<OpenCL> opencl);
+  explicit Memory(const size_t size, std::shared_ptr<OpenCL> opencl, std::vector<T> &source);
 
   // Accessors to the host/device data
   std::vector<T> host() const { return host_; }
@@ -81,10 +73,8 @@ class Memory {
   std::vector<T> host_;
   std::shared_ptr<cl::Buffer> device_;
 
-  // Pointers to the memory's context and command queue
-  // TODO: Pass these objects by reference instead of creating copies
-  cl::Context context_;
-  cl::CommandQueue queue_;
+  // Pointer to the OpenCL context and command queue
+  std::shared_ptr<OpenCL> opencl_;
 };
 
 
