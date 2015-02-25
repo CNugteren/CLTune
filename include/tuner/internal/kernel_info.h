@@ -35,6 +35,7 @@
 #include <vector>
 #include <iostream>
 #include <stdexcept>
+#include <functional>
 
 // The C++ OpenCL wrapper
 #include "cl.hpp"
@@ -47,12 +48,6 @@ namespace cltune {
 
 // Enumeration of modifiers to global/local thread-sizes
 enum ThreadSizeModifierType { kGlobalMul, kGlobalDiv, kLocalMul, kLocalDiv };
-
-// Enumeration of equalities/inequalities on parameter
-enum ConstraintType { kEqual, kLargerThan, kLargerEqual, kSmallerThan, kSmallerEqual, kMultipleOf };
-
-// Enumeration of operations on parameter
-enum OperatorType { kNoOp, kMultipliedBy, kDividedBy };
 
 // =================================================================================================
 
@@ -81,30 +76,18 @@ class KernelInfo {
     ThreadSizeModifierType type;
   };
 
-  // Helper structure holding a constraint on parameters
-  // TODO: Make this more generic with a vector of parameters and operators
+  // Helper structure holding a constraint on parameters. This constraint consists of a constraint
+  // function object and a vector of paramater names represented as strings.
+  using ConstraintFunction = std::function<bool(std::vector<int>)>;
   struct Constraint {
-    std::string parameter_1;
-    ConstraintType type;
-    std::string parameter_2;
-    OperatorType op_1;
-    std::string parameter_3;
-    OperatorType op_2;
-    std::string parameter_4;
-  };
-
-  // Temporary structure
-  struct SupportKernel {
-    std::string name;
-    cl::NDRange global;
-    cl::NDRange local;
+    ConstraintFunction valid_if;
+    std::vector<std::string> parameters;
   };
 
   // Exception of the KernelInfo class
-  class KernelInfoException : public std::runtime_error {
+  class Exception : public std::runtime_error {
    public:
-    KernelInfoException(const std::string &message)
-                        : std::runtime_error(message) { };
+    Exception(const std::string &message): std::runtime_error(message) { };
   };
 
   // Initializes the class with a given name and a string of OpenCL source-code
@@ -135,22 +118,11 @@ class KernelInfo {
   // supported modifiers are given by the ThreadSizeModifierType enumeration.
   void AddModifier(const StringRange range, const ThreadSizeModifierType type);
 
-  // Adds a new constraint to the set of parameters (e.g. must be equal or larger than)
-  // TODO: Combine the below three functions and make them more generic.
-  void AddConstraint(const std::string parameter_1, const ConstraintType type,
-                     const std::string parameter_2);
-
-  // Also adds a constraint, but the second parameter is now modified by an operation "op" with
-  // respect to a third parameter (e.g. multiplication)
-  void AddConstraint(const std::string parameter_1, const ConstraintType type,
-                     const std::string parameter_2, const OperatorType op,
-                     const std::string parameter_3);
-
-  // As above, but with a second operation and a fourth parameter
-  void AddConstraint(const std::string parameter_1, const ConstraintType type,
-                     const std::string parameter_2, const OperatorType op_1,
-                     const std::string parameter_3, const OperatorType op_2,
-                     const std::string parameter_4);
+  // Adds a new constraint to the set of parameters (e.g. must be equal or larger than). The
+  // constraints come in the form of a function object which takes a number of tuning parameters,
+  // given as a vector of strings (parameter names). Their names are later substituted by actual
+  // values.
+  void AddConstraint(ConstraintFunction valid_if, const std::vector<std::string> &parameters);
 
   // Computes the global/local ranges (in NDRange-form) based on all global/local thread-sizes (in
   // StringRange-form) and a single permutation (i.e. a configuration) containing a list of all

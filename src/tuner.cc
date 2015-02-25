@@ -143,36 +143,13 @@ void Tuner::DivLocalSize(const size_t id, const StringRange range) {
 
 // Adds a contraint to the list of constraints for a particular kernel. First checks whether the
 // kernel exists and whether the parameters exist.
-void Tuner::AddConstraint(const size_t id, const std::string parameter_1, const ConstraintType type,
-                          const std::string parameter_2) {
+void Tuner::AddConstraint(const size_t id, KernelInfo::ConstraintFunction valid_if,
+                          const std::vector<std::string> &parameters) {
   if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
-  if (!kernels_[id].ParameterExists(parameter_1)) { throw Exception("Invalid parameter (1)"); }
-  if (!kernels_[id].ParameterExists(parameter_2)) { throw Exception("Invalid parameter (2)"); }
-  kernels_[id].AddConstraint(parameter_1, type, parameter_2);
-}
-
-// Same as above, but now with a compound second parameter.
-void Tuner::AddConstraint(const size_t id, const std::string parameter_1, const ConstraintType type,
-                          const std::string parameter_2, const OperatorType op,
-                          const std::string parameter_3) {
-  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
-  if (!kernels_[id].ParameterExists(parameter_1)) { throw Exception("Invalid parameter (1)"); }
-  if (!kernels_[id].ParameterExists(parameter_2)) { throw Exception("Invalid parameter (2)"); }
-  if (!kernels_[id].ParameterExists(parameter_3)) { throw Exception("Invalid parameter (3)"); }
-  kernels_[id].AddConstraint(parameter_1, type, parameter_2, op, parameter_3);
-}
-
-// Same as above, but now with a an extra extra operation.
-void Tuner::AddConstraint(const size_t id, const std::string parameter_1, const ConstraintType type,
-                          const std::string parameter_2, const OperatorType op_1,
-                          const std::string parameter_3, const OperatorType op_2,
-                          const std::string parameter_4) {
-  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
-  if (!kernels_[id].ParameterExists(parameter_1)) { throw Exception("Invalid parameter (1)"); }
-  if (!kernels_[id].ParameterExists(parameter_2)) { throw Exception("Invalid parameter (2)"); }
-  if (!kernels_[id].ParameterExists(parameter_3)) { throw Exception("Invalid parameter (3)"); }
-  if (!kernels_[id].ParameterExists(parameter_4)) { throw Exception("Invalid parameter (4)"); }
-  kernels_[id].AddConstraint(parameter_1, type, parameter_2, op_1, parameter_3, op_2, parameter_4);
+  for (auto &parameter: parameters) {
+    if (!kernels_[id].ParameterExists(parameter)) { throw Exception("Invalid parameter"); }
+  }
+  kernels_[id].AddConstraint(valid_if, parameters);
 }
 
 // =================================================================================================
