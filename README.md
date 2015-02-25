@@ -85,9 +85,9 @@ Other examples
 -------------
 
 Two examples are included as part of the CLTune distribution. They illustrate some more advanced
-features, such as modifying the thread dimensions based on the parameters and adding parameter
-constraints. The examples are compiled when providing `-ENABLE_SAMPLES=ON` to CMake (default option
-currently). The two included examples are:
+features, such as modifying the thread dimensions based on the parameters and adding user-defined
+parameter constraints. The examples are compiled when providing `-ENABLE_SAMPLES=ON` to CMake
+(default option). The two included examples are:
 
 * `simple.cc` providing a basic example of matrix-vector multiplication
 * `gemm.cc` providing a more advanced and heavily tuned implementation of matrix-matrix
@@ -98,7 +98,8 @@ Development and tests
 
 The CLTune project follows the Google C++ styleguide (with some exceptions) and uses a tab-size of
 two spaces and a max-width of 100 characters per line. It is furthermore based on practises from the
-third edition of Effective C++. The project is licensed under the MIT license by SURFsara, (c) 2014.The contributing authors so far are:
+third edition of Effective C++ and the first edition of Effective Modern C++. The project is
+licensed under the MIT license by SURFsara, (c) 2014. The contributing authors so far are:
 
 * Cedric Nugteren
 

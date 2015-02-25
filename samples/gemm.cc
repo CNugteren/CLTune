@@ -34,6 +34,11 @@
 // Includes the OpenCL tuner library
 #include "tuner/tuner.h"
 
+// Helper function to determine whether or not 'a' is a multiple of 'b'
+bool IsMultiple(int a, int b) {
+  return ((a/b)*b == a) ? true : false;
+};
+
 // =================================================================================================
 
 // Example showing how to tune an OpenCL SGEMM matrix-multiplication kernel. This assumes that
@@ -80,22 +85,29 @@ int main() {
   // Tests single precision (SGEMM)
   tuner.AddParameter(id, "PRECISION", {32});
 
+  // Sets constraints: Set-up the constraints functions to use. The constraints require a function
+  // object (in this case a lambda) which takes a vector of tuning parameter values and returns
+  // a boolean value whether or not the tuning configuration is legal. In this case, the helper
+  // function 'IsMultiple' is employed for convenience. In the calls to 'AddConstraint' below, the
+  // vector of parameter names (as strings) matches the input integer vector of the lambda's.
+  auto MultipleOfX = [] (std::vector<int> v) { return IsMultiple(v[0], v[1]); };
+  auto MultipleOfXMulY = [] (std::vector<int> v) { return IsMultiple(v[0], v[1]*v[2]); };
+  auto MultipleOfXMulYDivZ = [] (std::vector<int> v) { return IsMultiple(v[0], (v[1]*v[2])/v[3]); };
+
   // Sets constraints: Requirement for unrolling the KWG loop
-  tuner.AddConstraint(id, "KWG", cltune::kMultipleOf, "KWI");
+  tuner.AddConstraint(id, MultipleOfX, {"KWG", "KWI"});
 
   // Sets constraints: Required for integer MWI and NWI
-  tuner.AddConstraint(id, "MWG", cltune::kMultipleOf, "MDIMC", cltune::kMultipliedBy, "VWM");
-  tuner.AddConstraint(id, "NWG", cltune::kMultipleOf, "NDIMC", cltune::kMultipliedBy, "VWN");
+  tuner.AddConstraint(id, MultipleOfXMulY, {"MWG", "MDIMC", "VWM"});
+  tuner.AddConstraint(id, MultipleOfXMulY, {"NWG", "NDIMC", "VWN"});
 
   // Sets constraints: Required for integer MWIA and NWIB
-  tuner.AddConstraint(id, "MWG", cltune::kMultipleOf, "MDIMA", cltune::kMultipliedBy, "VWM");
-  tuner.AddConstraint(id, "NWG", cltune::kMultipleOf, "NDIMB", cltune::kMultipliedBy, "VWN");
+  tuner.AddConstraint(id, MultipleOfXMulY, {"MWG", "MDIMA", "VWM"});
+  tuner.AddConstraint(id, MultipleOfXMulY, {"NWG", "NDIMB", "VWN"});
 
   // Sets constraints: KWG has to be a multiple of KDIMA = ((MDIMC*NDIMC)/(MDIMA)) and KDIMB = (...)
-  tuner.AddConstraint(id, "KWG", cltune::kMultipleOf, "MDIMC", cltune::kMultipliedBy, "NDIMC",
-                      cltune::kDividedBy, "MDIMA");
-  tuner.AddConstraint(id, "KWG", cltune::kMultipleOf, "MDIMC", cltune::kMultipliedBy, "NDIMC",
-                      cltune::kDividedBy, "NDIMB");
+  tuner.AddConstraint(id, MultipleOfXMulYDivZ, {"KWG", "MDIMC", "NDIMC", "MDIMA"});
+  tuner.AddConstraint(id, MultipleOfXMulYDivZ, {"KWG", "MDIMC", "NDIMC", "NDIMB"});
 
   // Modifies the thread-sizes (both global and local) based on the parameters
   tuner.MulLocalSize(id, {"MDIMC", "NDIMC"});
@@ -124,7 +136,7 @@ int main() {
   tuner.PrintToFile("output.csv");
 
   // Also prints the performance of the best-case in terms of GFLOPS
-  constexpr double kGFLOP = (2*(long)kSizeM*(long)kSizeN*(long)kSizeK) / (1000.0*1000.0*1000.0);
+  constexpr auto kGFLOP = (2*(long)kSizeM*(long)kSizeN*(long)kSizeK) / (1000.0*1000.0*1000.0);
   if (time_ms != 0.0) {
     printf("[ -------> ] %.1lf ms or %.3lf GFLOPS\n", time_ms, 1000*kGFLOP/time_ms);
   }

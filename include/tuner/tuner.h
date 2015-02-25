@@ -35,6 +35,7 @@
 #include <vector>
 #include <stdexcept>
 #include <memory>
+#include <functional>
 
 // Include other classes
 #include "tuner/internal/memory.h"
@@ -48,7 +49,7 @@ namespace cltune {
 // See comment at top of file for a description of the class
 class Tuner {
  public:
-  static constexpr double kMaxL2Norm = 1e-4; // This is the threshold for 'correctness'
+  static constexpr auto kMaxL2Norm = 1e-4; // This is the threshold for 'correctness'
   static constexpr auto kNumRuns = 1; // This is used for more-accurate execution time measurement
 
   // Messages printed to stdout (in colours)
@@ -103,7 +104,7 @@ class Tuner {
 
   // Adds a new tuning parameter for a kernel with a specific ID. The parameter has a name, the
   // number of values, and a list of values.
-  // TODO: Remove all following functions (those that take "const int id" as first argument) and
+  // TODO: Remove all following functions (those that take "const size_t id" as first argument) and
   // make the KernelInfo class publicly accessible instead.
   void AddParameter(const size_t id, const std::string parameter_name,
                     const std::initializer_list<int> values);
@@ -115,23 +116,12 @@ class Tuner {
   void MulLocalSize(const size_t id, const StringRange range);
   void DivLocalSize(const size_t id, const StringRange range);
 
-  // Adds a new constraint to the set of parameters (e.g. must be equal or larger than)
-  // TODO: Combine the below three functions and make them more generic.
-  void AddConstraint(const size_t id, const std::string parameter_1, const ConstraintType type,
-                     const std::string parameter_2);
-
-  // Same as above but now the second parameter is created by performing an operation "op" on two
-  // supplied parameters.
-  void AddConstraint(const size_t id, const std::string parameter_1, const ConstraintType type,
-                     const std::string parameter_2, const OperatorType op,
-                     const std::string parameter_3);
-
-  // Same as above but now the second parameter is created by performing two operations on three
-  // supplied parameters.
-  void AddConstraint(const size_t id, const std::string parameter_1, const ConstraintType type,
-                     const std::string parameter_2, const OperatorType op_1,
-                     const std::string parameter_3, const OperatorType op_2,
-                     const std::string parameter_4);
+  // Adds a new constraint to the set of parameters (e.g. must be equal or larger than). The
+  // constraints come in the form of a function object which takes a number of tuning parameters,
+  // given as a vector of strings (parameter names). Their names are later substituted by actual
+  // values.
+  void AddConstraint(const size_t id, KernelInfo::ConstraintFunction valid_if,
+                     const std::vector<std::string> &parameters);
 
   // Functions to add kernel-arguments for input buffers, output buffers, and scalars. Make sure to
   // call these in the order in which the arguments appear in the OpenCL kernel.
