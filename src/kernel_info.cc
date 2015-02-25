@@ -70,27 +70,9 @@ void KernelInfo::AddModifier(const StringRange range, const ThreadSizeModifierTy
 }
 
 // Adds a constraint to the list of constraints
-void KernelInfo::AddConstraint(const std::string parameter_1, const ConstraintType type,
-                               const std::string parameter_2) {
-  Constraint constraint = {parameter_1, type, parameter_2, kNoOp, "", kNoOp, ""};
-  constraints_.push_back(constraint);
-}
-
-// Same as above, but now with an extra operation on the second parameter
-void KernelInfo::AddConstraint(const std::string parameter_1, const ConstraintType type,
-                               const std::string parameter_2, const OperatorType op,
-                               const std::string parameter_3) {
-  Constraint constraint = {parameter_1, type, parameter_2, op, parameter_3, kNoOp, ""};
-  constraints_.push_back(constraint);
-}
-
-// Same as above, but now with two extra operations on the second parameter
-void KernelInfo::AddConstraint(const std::string parameter_1, const ConstraintType type,
-                               const std::string parameter_2, const OperatorType op_1,
-                               const std::string parameter_3, const OperatorType op_2,
-                               const std::string parameter_4) {
-  Constraint constraint = {parameter_1, type, parameter_2, op_1, parameter_3, op_2, parameter_4};
-  constraints_.push_back(constraint);
+void KernelInfo::AddConstraint(ConstraintFunction valid_if,
+                               const std::vector<std::string> &parameters) {
+  constraints_.push_back({valid_if, parameters});
 }
 
 // =================================================================================================
@@ -103,7 +85,7 @@ void KernelInfo::ComputeRanges(const std::vector<Configuration> &configuration) 
   // Initializes the result vectors
   size_t num_dimensions = global_base_.dimensions();
   if (num_dimensions != local_base_.dimensions()) {
-    throw KernelInfoException("Mismatching number of global/local dimensions");
+    throw Exception("Mismatching number of global/local dimensions");
   }
   std::vector<size_t> global_values(num_dimensions);
   std::vector<size_t> local_values(num_dimensions);
@@ -122,10 +104,10 @@ void KernelInfo::ComputeRanges(const std::vector<Configuration> &configuration) 
       for (auto &parameter: configuration) {
         if (modifier_string == parameter.name) {
           switch (modifier.type) {
-            case kGlobalMul: global_values[dim] *= parameter.value; break;
-            case kGlobalDiv: global_values[dim] /= parameter.value; break;
-            case kLocalMul: local_values[dim] *= parameter.value; break;
-            case kLocalDiv: local_values[dim] /= parameter.value; break;
+            case ThreadSizeModifierType::kGlobalMul: global_values[dim] *= parameter.value; break;
+            case ThreadSizeModifierType::kGlobalDiv: global_values[dim] /= parameter.value; break;
+            case ThreadSizeModifierType::kLocalMul: local_values[dim] *= parameter.value; break;
+            case ThreadSizeModifierType::kLocalDiv: local_values[dim] /= parameter.value; break;
             default: assert(0 && "Invalid modifier type");
           }
           found_string = true;
@@ -134,7 +116,7 @@ void KernelInfo::ComputeRanges(const std::vector<Configuration> &configuration) 
 
       // No replacement was found, there might be something wrong with the string
       if (!found_string && modifier_string != "") {
-        throw KernelInfoException("Invalid modifier: "+modifier_string);
+        throw Exception("Invalid modifier: "+modifier_string);
       }
     }
   }
@@ -197,66 +179,35 @@ void KernelInfo::PopulateConfigurations(const size_t index,
 }
 
 // Loops over all user-defined constraints to check whether or not the configuration is valid.
-// Assumes initially all configurations are valid, then returns flag if one of the constraints has
-// not been met. Constraints operate on two parameters and are of a certain type, see the
-// ConstraintType enumeration for all supported types.
-// TODO: Make this function more generic
+// Assumes initially all configurations are valid, then returns false if one of the constraints has
+// not been met. Constraints consist of a user-defined function and a list of parameter names, which
+// are replaced by parameter values in this function.
 bool KernelInfo::ValidConfiguration(const std::vector<Configuration> &configuration) {
+
+  // Iterates over all constraints
   for (auto &constraint: constraints_) {
 
-    // Finds the combination of the two parameters (if it exists at all)
-    for (auto &p1: configuration) {
-      if (p1.name == constraint.parameter_1) {
-        for (auto &p2: configuration) {
-          if (p2.name == constraint.parameter_2) {
-            int value_1 = p1.value;
-            int value_2 = p2.value;
-
-            // Calculates the second value in case of a third parameter is present
-            if (constraint.op_1 != kNoOp) {
-              for (auto &p3: configuration) {
-                if (p3.name == constraint.parameter_3) {
-                  switch (constraint.op_1) {
-                    case kMultipliedBy: value_2 *= p3.value; break;
-                    case kDividedBy: value_2 /= p3.value; break;
-                    default: throw KernelInfoException("Invalid operation type");
-                  }
-
-                  // Calculates the second value in case of a fourth parameter is present
-                  if (constraint.op_2 != kNoOp) {
-                    for (auto &p4: configuration) {
-                      if (p4.name == constraint.parameter_4) {
-                        switch (constraint.op_2) {
-                          case kMultipliedBy: value_2 *= p4.value; break;
-                          case kDividedBy: value_2 /= p4.value; break;
-                          default: throw KernelInfoException("Invalid operation type");
-                        }
-                        break;
-                      }
-                    }
-                  }
-                  break;
-                }
-              }
-            }
-
-            // Performs the constraint check
-            switch (constraint.type) {
-              case kEqual: if (!(value_1 == value_2)) { return false; } break;
-              case kLargerThan: if (!(value_1 > value_2)) { return false; } break;
-              case kLargerEqual: if (!(value_1 >= value_2)) { return false; } break;
-              case kSmallerThan: if (!(value_1 < value_2)) { return false; } break;
-              case kSmallerEqual: if (!(value_1 <= value_2)) { return false; } break;
-              case kMultipleOf:
-                if (!((value_1/value_2)*value_2 == value_1)) { return false; }
-                break;
-              default: throw KernelInfoException("Invalid constraint type");
-            }
-          }
+    // Finds the values of the parameters
+    std::vector<int> values(0);
+    for (auto &parameter: constraint.parameters) {
+      for (auto &p : configuration) {
+        if (p.name == parameter) {
+          values.push_back(p.value);
+          break;
         }
       }
     }
+    if (constraint.parameters.size() != values.size()) {
+      throw Exception("Invalid tuning parameter constraint");
+    }
+
+    // Checks this constraint for these values
+    if (!constraint.valid_if(values)) {
+      return false;
+    }
   }
+
+  // Everything was OK: this configuration is valid
   return true;
 }
 
