@@ -46,10 +46,7 @@ class Searcher {
   using Configurations = std::vector<KernelInfo::Configuration>;
 
   // Base constructor
-  Searcher();
-
-  // Sets a list of configurations (required at set-up phase)
-  void SetConfigurations(const Configurations &configuration_list);
+  Searcher(const Configurations &configurations);
 
   // Pushes feedback (in the form of execution time) from the tuner to the search algorithm
   void PushExecutionTime(const double time);

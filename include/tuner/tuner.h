@@ -41,8 +41,9 @@
 #include "tuner/internal/memory.h"
 #include "tuner/internal/opencl.h"
 #include "tuner/internal/kernel_info.h"
-#include "tuner/internal/searchers/full_search.h"
 #include "tuner/internal/string_range.h"
+#include "tuner/internal/searchers/full_search.h"
+#include "tuner/internal/searchers/random_search.h"
 
 namespace cltune {
 // =================================================================================================

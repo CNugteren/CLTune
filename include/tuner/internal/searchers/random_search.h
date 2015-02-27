@@ -5,8 +5,8 @@
 //
 // Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
 //
-// This file implements a full-search algorithm, testing all configurations exhaustively. It is
-// derived from the basic search class Searcher.
+// This file implements a random-search algorithm, testing the configurations randomly. However,
+// it does not consider the same configuration twice. It is derived from the basic search class.
 //
 // -------------------------------------------------------------------------------------------------
 //
@@ -26,8 +26,8 @@
 //
 // =================================================================================================
 
-#ifndef CLBLAS_TUNER_SEARCHERS_FULL_SEARCH_H_
-#define CLBLAS_TUNER_SEARCHERS_FULL_SEARCH_H_
+#ifndef CLBLAS_TUNER_SEARCHERS_RANDOM_SEARCH_H_
+#define CLBLAS_TUNER_SEARCHERS_RANDOM_SEARCH_H_
 
 #include <vector>
 
@@ -37,9 +37,11 @@ namespace cltune {
 // =================================================================================================
 
 // See comment at top of file for a description of the class
-class FullSearch: public Searcher {
+class RandomSearch: public Searcher {
  public:
-  FullSearch(const Configurations &configurations);
+
+  // Takes additionally a fraction of configurations to try (1.0 == full search)
+  RandomSearch(const Configurations &configurations, const float fraction);
 
   // Retrieves the next configuration to test
   virtual KernelInfo::Configuration& NextConfiguration() override;
@@ -48,10 +50,11 @@ class FullSearch: public Searcher {
   virtual size_t NumConfigurations() override;
 
  private:
+    float fraction_;
 };
 
 // =================================================================================================
 } // namespace cltune
 
-// CLBLAS_TUNER_SEARCHERS_FULL_SEARCH_H_
+// CLBLAS_TUNER_SEARCHERS_RANDOM_SEARCH_H_
 #endif

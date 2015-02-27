@@ -33,15 +33,10 @@ namespace cltune {
 // =================================================================================================
 
 // Simple base-class constructor
-Searcher::Searcher():
-    configurations_(),
+Searcher::Searcher(const Configurations &configurations):
+    configurations_(configurations),
     execution_times_(),
     i(0) {
-}
-
-// Initializes the configurations
-void Searcher::SetConfigurations(const Configurations &configuration_list) {
-  configurations_ = configuration_list;
 }
 
 // Adds the resulting execution time to the back of the execution times vector

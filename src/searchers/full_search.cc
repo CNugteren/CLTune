@@ -28,14 +28,13 @@
 #include "tuner/internal/searchers/full_search.h"
 
 #include <string>
-#include <algorithm>
 
 namespace cltune {
 // =================================================================================================
 
 // Calls the base-class constructor directly
-FullSearch::FullSearch():
-    Searcher() {
+FullSearch::FullSearch(const Configurations &configurations):
+    Searcher(configurations) {
 }
 
 // =================================================================================================

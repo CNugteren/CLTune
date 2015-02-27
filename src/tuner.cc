@@ -219,13 +219,13 @@ void Tuner::Tune() {
     // Else: there are tuning parameters to iterate over
     } else {
 
-      // Define the search algorithm
-      // TODO: Make the search algorithm selectable by the user
-      FullSearch search{};
-
       // Computes the permutations of all parameters and pass them to a (smart) search algorithm
       kernel.SetConfigurations();
-      search.SetConfigurations(kernel.configurations());
+
+      // Define the search algorithm
+      // TODO: Make the search algorithm selectable by the user
+      FullSearch search{kernel.configurations()};
+      //RandomSearch search{kernel.configurations(), 0.25};
 
       // Iterates over all possible configurations (the permutations of the tuning parameters)
       for (auto p=0; p<search.NumConfigurations(); ++p) {

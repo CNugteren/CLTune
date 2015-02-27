@@ -5,8 +5,7 @@
 //
 // Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
 //
-// This file implements a full-search algorithm, testing all configurations exhaustively. It is
-// derived from the basic search class Searcher.
+// This file implements the RandomSearch class (see the header for information about the class).
 //
 // -------------------------------------------------------------------------------------------------
 //
@@ -26,32 +25,33 @@
 //
 // =================================================================================================
 
-#ifndef CLBLAS_TUNER_SEARCHERS_FULL_SEARCH_H_
-#define CLBLAS_TUNER_SEARCHERS_FULL_SEARCH_H_
+#include "tuner/internal/searchers/random_search.h"
 
-#include <vector>
-
-#include "tuner/internal/searcher.h"
+#include <string>
+#include <algorithm>
 
 namespace cltune {
 // =================================================================================================
 
-// See comment at top of file for a description of the class
-class FullSearch: public Searcher {
- public:
-  FullSearch(const Configurations &configurations);
+// Randomizes the configurations list
+RandomSearch::RandomSearch(const Configurations &configurations, const float fraction):
+    Searcher(configurations),
+    fraction_(fraction) {
+  std::random_shuffle(configurations_.begin(), configurations_.end());
+}
 
-  // Retrieves the next configuration to test
-  virtual KernelInfo::Configuration& NextConfiguration() override;
+// =================================================================================================
 
-  // Retrieves the total number of configurations to try
-  virtual size_t NumConfigurations() override;
+// Returns the next random configuration
+KernelInfo::Configuration& RandomSearch::NextConfiguration() {
+  ++i;
+  return configurations_[i-1];
+}
 
- private:
-};
+// The number of configurations is equal to all possible configurations
+size_t RandomSearch::NumConfigurations() {
+  return configurations_.size()*fraction_;
+}
 
 // =================================================================================================
 } // namespace cltune
-
-// CLBLAS_TUNER_SEARCHERS_FULL_SEARCH_H_
-#endif
