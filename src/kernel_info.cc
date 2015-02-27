@@ -38,7 +38,7 @@ KernelInfo::KernelInfo(std::string name, std::string source) :
   name_(name),
   source_(source),
   parameters_(),
-  configuration_list_(),
+  configurations_(),
   constraints_(),
   global_base_(), local_base_(),
   global_(), local_(),
@@ -80,7 +80,7 @@ void KernelInfo::AddConstraint(ConstraintFunction valid_if,
 // Iterates over all modifiers (e.g. add a local multiplier) and applies these values to the
 // global/local thread-sizes. Modified results are kept in temporary values, but are finally
 // copied back to the member variables global_ and local_.
-void KernelInfo::ComputeRanges(const std::vector<Configuration> &configuration) {
+void KernelInfo::ComputeRanges(const Configuration &config) {
 
   // Initializes the result vectors
   size_t num_dimensions = global_base_.dimensions();
@@ -101,13 +101,13 @@ void KernelInfo::ComputeRanges(const std::vector<Configuration> &configuration) 
 
       // Replaces the parameter-string with the corresponding integer and processes it
       bool found_string = false;
-      for (auto &parameter: configuration) {
-        if (modifier_string == parameter.name) {
+      for (auto &setting: config) {
+        if (modifier_string == setting.name) {
           switch (modifier.type) {
-            case ThreadSizeModifierType::kGlobalMul: global_values[dim] *= parameter.value; break;
-            case ThreadSizeModifierType::kGlobalDiv: global_values[dim] /= parameter.value; break;
-            case ThreadSizeModifierType::kLocalMul: local_values[dim] *= parameter.value; break;
-            case ThreadSizeModifierType::kLocalDiv: local_values[dim] /= parameter.value; break;
+            case ThreadSizeModifierType::kGlobalMul: global_values[dim] *= setting.value; break;
+            case ThreadSizeModifierType::kGlobalDiv: global_values[dim] /= setting.value; break;
+            case ThreadSizeModifierType::kLocalMul: local_values[dim] *= setting.value; break;
+            case ThreadSizeModifierType::kLocalDiv: local_values[dim] /= setting.value; break;
             default: assert(0 && "Invalid modifier type");
           }
           found_string = true;
@@ -145,25 +145,24 @@ void KernelInfo::ComputeRanges(const std::vector<Configuration> &configuration) 
 
 // =================================================================================================
 
-// Initializes an empty configuration (name/value pair) and kicks-off the recursive function to
-// find the configuration list. It also applies the user-defined constraints within.
-void KernelInfo::SetConfigurationList() {
-  std::vector<Configuration> configuration;
-  PopulateConfigurations(0, configuration);
+// Initializes an empty configuration (vector of name/value pairs) and kicks-off the recursive
+// function to find all configurations. It also applies the user-defined constraints within.
+void KernelInfo::SetConfigurations() {
+  Configuration config;
+  PopulateConfigurations(0, config);
 }
 
 // Iterates recursively over all permutations of the user-defined parameters. This code creates
 // multiple chains, in which each chain selects a unique combination of values for all parameters.
 // At the end of each chain (when all parameters are considered), the function stores the result
 // into the configuration list.
-void KernelInfo::PopulateConfigurations(const size_t index,
-                                        const std::vector<Configuration> &configuration) {
+void KernelInfo::PopulateConfigurations(const size_t index, const Configuration &config) {
 
   // End of the chain: all parameters are considered, store the resulting configuration if it is a
   // valid one according to the constraints
   if (index == parameters_.size()) {
-    if (ValidConfiguration(configuration)) {
-      configuration_list_.push_back(configuration);
+    if (ValidConfiguration(config)) {
+      configurations_.push_back(config);
     }
     return;
   }
@@ -172,9 +171,9 @@ void KernelInfo::PopulateConfigurations(const size_t index,
   // recursively
   Parameter parameter = parameters_[index];
   for (auto &value: parameter.values) {
-    std::vector<Configuration> configuration_copy = configuration;
-    configuration_copy.push_back({parameter.name, value});
-    PopulateConfigurations(index+1, configuration_copy);
+    Configuration config_copy = config;
+    config_copy.push_back({parameter.name, value});
+    PopulateConfigurations(index+1, config_copy);
   }
 }
 
@@ -182,7 +181,7 @@ void KernelInfo::PopulateConfigurations(const size_t index,
 // Assumes initially all configurations are valid, then returns false if one of the constraints has
 // not been met. Constraints consist of a user-defined function and a list of parameter names, which
 // are replaced by parameter values in this function.
-bool KernelInfo::ValidConfiguration(const std::vector<Configuration> &configuration) {
+bool KernelInfo::ValidConfiguration(const Configuration &config) {
 
   // Iterates over all constraints
   for (auto &constraint: constraints_) {
@@ -190,9 +189,9 @@ bool KernelInfo::ValidConfiguration(const std::vector<Configuration> &configurat
     // Finds the values of the parameters
     std::vector<int> values(0);
     for (auto &parameter: constraint.parameters) {
-      for (auto &p : configuration) {
-        if (p.name == parameter) {
-          values.push_back(p.value);
+      for (auto &setting: config) {
+        if (setting.name == parameter) {
+          values.push_back(setting.value);
           break;
         }
       }
