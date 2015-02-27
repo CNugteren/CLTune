@@ -219,13 +219,17 @@ void Tuner::Tune() {
     // Else: there are tuning parameters to iterate over
     } else {
 
+      // Define the search algorithm
+      // TODO: Make the search algorithm selectable by the user
+      FullSearch search{};
+
       // Computes the permutations of all parameters and pass them to a (smart) search algorithm
       kernel.SetConfigurations();
+      search.SetConfigurations(kernel.configurations());
 
       // Iterates over all possible configurations (the permutations of the tuning parameters)
-      auto num_configurations = kernel.configurations().size();
-      for (auto p=0; p<num_configurations; ++p) {
-        auto permutation = kernel.configurations()[p];
+      for (auto p=0; p<search.NumConfigurations(); ++p) {
+        auto permutation = search.NextConfiguration();
 
         // Adds the parameters to the source-code string as defines
         auto source = std::string{};
@@ -238,8 +242,11 @@ void Tuner::Tune() {
         kernel.ComputeRanges(permutation);
 
         // Compiles and runs the kernel
-        auto tuning_result = RunKernel(source, kernel, p, num_configurations);
+        auto tuning_result = RunKernel(source, kernel, p, search.NumConfigurations());
         tuning_result.status = VerifyOutput();
+
+        // Gives timing feedback to the search-algorithm
+        search.PushExecutionTime(tuning_result.time);
 
         // Stores the parameters and the timing-result
         tuning_result.configuration = permutation;

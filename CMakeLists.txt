@@ -63,7 +63,9 @@ set(TUNER
     src/kernel_info.cc
     src/string_range.cc
     src/memory.cc
-    src/opencl.cc)
+    src/opencl.cc
+    src/searcher.cc
+    src/searchers/full_search.cc)
 
 # Links the library
 add_library(cltune SHARED ${TUNER})

@@ -41,6 +41,7 @@
 #include "tuner/internal/memory.h"
 #include "tuner/internal/opencl.h"
 #include "tuner/internal/kernel_info.h"
+#include "tuner/internal/searchers/full_search.h"
 #include "tuner/internal/string_range.h"
 
 namespace cltune {
@@ -77,7 +78,7 @@ class Tuner {
     double time;
     size_t threads;
     bool status;
-    std::vector<KernelInfo::Configuration> configurations;
+    KernelInfo::Configuration configuration;
   };
 
   // Exception of the tuner itself
