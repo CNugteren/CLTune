@@ -153,14 +153,14 @@ TEST_F(KernelInfoTest, AddParameter) {
 TEST_F(KernelInfoTest, CreateLocalRange) {
 
   // Sets an example configuration
-  std::vector<cltune::KernelInfo::Configuration> configuration;
-  configuration.push_back(cltune::KernelInfo::Configuration({"PARAM", 32}));
+  cltune::KernelInfo::Configuration config;
+  config.push_back(cltune::KernelInfo::Setting({"PARAM", 32}));
 
   // Tests a couple of different ranges against this configuration
   for (auto i=0; i<kNumRanges; ++i) {
     kernel_->set_global_base(ranges_[i]);
     kernel_->set_local_base(ranges_[i]);
-    kernel_->ComputeRanges(configuration);
+    kernel_->ComputeRanges(config);
     ASSERT_EQ(ranges_[i].dimensions(), kernel_->local_base().dimensions());
     for (auto j=0; j<kernel_->local_base().dimensions(); ++j) {
       EXPECT_EQ(ranges_[i][j], kernel_->local_base()[j]);

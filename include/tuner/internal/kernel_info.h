@@ -59,14 +59,16 @@ class KernelInfo {
     std::vector<int> values;
   };
 
-  // Helper structure holding a configuration: a name and a value 
-  struct Configuration {
+  // Helper structure holding a setting: a name and a value. Multiple settings combined make a
+  // single configuration.
+  struct Setting {
     std::string name;
     int value;
     std::string GetDefine() const { return "#define "+name+" "+GetValueString()+"\n"; }
     std::string GetConfig() const { return name+" "+GetValueString(); }
     std::string GetValueString() const { return std::to_string((long long)value); }
   };
+  using Configuration = std::vector<Setting>;
 
   // Helper structure holding a modifier: its value and its type
   struct ThreadSizeModifier {
@@ -99,7 +101,7 @@ class KernelInfo {
   cl::NDRange local_base() const { return local_base_; }
   cl::NDRange global() const { return global_; }
   cl::NDRange local() const { return local_; }
-  std::vector<std::vector<Configuration>> configuration_list() { return configuration_list_; }
+  std::vector<Configuration> configurations() { return configurations_; }
 
   // Accessors (setters) - Note that these also pre-set the final global/local size
   void set_global_base(cl::NDRange global) { global_base_ = global; global_ = global; }
@@ -125,25 +127,25 @@ class KernelInfo {
   // Computes the global/local ranges (in NDRange-form) based on all global/local thread-sizes (in
   // StringRange-form) and a single permutation (i.e. a configuration) containing a list of all
   // parameter names and their current values.
-  void ComputeRanges(const std::vector<Configuration> &configuration);
+  void ComputeRanges(const Configuration &config);
 
   // Computes all permutations based on the parameters and their values (the configuration list).
   // The result is stored as a member variable.
-  void SetConfigurationList();
+  void SetConfigurations();
   
  private:
-  // Called recursively internally by SetConfigurationList 
-  void PopulateConfigurations(const size_t index, const std::vector<Configuration> &configuration);
+  // Called recursively internally by SetConfigurations 
+  void PopulateConfigurations(const size_t index, const Configuration &config);
 
   // Returns whether or not a given configuration is valid. This check is based on the user-supplied
   // constraints.
-  bool ValidConfiguration(const std::vector<Configuration> &configuration);
+  bool ValidConfiguration(const Configuration &config);
 
   // Member variables
   std::string name_;
   std::string source_;
   std::vector<Parameter> parameters_;
-  std::vector<std::vector<Configuration>> configuration_list_;
+  std::vector<Configuration> configurations_;
   std::vector<Constraint> constraints_;
 
   // Global/local thread-sizes

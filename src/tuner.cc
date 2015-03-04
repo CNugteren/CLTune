@@ -219,13 +219,17 @@ void Tuner::Tune() {
     // Else: there are tuning parameters to iterate over
     } else {
 
-      // Computes the permutations of all parameters and store them as a configuration list
-      kernel.SetConfigurationList();
+      // Computes the permutations of all parameters and pass them to a (smart) search algorithm
+      kernel.SetConfigurations();
+
+      // Define the search algorithm
+      // TODO: Make the search algorithm selectable by the user
+      FullSearch search{kernel.configurations()};
+      //RandomSearch search{kernel.configurations(), 0.25};
 
       // Iterates over all possible configurations (the permutations of the tuning parameters)
-      auto num_configurations = kernel.configuration_list().size();
-      for (auto p=0; p<num_configurations; ++p) {
-        auto permutation = kernel.configuration_list()[p];
+      for (auto p=0; p<search.NumConfigurations(); ++p) {
+        auto permutation = search.NextConfiguration();
 
         // Adds the parameters to the source-code string as defines
         auto source = std::string{};
@@ -238,11 +242,14 @@ void Tuner::Tune() {
         kernel.ComputeRanges(permutation);
 
         // Compiles and runs the kernel
-        auto tuning_result = RunKernel(source, kernel, p, num_configurations);
+        auto tuning_result = RunKernel(source, kernel, p, search.NumConfigurations());
         tuning_result.status = VerifyOutput();
 
+        // Gives timing feedback to the search-algorithm
+        search.PushExecutionTime(tuning_result.time);
+
         // Stores the parameters and the timing-result
-        tuning_result.configurations = permutation;
+        tuning_result.configuration = permutation;
         tuning_results_.push_back(tuning_result);
         if (!tuning_result.status) { PrintResult(stdout, tuning_result, kMessageWarning); }
       }
@@ -302,8 +309,8 @@ void Tuner::PrintToFile(const std::string &filename) const {
       // Prints the header in case of a new kernel name
       if (new_kernel) {
         fprintf(file, "name;time;threads;");
-        for (auto &configuration: tuning_result.configurations) {
-          fprintf(file, "%s;", configuration.name.c_str());
+        for (auto &setting: tuning_result.configuration) {
+          fprintf(file, "%s;", setting.name.c_str());
         }
         fprintf(file, "\n");
       }
@@ -312,8 +319,8 @@ void Tuner::PrintToFile(const std::string &filename) const {
       fprintf(file, "%s;", tuning_result.kernel_name.c_str());
       fprintf(file, "%.2lf;", tuning_result.time);
       fprintf(file, "%lu;", tuning_result.threads);
-      for (auto &configuration: tuning_result.configurations) {
-        fprintf(file, "%d;", configuration.value);
+      for (auto &setting: tuning_result.configuration) {
+        fprintf(file, "%d;", setting.value);
       }
       fprintf(file, "\n");
     }
@@ -505,8 +512,8 @@ bool Tuner::DownloadAndCompare(const MemArgument &device_buffer, const size_t i)
 void Tuner::PrintResult(FILE* fp, const TunerResult &result, const std::string &message) const {
   fprintf(fp, "%s %s; ", message.c_str(), result.kernel_name.c_str());
   fprintf(fp, "%6.0lf ms;", result.time);
-  for (auto &configuration: result.configurations) {
-    fprintf(fp, "%9s;", configuration.GetConfig().c_str());
+  for (auto &setting: result.configuration) {
+    fprintf(fp, "%9s;", setting.GetConfig().c_str());
   }
   fprintf(fp, "\n");
 }
