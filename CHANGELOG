@@ -1,4 +1,8 @@
 
+Version 1.2.0
+- Added the interface to customize search algorithms
+- Initially added full-search and random-search as basic search algorithms
+
 Version 1.1.0
 - User-defined parameter constraints are now fully customizable by accepting arbitrary functions on
   an arbitrary combination of parameters.
