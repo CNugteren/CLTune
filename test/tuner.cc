@@ -60,7 +60,7 @@ class TunerTest : public testing::Test {
 
   // Constructor
   explicit TunerTest() :
-    tuner_(new cltune::Tuner(0, 0)) {
+    tuner_{new cltune::Tuner(0, 0)} {
   }
 
   // Initializes the tester
@@ -68,14 +68,14 @@ class TunerTest : public testing::Test {
     tuner_->SuppressOutput();
 
     // Creates example global/local thread-sizes
-    global_ = cl::NDRange(kSizeM, kSizeN);
-    local_ = cl::NDRange(8, 1);
+    global_ = cl::NDRange{kSizeM, kSizeN};
+    local_ = cl::NDRange{8, 1};
 
     // Adds example parameters
     for (auto k=0; k<kNumParameters; ++k) {
       auto parameter = "TEST_PARAM_"+std::to_string(static_cast<long long>(k));
       auto values = {5, 1, 999};
-      cltune::StringRange string_range = {parameter, parameter};
+      auto string_range = cltune::StringRange{parameter, parameter};
       parameter_list_.push_back(parameter);
       values_list_.push_back(values);
       string_ranges_.push_back(string_range);
@@ -86,7 +86,7 @@ class TunerTest : public testing::Test {
   }
 
   // Member variables
-  std::shared_ptr<cltune::Tuner> tuner_;
+  std::unique_ptr<cltune::Tuner> tuner_;
   cl::NDRange global_;
   cl::NDRange local_;
   std::vector<std::string> parameter_list_;
@@ -100,7 +100,7 @@ class TunerTest : public testing::Test {
 TEST_F(TunerTest, InitOpenCL) {
 
   // Normal behaviour
-  cltune::Tuner tuner0(0, 0);
+  cltune::Tuner tuner0{0, 0};
   tuner0.SuppressOutput();
 
   // Invalid behaviour, expect an exception

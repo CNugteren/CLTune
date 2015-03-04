@@ -42,7 +42,7 @@ class KernelInfoTest : public testing::Test {
 
   // Constructor
   explicit KernelInfoTest() :
-    kernel_(new cltune::KernelInfo("name", "source")) {
+    kernel_{new cltune::KernelInfo("name", "source")} {
   }
 
   // Initializes the tester
@@ -52,8 +52,8 @@ class KernelInfoTest : public testing::Test {
     for (auto i=0; i<kNumParameters; ++i) {
 
        // Creates a pseudo-random name and values
-      std::string name = "TEST_PARAM_" + std::to_string(static_cast<long long>(i));
-      std::vector<int> values = {1, 6+i, 9, 1*i, 2000};
+      auto name = "TEST_PARAM_" + std::to_string(static_cast<long long>(i));
+      auto values = std::vector<int>{1, 6+i, 9, 1*i, 2000};
       for (auto j=0; j<i; ++j) { values.push_back((j+3)*i); }
 
       // Sets the name and value
@@ -63,8 +63,6 @@ class KernelInfoTest : public testing::Test {
 
     // Creates some example NDRanges and StringRanges
     for (auto i=0; i<kNumRanges; ++i) {
-      cl::NDRange range;
-      cltune::StringRange string_range;
 
       // Sets some example values
       auto v1 = static_cast<long long>(i*i);
@@ -72,6 +70,8 @@ class KernelInfoTest : public testing::Test {
       auto v3 = static_cast<long long>(8);
 
       // Creates ranges different lengths (x,y,z)
+      auto range = cl::NDRange{};
+      auto string_range = cltune::StringRange{};
       if (i%4 == 0) {
         range = cl::NDRange();
         string_range = cltune::StringRange();
@@ -100,7 +100,7 @@ class KernelInfoTest : public testing::Test {
   }
 
   // Member variables
-  std::shared_ptr<cltune::KernelInfo> kernel_;
+  std::unique_ptr<cltune::KernelInfo> kernel_;
   std::vector<std::string> names_;
   std::vector<std::vector<int>> values_list_;
   std::vector<cl::NDRange> ranges_;
@@ -114,7 +114,7 @@ TEST_F(KernelInfoTest, SetGlobalBase) {
   for (auto i=0; i<kNumRanges; ++i) {
     kernel_->set_global_base(ranges_[i]);
     ASSERT_EQ(ranges_[i].dimensions(), kernel_->global_base().dimensions());
-    for (auto j=0; j<kernel_->global_base().dimensions(); ++j) {
+    for (auto j=static_cast<size_t>(0); j<kernel_->global_base().dimensions(); ++j) {
       EXPECT_EQ(ranges_[i][j], kernel_->global_base()[j]);
     }
   }
@@ -125,7 +125,7 @@ TEST_F(KernelInfoTest, SetLocalBase) {
   for (auto i=0; i<kNumRanges; ++i) {
     kernel_->set_local_base(ranges_[i]);
     ASSERT_EQ(ranges_[i].dimensions(), kernel_->local_base().dimensions());
-    for (auto j=0; j<kernel_->local_base().dimensions(); ++j) {
+    for (auto j=static_cast<size_t>(0); j<kernel_->local_base().dimensions(); ++j) {
       EXPECT_EQ(ranges_[i][j], kernel_->local_base()[j]);
     }
   }
@@ -143,7 +143,7 @@ TEST_F(KernelInfoTest, AddParameter) {
   for (auto i=0; i<kNumParameters; ++i) {
     ASSERT_EQ(values_list_[i].size(), kernel_->parameters()[i].values.size());
     EXPECT_EQ(names_[i], kernel_->parameters()[i].name);
-    for (auto j=0; j<kernel_->parameters()[i].values.size(); ++j) {
+    for (auto j=static_cast<size_t>(0); j<kernel_->parameters()[i].values.size(); ++j) {
       EXPECT_EQ(values_list_[i][j], kernel_->parameters()[i].values[j]);
     }
   }
@@ -162,7 +162,7 @@ TEST_F(KernelInfoTest, CreateLocalRange) {
     kernel_->set_local_base(ranges_[i]);
     kernel_->ComputeRanges(config);
     ASSERT_EQ(ranges_[i].dimensions(), kernel_->local_base().dimensions());
-    for (auto j=0; j<kernel_->local_base().dimensions(); ++j) {
+    for (auto j=static_cast<size_t>(0); j<kernel_->local_base().dimensions(); ++j) {
       EXPECT_EQ(ranges_[i][j], kernel_->local_base()[j]);
     }
   }
