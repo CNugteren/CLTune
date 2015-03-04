@@ -146,7 +146,7 @@ class Tuner {
  private:
   // Compiles and runs a kernel and returns the elapsed time
   TunerResult RunKernel(const std::string &source, const KernelInfo &kernel,
-                        const int configuration_id, const int num_configurations);
+                        const size_t configuration_id, const size_t num_configurations);
 
   // Sets an OpenCL buffer to zero
   template <typename T> void ResetMemArgument(MemArgument &argument);

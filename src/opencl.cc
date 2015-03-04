@@ -86,10 +86,12 @@ OpenCL::OpenCL(const size_t platform_id, const size_t device_id):
 // Verifies: 1) the local worksize in each dimension, 2) the local worksize in all dimensions
 // combined, and 3) the number of dimensions. For now, the global size is not verified.
 size_t OpenCL::VerifyThreadSizes(const cl::NDRange &global, const cl::NDRange &local) const {
-  auto local_size = 1;
-  auto global_size = 1;
-  for (auto i=0; i<global.dimensions(); ++i) { global_size *= global[i]; }
-  for (auto i=0; i<local.dimensions(); ++i) {
+  auto local_size = static_cast<size_t>(1);
+  auto global_size = static_cast<size_t>(1);
+  for (auto i=static_cast<size_t>(0); i<global.dimensions(); ++i) {
+    global_size *= global[i];
+  }
+  for (auto i=static_cast<size_t>(0); i<local.dimensions(); ++i) {
     local_size *= local[i];
     if (local[i] > max_local_sizes_[i]) {
       throw std::runtime_error("Local size in dimension "+ToString(i)+

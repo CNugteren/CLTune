@@ -228,7 +228,7 @@ void Tuner::Tune() {
       //RandomSearch search{kernel.configurations(), 0.25};
 
       // Iterates over all possible configurations (the permutations of the tuning parameters)
-      for (auto p=0; p<search.NumConfigurations(); ++p) {
+      for (auto p=static_cast<size_t>(0); p<search.NumConfigurations(); ++p) {
         auto permutation = search.NextConfiguration();
 
         // Adds the parameters to the source-code string as defines
@@ -340,7 +340,8 @@ void Tuner::SuppressOutput() {
 // Compiles the kernel and checks for OpenCL error messages, sets all output buffers to zero,
 // launches the kernel, and collects the timing information.
 Tuner::TunerResult Tuner::RunKernel(const std::string &source, const KernelInfo &kernel,
-                                    const int configuration_id, const int num_configurations) {
+                                    const size_t configuration_id,
+                                    const size_t num_configurations) {
 
   // Collects the source
   cl::Program::Sources sources;
@@ -412,7 +413,9 @@ Tuner::TunerResult Tuner::RunKernel(const std::string &source, const KernelInfo 
     auto end_time = events[t].getProfilingInfo<CL_PROFILING_COMMAND_END>(&status);
     elapsed_time = std::min(elapsed_time, (end_time - start_time) / (1000.0 * 1000.0));
   }
-  fprintf(stdout, "%s Completed %s (%.0lf ms) - %d out of %d\n",
+
+  // Prints diagnostic information
+  fprintf(stdout, "%s Completed %s (%.0lf ms) - %lu out of %lu\n",
           kMessageOK.c_str(), kernel.name().c_str(), elapsed_time,
           configuration_id+1, num_configurations);
 
@@ -468,14 +471,15 @@ template <typename T> void Tuner::DownloadReference(const MemArgument &device_bu
 bool Tuner::VerifyOutput() {
   auto status = true;
   if (has_reference_) {
-    for (auto i=0; i<arguments_output_.size(); ++i) {
-      auto output_buffer = arguments_output_[i];
+    auto i = 0;
+    for (auto &output_buffer: arguments_output_) {
       switch (output_buffer.type) {
         case MemType::kInt: status &= DownloadAndCompare<int>(output_buffer, i); break;
         case MemType::kFloat: status &= DownloadAndCompare<float>(output_buffer, i); break;
         case MemType::kDouble: status &= DownloadAndCompare<double>(output_buffer, i); break;
         default: throw Exception("Unsupported output data-type");
       }
+      ++i;
     }
   }
   return status;
