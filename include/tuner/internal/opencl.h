@@ -65,9 +65,9 @@ class OpenCL {
   explicit OpenCL(const size_t platform_id, const size_t device_id);
 
   // Accessors
-  const cl::Device& device() const { return device_; }
-  const cl::Context& context() const { return context_; }
-  const cl::CommandQueue& queue() const { return queue_; }
+  const cl::Device device() const { return device_; }
+  const cl::Context context() const { return context_; }
+  cl::CommandQueue queue() const { return queue_; }
 
   // Checks whether the global and local thread-sizes, and local memory size are compatible with the
   // current device

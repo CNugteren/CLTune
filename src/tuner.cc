@@ -52,18 +52,18 @@ const std::string Tuner::kMessageBest    = "\x1b[35m[     BEST ]\x1b[0m";
 
 // Initializes the platform and device to the default 0
 Tuner::Tuner():
-    opencl_(new OpenCL(0, 0)),
-    has_reference_(false),
-    suppress_output_(false),
-    argument_counter_(0) {
+    opencl_{new OpenCL(0, 0)},
+    has_reference_{false},
+    suppress_output_{false},
+    argument_counter_{0} {
 }
 
 // Initializes with a custom platform and device
 Tuner::Tuner(int platform_id, int device_id):
-    opencl_(new OpenCL(platform_id, device_id)),
-    has_reference_(false),
-    suppress_output_(false),
-    argument_counter_(0) {
+    opencl_{new OpenCL(platform_id, device_id)},
+    has_reference_{false},
+    suppress_output_{false},
+    argument_counter_{0} {
 }
 
 // End of the tuner
@@ -157,26 +157,26 @@ void Tuner::AddConstraint(const size_t id, KernelInfo::ConstraintFunction valid_
 // Creates a new buffer of type Memory (containing both host and device data) based on a source
 // vector of data. Then, upload it to the device and store the argument in a list.
 template <typename T>
-void Tuner::AddArgumentInput(std::vector<T> &source) {
-  Memory<T> buffer(source.size(), opencl_, source);
+void Tuner::AddArgumentInput(const std::vector<T> &source) {
+  auto buffer = Memory<T>{source.size(), opencl_->queue(), opencl_->context(), source};
   buffer.UploadToDevice();
   MemArgument argument = {argument_counter_++, source.size(), buffer.type, *buffer.device()};
   arguments_input_.push_back(argument);
 }
-template void Tuner::AddArgumentInput<int>(std::vector<int>&);
-template void Tuner::AddArgumentInput<float>(std::vector<float>&);
-template void Tuner::AddArgumentInput<double>(std::vector<double>&);
+template void Tuner::AddArgumentInput<int>(const std::vector<int>&);
+template void Tuner::AddArgumentInput<float>(const std::vector<float>&);
+template void Tuner::AddArgumentInput<double>(const std::vector<double>&);
 
 // As above, but now marked as output buffer
 template <typename T>
-void Tuner::AddArgumentOutput(std::vector<T> &source) {
-  Memory<T> buffer(source.size(), opencl_, source);
+void Tuner::AddArgumentOutput(const std::vector<T> &source) {
+  auto buffer = Memory<T>{source.size(), opencl_->queue(), opencl_->context(), source};
   MemArgument argument = {argument_counter_++, source.size(), buffer.type, *buffer.device()};
   arguments_output_.push_back(argument);
 }
-template void Tuner::AddArgumentOutput<int>(std::vector<int>&);
-template void Tuner::AddArgumentOutput<float>(std::vector<float>&);
-template void Tuner::AddArgumentOutput<double>(std::vector<double>&);
+template void Tuner::AddArgumentOutput<int>(const std::vector<int>&);
+template void Tuner::AddArgumentOutput<float>(const std::vector<float>&);
+template void Tuner::AddArgumentOutput<double>(const std::vector<double>&);
 
 // Sets a simple scalar value as an argument to the kernel
 template <typename T>

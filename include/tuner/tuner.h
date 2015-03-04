@@ -127,8 +127,8 @@ class Tuner {
 
   // Functions to add kernel-arguments for input buffers, output buffers, and scalars. Make sure to
   // call these in the order in which the arguments appear in the OpenCL kernel.
-  template <typename T> void AddArgumentInput(std::vector<T> &source);
-  template <typename T> void AddArgumentOutput(std::vector<T> &source);
+  template <typename T> void AddArgumentInput(const std::vector<T> &source);
+  template <typename T> void AddArgumentOutput(const std::vector<T> &source);
   template <typename T> void AddArgumentScalar(const T argument);
 
   // Starts the tuning process: compile all kernels and run them for each permutation of the tuning-
@@ -169,7 +169,7 @@ class Tuner {
   void PrintHeader(const std::string &header_name) const;
 
   // OpenCL platform
-  std::shared_ptr<OpenCL> opencl_;
+  std::unique_ptr<OpenCL> opencl_;
 
   // Settings
   bool has_reference_;
@@ -183,7 +183,7 @@ class Tuner {
   std::vector<std::pair<int,int>> arguments_scalar_;
 
   // Storage for the reference kernel and output
-  std::shared_ptr<KernelInfo> reference_kernel_;
+  std::unique_ptr<KernelInfo> reference_kernel_;
   std::vector<void*> reference_outputs_;
 
   // List of tuning results
