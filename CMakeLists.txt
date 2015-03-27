@@ -66,7 +66,8 @@ set(TUNER
     src/opencl.cc
     src/searcher.cc
     src/searchers/full_search.cc
-    src/searchers/random_search.cc)
+    src/searchers/random_search.cc
+    src/searchers/annealing.cc)
 
 # Links the library
 add_library(cltune SHARED ${TUNER})
