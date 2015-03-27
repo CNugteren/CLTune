@@ -49,10 +49,11 @@ class Searcher {
   Searcher(const Configurations &configurations);
 
   // Pushes feedback (in the form of execution time) from the tuner to the search algorithm
-  void PushExecutionTime(const double time);
+  void PushExecutionTime(const double execution_time);
 
   // Pure virtual functions: these are overriden by the derived classes
-  virtual KernelInfo::Configuration& NextConfiguration() = 0;
+  virtual KernelInfo::Configuration GetConfiguration() = 0;
+  virtual void CalculateNextIndex() = 0;
   virtual size_t NumConfigurations() = 0;
 
  protected:
@@ -60,7 +61,8 @@ class Searcher {
   // Protected member variables accessible by derived classes
   Configurations configurations_;
   std::vector<double> execution_times_;
-  size_t i;
+  std::vector<size_t> explored_indices_;
+  size_t index_;
 };
 
 // =================================================================================================

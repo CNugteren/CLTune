@@ -27,7 +27,7 @@
 
 #include "tuner/internal/searcher.h"
 
-#include <string>
+#include <limits>
 
 namespace cltune {
 // =================================================================================================
@@ -35,13 +35,16 @@ namespace cltune {
 // Simple base-class constructor
 Searcher::Searcher(const Configurations &configurations):
     configurations_(configurations),
-    execution_times_(),
-    i(0) {
+    execution_times_(configurations.size(), std::numeric_limits<double>::max()),
+    explored_indices_(),
+    index_(0) {
 }
 
-// Adds the resulting execution time to the back of the execution times vector
-void Searcher::PushExecutionTime(const double time) {
-  execution_times_.push_back(time);
+// Adds the resulting execution time to the back of the execution times vector. Also stores the
+// index value (to keep track of which indices are explored).
+void Searcher::PushExecutionTime(const double execution_time) {
+  explored_indices_.push_back(index_);
+  execution_times_[index_] = execution_time;
 }
 
 // =================================================================================================

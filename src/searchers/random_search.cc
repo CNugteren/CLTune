@@ -27,7 +27,6 @@
 
 #include "tuner/internal/searchers/random_search.h"
 
-#include <string>
 #include <algorithm>
 
 namespace cltune {
@@ -42,10 +41,14 @@ RandomSearch::RandomSearch(const Configurations &configurations, const float fra
 
 // =================================================================================================
 
-// Returns the next random configuration
-KernelInfo::Configuration& RandomSearch::NextConfiguration() {
-  ++i;
-  return configurations_[i-1];
+// Returns the next configuration (vector of configurations is already shuffled randomly)
+KernelInfo::Configuration RandomSearch::GetConfiguration() {
+  return configurations_[index_];
+}
+
+// Calculates the index of the next configuration to test
+void RandomSearch::CalculateNextIndex() {
+  ++index_;
 }
 
 // The number of configurations is equal to all possible configurations

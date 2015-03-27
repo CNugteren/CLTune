@@ -44,7 +44,10 @@ class RandomSearch: public Searcher {
   RandomSearch(const Configurations &configurations, const float fraction);
 
   // Retrieves the next configuration to test
-  virtual KernelInfo::Configuration& NextConfiguration() override;
+  virtual KernelInfo::Configuration GetConfiguration() override;
+
+  // Calculates the next index
+  virtual void CalculateNextIndex() override;
 
   // Retrieves the total number of configurations to try
   virtual size_t NumConfigurations() override;
