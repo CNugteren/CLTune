@@ -103,6 +103,15 @@ size_t Annealing::NumConfigurations() {
 
 // =================================================================================================
 
+// Adds the resulting execution time to the back of the execution times vector. Also stores the
+// index value (to keep track of which indices are explored).
+void Annealing::PushExecutionTime(const double execution_time) {
+  explored_indices_.push_back(current_state_);
+  execution_times_[index_] = execution_time;
+}
+
+// =================================================================================================
+
 // Retrieves the neighbours IDs of a configuration identified by a reference ID. This searches
 // through all configurations and checks how many values are different. This function returns a
 // vector with IDs of which there is only one difference with the reference configuration.

@@ -57,6 +57,9 @@ class Annealing: public Searcher {
   // Retrieves the total number of configurations to try
   virtual size_t NumConfigurations() override;
 
+  // Pushes feedback (in the form of execution time) from the tuner to the search algorithm
+  virtual void PushExecutionTime(const double execution_time) override;
+
  private:
 
   // Retrieves a vector with all neighbours of a reference configuration

@@ -49,7 +49,10 @@ class Searcher {
   Searcher(const Configurations &configurations);
 
   // Pushes feedback (in the form of execution time) from the tuner to the search algorithm
-  void PushExecutionTime(const double execution_time);
+  virtual void PushExecutionTime(const double execution_time);
+
+  // Prints the log of the search process
+  void PrintLog(FILE* fp) const;
 
   // Pure virtual functions: these are overriden by the derived classes
   virtual KernelInfo::Configuration GetConfiguration() = 0;

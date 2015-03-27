@@ -255,6 +255,14 @@ void Tuner::Tune() {
         tuning_results_.push_back(tuning_result);
         if (!tuning_result.status) { PrintResult(stdout, tuning_result, kMessageWarning); }
       }
+
+      // Prints a log of the searching process
+      // TODO: Make this an option
+      if (false) {
+        auto file = fopen("search_output.txt", "w");
+        search.PrintLog(file);
+        fclose(file);
+      }
     }
   }
 }
@@ -470,7 +478,7 @@ template <typename T> void Tuner::DownloadReference(const MemArgument &device_bu
 bool Tuner::VerifyOutput() {
   auto status = true;
   if (has_reference_) {
-    for (auto i=0; i<arguments_output_.size(); ++i) {
+    for (auto i=0UL; i<arguments_output_.size(); ++i) {
       auto output_buffer = arguments_output_[i];
       switch (output_buffer.type) {
         case MemType::kInt: status &= DownloadAndCompare<int>(output_buffer, i); break;

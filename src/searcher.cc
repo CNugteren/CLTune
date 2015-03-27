@@ -47,5 +47,15 @@ void Searcher::PushExecutionTime(const double execution_time) {
   execution_times_[index_] = execution_time;
 }
 
+// Prints the explored indices and the corresponding execution times to a log(file)
+void Searcher::PrintLog(FILE* fp) const {
+  fprintf(fp, "step;index;time\n");
+  auto step = 0;
+  for (auto &explored_index: explored_indices_) {
+    fprintf(fp, "%d;%lu;%.3lf\n", step, explored_index, execution_times_[explored_index]);
+    ++step;
+  }
+}
+
 // =================================================================================================
 } // namespace cltune
