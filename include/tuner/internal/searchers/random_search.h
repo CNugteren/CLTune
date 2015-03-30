@@ -41,7 +41,7 @@ class RandomSearch: public Searcher {
  public:
 
   // Takes additionally a fraction of configurations to try (1.0 == full search)
-  RandomSearch(const Configurations &configurations, const float fraction);
+  RandomSearch(const Configurations &configurations, const double fraction);
 
   // Retrieves the next configuration to test
   virtual KernelInfo::Configuration GetConfiguration() override;
@@ -53,7 +53,7 @@ class RandomSearch: public Searcher {
   virtual size_t NumConfigurations() override;
 
  private:
-    float fraction_;
+    double fraction_;
 };
 
 // =================================================================================================

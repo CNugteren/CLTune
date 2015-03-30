@@ -52,8 +52,13 @@ namespace cltune {
 // See comment at top of file for a description of the class
 class Tuner {
  public:
+
+  // Parameters
   static constexpr auto kMaxL2Norm = 1e-4; // This is the threshold for 'correctness'
   static constexpr auto kNumRuns = 1; // This is used for more-accurate execution time measurement
+
+  // Constants
+  static constexpr auto kMaxSearchArguments = 2;
 
   // Messages printed to stdout (in colours)
   static const std::string kMessageFull;
@@ -65,6 +70,9 @@ class Tuner {
   static const std::string kMessageFailure;
   static const std::string kMessageResult;
   static const std::string kMessageBest;
+
+  // Search methods
+  enum class SearchMethod{FullSearch, RandomSearch, Annealing};
 
   // Helper structure to store an OpenCL memory argument for a kernel
   struct MemArgument {
@@ -132,6 +140,14 @@ class Tuner {
   template <typename T> void AddArgumentOutput(std::vector<T> &source);
   template <typename T> void AddArgumentScalar(const T argument);
 
+  // Configures a specific search method. The default search method is "FullSearch"
+  void UseFullSearch();
+  void UseRandomSearch(const float fraction);
+  void UseAnnealing(const float fraction, const double max_temperature);
+
+  // Output the search process to a file
+  void OutputSearchLog(const std::string &filename);
+
   // Starts the tuning process: compile all kernels and run them for each permutation of the tuning-
   // parameters. Note that this might take a while.
   void Tune();
@@ -175,6 +191,12 @@ class Tuner {
   // Settings
   bool has_reference_;
   bool suppress_output_;
+  bool output_search_process_;
+  std::string search_log_filename_;
+
+  // The search method and its arguments
+  SearchMethod search_method_;
+  std::vector<double> search_args_;
 
   // Storage of kernel sources, arguments, and parameters
   int argument_counter_;

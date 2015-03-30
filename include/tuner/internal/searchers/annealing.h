@@ -46,7 +46,7 @@ class Annealing: public Searcher {
 
   // Takes additionally a fraction of configurations to consider
   Annealing(const Configurations &configurations,
-            const float fraction, const double max_temperature);
+            const double fraction, const double max_temperature);
 
   // Retrieves the next configuration to test
   virtual KernelInfo::Configuration GetConfiguration() override;
@@ -72,7 +72,7 @@ class Annealing: public Searcher {
                                const double temperature) const;
 
   // Configuration parameters
-  float fraction_;
+  double fraction_;
   double max_temperature_;
 
   // Annealing-specific member variables

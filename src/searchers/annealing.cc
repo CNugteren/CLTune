@@ -36,7 +36,7 @@ namespace cltune {
 // Initializes the simulated annealing searcher by specifying the fraction of the total search space
 // to consider and the maximum annealing 'temperature'.
 Annealing::Annealing(const Configurations &configurations,
-                     const float fraction, const double max_temperature):
+                     const double fraction, const double max_temperature):
     Searcher(configurations),
     fraction_(fraction),
     max_temperature_(max_temperature),
