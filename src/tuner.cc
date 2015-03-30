@@ -304,7 +304,7 @@ void Tuner::Tune() {
       // Prints a log of the searching process. This is disabled per default, but can be enabled
       // using the "OutputSearchLog" function.
       if (output_search_process_) {
-        auto file = fopen(search_log_filename_, "w");
+        auto file = fopen(search_log_filename_.c_str(), "w");
         search->PrintLog(file);
         fclose(file);
       }
