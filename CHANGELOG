@@ -1,4 +1,10 @@
 
+Version 1.3.0
+- Allow users to select a search strategy through the API
+- Added support for the simulated annealing search method
+- Added a sample using simulated annealing
+- Added an option to output the search process to file
+
 Version 1.2.0
 - Added the interface to customize search algorithms
 - Initially added full-search and random-search as basic search algorithms
