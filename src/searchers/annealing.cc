@@ -47,6 +47,9 @@ Annealing::Annealing(const Configurations &configurations,
     generator_(rd_()),
     int_distribution_(0, configurations_.size()),
     probability_distribution_(0.0, 1.0) {
+  auto random_initial_state = int_distribution_(generator_);
+  current_state_ = random_initial_state;
+  index_ = random_initial_state;
 }
 
 // =================================================================================================
