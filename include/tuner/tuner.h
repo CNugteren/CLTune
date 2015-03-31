@@ -136,8 +136,8 @@ class Tuner {
 
   // Functions to add kernel-arguments for input buffers, output buffers, and scalars. Make sure to
   // call these in the order in which the arguments appear in the OpenCL kernel.
-  template <typename T> void AddArgumentInput(std::vector<T> &source);
-  template <typename T> void AddArgumentOutput(std::vector<T> &source);
+  template <typename T> void AddArgumentInput(const std::vector<T> &source);
+  template <typename T> void AddArgumentOutput(const std::vector<T> &source);
   template <typename T> void AddArgumentScalar(const T argument);
 
   // Configures a specific search method. The default search method is "FullSearch"
@@ -163,7 +163,7 @@ class Tuner {
  private:
   // Compiles and runs a kernel and returns the elapsed time
   TunerResult RunKernel(const std::string &source, const KernelInfo &kernel,
-                        const int configuration_id, const int num_configurations);
+                        const size_t configuration_id, const size_t num_configurations);
 
   // Sets an OpenCL buffer to zero
   template <typename T> void ResetMemArgument(MemArgument &argument);
@@ -186,7 +186,7 @@ class Tuner {
   void PrintHeader(const std::string &header_name) const;
 
   // OpenCL platform
-  std::shared_ptr<OpenCL> opencl_;
+  std::unique_ptr<OpenCL> opencl_;
 
   // Settings
   bool has_reference_;
@@ -206,7 +206,7 @@ class Tuner {
   std::vector<std::pair<int,int>> arguments_scalar_;
 
   // Storage for the reference kernel and output
-  std::shared_ptr<KernelInfo> reference_kernel_;
+  std::unique_ptr<KernelInfo> reference_kernel_;
   std::vector<void*> reference_outputs_;
 
   // List of tuning results

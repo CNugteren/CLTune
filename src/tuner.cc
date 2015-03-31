@@ -168,26 +168,26 @@ void Tuner::AddConstraint(const size_t id, KernelInfo::ConstraintFunction valid_
 // Creates a new buffer of type Memory (containing both host and device data) based on a source
 // vector of data. Then, upload it to the device and store the argument in a list.
 template <typename T>
-void Tuner::AddArgumentInput(std::vector<T> &source) {
-  Memory<T> buffer(source.size(), opencl_, source);
+void Tuner::AddArgumentInput(const std::vector<T> &source) {
+  auto buffer = Memory<T>{source.size(), opencl_->queue(), opencl_->context(), source};
   buffer.UploadToDevice();
   MemArgument argument = {argument_counter_++, source.size(), buffer.type, *buffer.device()};
   arguments_input_.push_back(argument);
 }
-template void Tuner::AddArgumentInput<int>(std::vector<int>&);
-template void Tuner::AddArgumentInput<float>(std::vector<float>&);
-template void Tuner::AddArgumentInput<double>(std::vector<double>&);
+template void Tuner::AddArgumentInput<int>(const std::vector<int>&);
+template void Tuner::AddArgumentInput<float>(const std::vector<float>&);
+template void Tuner::AddArgumentInput<double>(const std::vector<double>&);
 
 // As above, but now marked as output buffer
 template <typename T>
-void Tuner::AddArgumentOutput(std::vector<T> &source) {
-  Memory<T> buffer(source.size(), opencl_, source);
+void Tuner::AddArgumentOutput(const std::vector<T> &source) {
+  auto buffer = Memory<T>{source.size(), opencl_->queue(), opencl_->context(), source};
   MemArgument argument = {argument_counter_++, source.size(), buffer.type, *buffer.device()};
   arguments_output_.push_back(argument);
 }
-template void Tuner::AddArgumentOutput<int>(std::vector<int>&);
-template void Tuner::AddArgumentOutput<float>(std::vector<float>&);
-template void Tuner::AddArgumentOutput<double>(std::vector<double>&);
+template void Tuner::AddArgumentOutput<int>(const std::vector<int>&);
+template void Tuner::AddArgumentOutput<float>(const std::vector<float>&);
+template void Tuner::AddArgumentOutput<double>(const std::vector<double>&);
 
 // Sets a simple scalar value as an argument to the kernel
 template <typename T>
@@ -274,7 +274,7 @@ void Tuner::Tune() {
       }
 
       // Iterates over all possible configurations (the permutations of the tuning parameters)
-      for (auto p=static_cast<size_t>(0); p<search->NumConfigurations(); ++p) {
+      for (auto p=0UL; p<search->NumConfigurations(); ++p) {
         auto permutation = search->GetConfiguration();
 
         // Adds the parameters to the source-code string as defines
@@ -395,7 +395,8 @@ void Tuner::SuppressOutput() {
 // Compiles the kernel and checks for OpenCL error messages, sets all output buffers to zero,
 // launches the kernel, and collects the timing information.
 Tuner::TunerResult Tuner::RunKernel(const std::string &source, const KernelInfo &kernel,
-                                    const int configuration_id, const int num_configurations) {
+                                    const size_t configuration_id,
+                                    const size_t num_configurations) {
 
   // Collects the source
   cl::Program::Sources sources;
@@ -467,7 +468,9 @@ Tuner::TunerResult Tuner::RunKernel(const std::string &source, const KernelInfo 
     auto end_time = events[t].getProfilingInfo<CL_PROFILING_COMMAND_END>(&status);
     elapsed_time = std::min(elapsed_time, (end_time - start_time) / (1000.0 * 1000.0));
   }
-  fprintf(stdout, "%s Completed %s (%.0lf ms) - %d out of %d\n",
+
+  // Prints diagnostic information
+  fprintf(stdout, "%s Completed %s (%.0lf ms) - %lu out of %lu\n",
           kMessageOK.c_str(), kernel.name().c_str(), elapsed_time,
           configuration_id+1, num_configurations);
 
@@ -523,14 +526,15 @@ template <typename T> void Tuner::DownloadReference(const MemArgument &device_bu
 bool Tuner::VerifyOutput() {
   auto status = true;
   if (has_reference_) {
-    for (auto i=0UL; i<arguments_output_.size(); ++i) {
-      auto output_buffer = arguments_output_[i];
+    auto i = 0;
+    for (auto &output_buffer: arguments_output_) {
       switch (output_buffer.type) {
         case MemType::kInt: status &= DownloadAndCompare<int>(output_buffer, i); break;
         case MemType::kFloat: status &= DownloadAndCompare<float>(output_buffer, i); break;
         case MemType::kDouble: status &= DownloadAndCompare<double>(output_buffer, i); break;
         default: throw Exception("Unsupported output data-type");
       }
+      ++i;
     }
   }
   return status;

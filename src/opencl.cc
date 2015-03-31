@@ -36,14 +36,16 @@ namespace cltune {
 // Gets a list of all platforms/devices and chooses the selected ones. Initializes OpenCL and also
 // downloads properties of the device for later use.
 OpenCL::OpenCL(const size_t platform_id, const size_t device_id):
-    suppress_output_(false) {
+    suppress_output_{false} {
+
+  // Starting on a new platform/device
   if (!suppress_output_) {
-    fprintf(stdout, "\n%s New tuner on platform %lu device %lu\n",
+    fprintf(stdout, "\n%s Initializing OpenCL on platform %lu device %lu\n",
             Tuner::kMessageFull.c_str(), platform_id, device_id);
   }
 
   // Initializes the OpenCL platform
-  std::vector<cl::Platform> platforms{};
+  auto platforms = std::vector<cl::Platform>{};
   cl::Platform::get(&platforms);
   if (platforms.size() == 0) {
     throw std::runtime_error("No OpenCL platforms found");
@@ -54,7 +56,7 @@ OpenCL::OpenCL(const size_t platform_id, const size_t device_id):
   platform_ = platforms[platform_id];
 
   // Initializes the OpenCL device
-  std::vector<cl::Device> devices;
+  auto devices = std::vector<cl::Device>{};
   platform_.getDevices(kDeviceType, &devices);
   if (devices.size() == 0) {
     throw std::runtime_error("No OpenCL devices found on platform " + ToString(platform_id));
@@ -69,7 +71,7 @@ OpenCL::OpenCL(const size_t platform_id, const size_t device_id):
   queue_ = cl::CommandQueue(context_, device_, CL_QUEUE_PROFILING_ENABLE);
 
   // Gets device properties
-  std::string device_name = device_.getInfo<CL_DEVICE_NAME>();
+  auto device_name  = device_.getInfo<CL_DEVICE_NAME>();
   max_local_dims_    = device_.getInfo<CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS>();
   max_local_threads_ = device_.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
   max_local_sizes_   = device_.getInfo<CL_DEVICE_MAX_WORK_ITEM_SIZES>();
