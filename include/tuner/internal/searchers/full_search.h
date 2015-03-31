@@ -42,7 +42,10 @@ class FullSearch: public Searcher {
   FullSearch(const Configurations &configurations);
 
   // Retrieves the next configuration to test
-  virtual KernelInfo::Configuration& NextConfiguration() override;
+  virtual KernelInfo::Configuration GetConfiguration() override;
+
+  // Calculates the next index
+  virtual void CalculateNextIndex() override;
 
   // Retrieves the total number of configurations to try
   virtual size_t NumConfigurations() override;

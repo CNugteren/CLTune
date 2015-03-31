@@ -52,18 +52,26 @@ const std::string Tuner::kMessageBest    = "\x1b[35m[     BEST ]\x1b[0m";
 
 // Initializes the platform and device to the default 0
 Tuner::Tuner():
-    opencl_{new OpenCL(0, 0)},
-    has_reference_{false},
-    suppress_output_{false},
-    argument_counter_{0} {
+    opencl_(new OpenCL(0, 0)),
+    has_reference_(false),
+    suppress_output_(false),
+    output_search_process_(false),
+    search_log_filename_(std::string{}),
+    search_method_(SearchMethod::FullSearch),
+    search_args_(kMaxSearchArguments, 0.0),
+    argument_counter_(0) {
 }
 
 // Initializes with a custom platform and device
 Tuner::Tuner(int platform_id, int device_id):
-    opencl_{new OpenCL(platform_id, device_id)},
-    has_reference_{false},
-    suppress_output_{false},
-    argument_counter_{0} {
+    opencl_(new OpenCL(platform_id, device_id)),
+    has_reference_(false),
+    suppress_output_(false),
+    output_search_process_(false),
+    search_log_filename_(std::string{}),
+    search_method_(SearchMethod::FullSearch),
+    search_args_(kMaxSearchArguments, 0.0),
+    argument_counter_(0) {
 }
 
 // End of the tuner
@@ -75,6 +83,9 @@ Tuner::~Tuner() {
     fprintf(stdout, "\n%s End of the tuning process\n\n", kMessageFull.c_str());
   }
 }
+
+// =================================================================================================
+
 
 // =================================================================================================
 
@@ -189,6 +200,32 @@ template void Tuner::AddArgumentScalar<double>(const double);
 
 // =================================================================================================
 
+// Use full search as a search strategy. This is the default method.
+void Tuner::UseFullSearch() {
+  search_method_ = SearchMethod::FullSearch;
+}
+
+// Use random search as a search strategy.
+void Tuner::UseRandomSearch(const float fraction) {
+  search_method_ = SearchMethod::RandomSearch;
+  search_args_[0] = fraction;
+}
+
+// Use simulated annealing as a search strategy.
+void Tuner::UseAnnealing(const float fraction, const double max_temperature) {
+  search_method_ = SearchMethod::Annealing;
+  search_args_[0] = fraction;
+  search_args_[1] = max_temperature;
+}
+
+// Output the search process to a file. This is disabled per default.
+void Tuner::OutputSearchLog(const std::string &filename) {
+  output_search_process_ = true;
+  search_log_filename_ = filename;
+}
+
+// =================================================================================================
+
 // Starts the tuning process. First, the reference kernel is run if it exists (output results are
 // automatically verified with respect to this reference run). Next, all permutations of all tuning-
 // parameters are computed for each kernel and those kernels are run. Their timing-results are
@@ -222,14 +259,23 @@ void Tuner::Tune() {
       // Computes the permutations of all parameters and pass them to a (smart) search algorithm
       kernel.SetConfigurations();
 
-      // Define the search algorithm
-      // TODO: Make the search algorithm selectable by the user
-      FullSearch search{kernel.configurations()};
-      //RandomSearch search{kernel.configurations(), 0.25};
+      // Creates the selected search algorithm
+      std::unique_ptr<Searcher> search;
+      switch (search_method_) {
+        case SearchMethod::FullSearch:
+          search.reset(new FullSearch{kernel.configurations()});
+          break;
+        case SearchMethod::RandomSearch:
+          search.reset(new RandomSearch{kernel.configurations(), search_args_[0]});
+          break;
+        case SearchMethod::Annealing:
+          search.reset(new Annealing{kernel.configurations(), search_args_[0], search_args_[1]});
+          break;
+      }
 
       // Iterates over all possible configurations (the permutations of the tuning parameters)
-      for (auto p=static_cast<size_t>(0); p<search.NumConfigurations(); ++p) {
-        auto permutation = search.NextConfiguration();
+      for (auto p=0UL; p<search->NumConfigurations(); ++p) {
+        auto permutation = search->GetConfiguration();
 
         // Adds the parameters to the source-code string as defines
         auto source = std::string{};
@@ -242,16 +288,25 @@ void Tuner::Tune() {
         kernel.ComputeRanges(permutation);
 
         // Compiles and runs the kernel
-        auto tuning_result = RunKernel(source, kernel, p, search.NumConfigurations());
+        auto tuning_result = RunKernel(source, kernel, p, search->NumConfigurations());
         tuning_result.status = VerifyOutput();
 
-        // Gives timing feedback to the search-algorithm
-        search.PushExecutionTime(tuning_result.time);
+        // Gives timing feedback to the search algorithm and calculate the next index
+        search->PushExecutionTime(tuning_result.time);
+        search->CalculateNextIndex();
 
         // Stores the parameters and the timing-result
         tuning_result.configuration = permutation;
         tuning_results_.push_back(tuning_result);
         if (!tuning_result.status) { PrintResult(stdout, tuning_result, kMessageWarning); }
+      }
+
+      // Prints a log of the searching process. This is disabled per default, but can be enabled
+      // using the "OutputSearchLog" function.
+      if (output_search_process_) {
+        auto file = fopen(search_log_filename_.c_str(), "w");
+        search->PrintLog(file);
+        fclose(file);
       }
     }
   }

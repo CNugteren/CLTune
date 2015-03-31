@@ -27,8 +27,6 @@
 
 #include "tuner/internal/searchers/full_search.h"
 
-#include <string>
-
 namespace cltune {
 // =================================================================================================
 
@@ -39,10 +37,14 @@ FullSearch::FullSearch(const Configurations &configurations):
 
 // =================================================================================================
 
-// Returns the next configuration in order
-KernelInfo::Configuration& FullSearch::NextConfiguration() {
-  ++i;
-  return configurations_[i-1];
+// Returns the next configuration
+KernelInfo::Configuration FullSearch::GetConfiguration() {
+  return configurations_[index_];
+}
+
+// Calculates the index of the next configuration to test
+void FullSearch::CalculateNextIndex() {
+  ++index_;
 }
 
 // The number of configurations is equal to all possible configurations

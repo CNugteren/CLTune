@@ -5,8 +5,7 @@
 //
 // Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
 //
-// This file implements a random-search algorithm, testing the configurations randomly. However,
-// it does not consider the same configuration twice. It is derived from the basic search class.
+// This file implements the simulated annealing algorithm. (...)
 //
 // -------------------------------------------------------------------------------------------------
 //
@@ -26,10 +25,11 @@
 //
 // =================================================================================================
 
-#ifndef CLBLAS_TUNER_SEARCHERS_RANDOM_SEARCH_H_
-#define CLBLAS_TUNER_SEARCHERS_RANDOM_SEARCH_H_
+#ifndef CLBLAS_TUNER_SEARCHERS_ANNEALING_H_
+#define CLBLAS_TUNER_SEARCHERS_ANNEALING_H_
 
 #include <vector>
+#include <random>
 
 #include "tuner/internal/searcher.h"
 
@@ -37,11 +37,16 @@ namespace cltune {
 // =================================================================================================
 
 // See comment at top of file for a description of the class
-class RandomSearch: public Searcher {
+class Annealing: public Searcher {
  public:
 
-  // Takes additionally a fraction of configurations to try (1.0 == full search)
-  RandomSearch(const Configurations &configurations, const double fraction);
+  // Maximum number of successive visits to already visited states. If this number is exceeded, the
+  // algorithm ends
+  static constexpr auto kMaxAlreadyVisitedStates = 10;
+
+  // Takes additionally a fraction of configurations to consider
+  Annealing(const Configurations &configurations,
+            const double fraction, const double max_temperature);
 
   // Retrieves the next configuration to test
   virtual KernelInfo::Configuration GetConfiguration() override;
@@ -52,12 +57,39 @@ class RandomSearch: public Searcher {
   // Retrieves the total number of configurations to try
   virtual size_t NumConfigurations() override;
 
+  // Pushes feedback (in the form of execution time) from the tuner to the search algorithm
+  virtual void PushExecutionTime(const double execution_time) override;
+
  private:
-    double fraction_;
+
+  // Retrieves a vector with all neighbours of a reference configuration
+  std::vector<size_t> GetNeighboursOf(const size_t reference_id) const;
+
+  // Computes the acceptance probability P of simulated annealing based on the 'energy' of the
+  // current and neighbouring state, and the 'temperature'.
+  double AcceptanceProbability(const double current_energy,
+                               const double neighbour_energy,
+                               const double temperature) const;
+
+  // Configuration parameters
+  double fraction_;
+  double max_temperature_;
+
+  // Annealing-specific member variables
+  size_t num_visited_states_;
+  size_t current_state_;
+  size_t neighbour_state_;
+  size_t num_already_visisted_states_;
+
+  // Random number generation
+  std::default_random_engine generator_;
+  std::random_device rd_;
+  std::uniform_int_distribution<int> int_distribution_;
+  std::uniform_real_distribution<double> probability_distribution_;
 };
 
 // =================================================================================================
 } // namespace cltune
 
-// CLBLAS_TUNER_SEARCHERS_RANDOM_SEARCH_H_
+// CLBLAS_TUNER_SEARCHERS_ANNEALING_H_
 #endif

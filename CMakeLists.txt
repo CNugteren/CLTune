@@ -66,7 +66,8 @@ set(TUNER
     src/opencl.cc
     src/searcher.cc
     src/searchers/full_search.cc
-    src/searchers/random_search.cc)
+    src/searchers/random_search.cc
+    src/searchers/annealing.cc)
 
 # Links the library
 add_library(cltune SHARED ${TUNER})
@@ -77,10 +78,12 @@ target_link_libraries(cltune ${OpenCL_LIBRARY})
 if (ENABLE_SAMPLES)
 
     # Adds sample programs
-    add_executable(sample_gemm samples/gemm.cc)
     add_executable(sample_simple samples/simple.cc)
-    target_link_libraries(sample_gemm cltune ${OpenCL_LIBRARY} ${OpenMP_LIBRARY})
+    add_executable(sample_gemm samples/gemm.cc)
+    add_executable(sample_gemm_annealing samples/gemm_annealing.cc)
     target_link_libraries(sample_simple cltune ${OpenCL_LIBRARY} ${OpenMP_LIBRARY})
+    target_link_libraries(sample_gemm cltune ${OpenCL_LIBRARY} ${OpenMP_LIBRARY})
+    target_link_libraries(sample_gemm_annealing cltune ${OpenCL_LIBRARY} ${OpenMP_LIBRARY})
 
 endif()
 # ==================================================================================================
