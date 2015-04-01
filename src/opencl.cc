@@ -71,7 +71,7 @@ OpenCL::OpenCL(const size_t platform_id, const size_t device_id):
   queue_ = cl::CommandQueue(context_, device_, CL_QUEUE_PROFILING_ENABLE);
 
   // Gets device properties
-  auto device_name  = device_.getInfo<CL_DEVICE_NAME>();
+  device_name_       = device_.getInfo<CL_DEVICE_NAME>();
   max_local_dims_    = device_.getInfo<CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS>();
   max_local_threads_ = device_.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
   max_local_sizes_   = device_.getInfo<CL_DEVICE_MAX_WORK_ITEM_SIZES>();
