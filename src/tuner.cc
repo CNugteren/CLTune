@@ -33,6 +33,7 @@
 #include <sstream>
 #include <cmath>
 #include <limits>
+#include <regex>
 
 namespace cltune {
 // =================================================================================================
@@ -427,9 +428,15 @@ Tuner::TunerResult Tuner::RunKernel(const std::string &source, const KernelInfo 
                                     const size_t configuration_id,
                                     const size_t num_configurations) {
 
+  // Removes the use of C++11 string literals (if any) from the kernel source code
+  auto string_literal_start = std::regex{"R\"\\("};
+  auto string_literal_end = std::regex{"\\)\";"};
+  auto processed_source = std::regex_replace(source, string_literal_start, "");
+  processed_source = std::regex_replace(processed_source, string_literal_end, "");
+
   // Collects the source
   cl::Program::Sources sources;
-  sources.push_back({source.c_str(), source.length()});
+  sources.push_back({processed_source.c_str(), processed_source.length()});
 
   // Compiles the kernel and prints the compiler errors/warnings
   cl::Program program(opencl_->context(), sources);
