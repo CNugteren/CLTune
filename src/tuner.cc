@@ -319,7 +319,7 @@ void Tuner::Tune() {
 double Tuner::PrintToScreen() const {
 
   // Finds the best result
-  TunerResult best_result;
+  auto best_result = tuning_results_[0];
   auto best_time = std::numeric_limits<double>::max();
   for (auto &tuning_result: tuning_results_) {
     if (tuning_result.status && best_time >= tuning_result.time) {
@@ -343,7 +343,36 @@ double Tuner::PrintToScreen() const {
   }
   PrintHeader("Printing best result to stdout");
   PrintResult(stdout, best_result, kMessageBest);
+
+  // Return the best time
   return best_time;
+}
+
+// Prints the best result in a neatly formatted C++ database format to screen
+void Tuner::PrintFormatted() const {
+
+  // Finds the best result
+  auto best_result = tuning_results_[0];
+  auto best_time = std::numeric_limits<double>::max();
+  for (auto &tuning_result: tuning_results_) {
+    if (tuning_result.status && best_time >= tuning_result.time) {
+      best_result = tuning_result;
+      best_time = tuning_result.time;
+    }
+  }
+
+  // Prints the best result in C++ database format
+  auto count = 0;
+  PrintHeader("Printing best result in database format to stdout");
+  fprintf(stdout, "{ \"%s\", { ", opencl_->device_name().c_str());
+  for (auto &setting: best_result.configuration) {
+    fprintf(stdout, "%s", setting.GetDatabase().c_str());
+    if (count < best_result.configuration.size()-1) {
+      fprintf(stdout, ", ");
+    }
+    count++;
+  }
+  fprintf(stdout, " } }\n");
 }
 
 // Same as PrintToScreen, but now outputs into a file and does not mark the best-case

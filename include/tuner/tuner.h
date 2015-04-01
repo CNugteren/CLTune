@@ -155,6 +155,7 @@ class Tuner {
   // Prints the results of the tuning either to screen (stdout) or to a specific output-file.
   // Returns the execution time in miliseconds.
   double PrintToScreen() const;
+  void PrintFormatted() const;
   void PrintToFile(const std::string &filename) const;
 
   // Disable all further printing to stdout
