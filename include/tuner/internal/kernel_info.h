@@ -66,6 +66,7 @@ class KernelInfo {
     int value;
     std::string GetDefine() const { return "#define "+name+" "+GetValueString()+"\n"; }
     std::string GetConfig() const { return name+" "+GetValueString(); }
+    std::string GetDatabase() const { return "{\""+name+"\","+GetValueString()+"}"; }
     std::string GetValueString() const { return std::to_string((long long)value); }
   };
   using Configuration = std::vector<Setting>;

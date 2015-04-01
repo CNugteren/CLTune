@@ -68,6 +68,7 @@ class OpenCL {
   const cl::Device device() const { return device_; }
   const cl::Context context() const { return context_; }
   cl::CommandQueue queue() const { return queue_; }
+  const std::string device_name() const { return device_name_; }
 
   // Checks whether the global and local thread-sizes, and local memory size are compatible with the
   // current device
@@ -86,6 +87,7 @@ class OpenCL {
   cl::CommandQueue queue_;
 
   // OpenCL device properties and limitations
+  std::string device_name_;
   size_t max_local_dims_;
   size_t max_local_threads_;
   std::vector<size_t> max_local_sizes_;
