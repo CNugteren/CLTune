@@ -79,7 +79,7 @@ OpenCL::OpenCL(const size_t platform_id, const size_t device_id):
 
   // Prints the device name
   if (!suppress_output_) {
-    fprintf(stdout, "%s Device name: '%s'\n", Tuner::kMessageFull.c_str(), device_name.c_str());
+    fprintf(stdout, "%s Device name: '%s'\n", Tuner::kMessageFull.c_str(), device_name_.c_str());
   }
 }
 
