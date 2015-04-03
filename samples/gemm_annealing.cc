@@ -64,7 +64,7 @@ int main() {
   for (auto &item: mat_c) { item = 0.0; }
 
   // Initializes the tuner (platform 0, device 0)
-  cltune::Tuner tuner(0, 0);
+  cltune::Tuner tuner(0, 1);
 
   // Configures the tuner to select the simulated annealing search method, setting the fraction of
   // the search space to explore (1/64th) and the maximum annealing temperature (relative to the
@@ -144,6 +144,7 @@ int main() {
   // Prints the results to screen and to file
   auto time_ms = tuner.PrintToScreen();
   tuner.PrintToFile("output.csv");
+  tuner.PrintFormatted();
 
   // Also prints the performance of the best-case in terms of GFLOPS
   constexpr auto kGFLOP = (2*(long)kSizeM*(long)kSizeN*(long)kSizeK) / (1000.0*1000.0*1000.0);

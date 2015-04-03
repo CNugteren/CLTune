@@ -62,7 +62,7 @@ int main() {
   for (auto &item: mat_c) { item = 0.0; }
 
   // Initializes the tuner (platform 0, device 1)
-  cltune::Tuner tuner(0, 0);
+  cltune::Tuner tuner(0, 1);
   
   // Adds a heavily tuneable kernel and some example parameter values. Others can be added, but for
   // this example this already leads to plenty of kernels to test.
