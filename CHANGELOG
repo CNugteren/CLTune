@@ -1,4 +1,9 @@
 
+Version 1.3.1
+- Fixed simulated annealing's random number generation
+- Added new FindOpenCL CMake script
+- Added option to print database-formatted output of best results
+
 Version 1.3.0
 - Allow users to select a search strategy through the API
 - Added support for the simulated annealing search method
