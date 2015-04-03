@@ -55,7 +55,7 @@ find_package(OpenCL REQUIRED)
 # The includes
 include_directories(
     ${cltune_SOURCE_DIR}/include
-    ${OpenCL_INCLUDE_DIR})
+    ${OPENCL_INCLUDE_DIRS})
 
 # Gathers all source-files
 set(TUNER
@@ -71,7 +71,7 @@ set(TUNER
 
 # Links the library
 add_library(cltune SHARED ${TUNER})
-target_link_libraries(cltune ${OpenCL_LIBRARY})
+target_link_libraries(cltune ${OPENCL_LIBRARIES})
 
 # ==================================================================================================
 # Optional: Enable compilation of sample programs
@@ -81,9 +81,9 @@ if (ENABLE_SAMPLES)
     add_executable(sample_simple samples/simple.cc)
     add_executable(sample_gemm samples/gemm.cc)
     add_executable(sample_gemm_annealing samples/gemm_annealing.cc)
-    target_link_libraries(sample_simple cltune ${OpenCL_LIBRARY} ${OpenMP_LIBRARY})
-    target_link_libraries(sample_gemm cltune ${OpenCL_LIBRARY} ${OpenMP_LIBRARY})
-    target_link_libraries(sample_gemm_annealing cltune ${OpenCL_LIBRARY} ${OpenMP_LIBRARY})
+    target_link_libraries(sample_simple cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
+    target_link_libraries(sample_gemm cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
+    target_link_libraries(sample_gemm_annealing cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
 
 endif()
 # ==================================================================================================
@@ -97,7 +97,7 @@ if (ENABLE_TESTS)
 
     # Compiles the tests
     add_executable(unit_tests test/tuner.cc test/kernel_info.cc)
-    target_link_libraries(unit_tests gtest gtest_main cltune ${OpenCL_LIBRARY})
+    target_link_libraries(unit_tests gtest gtest_main cltune ${OPENCL_LIBRARIES})
 
     # Adds the tests
     add_test(
