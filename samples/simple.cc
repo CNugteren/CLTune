@@ -55,7 +55,7 @@ int main() {
   for (auto &item: vec_y) { item = 0.0; }
 
   // Initializes the tuner (platform 0, device 1)
-  cltune::Tuner tuner(0, 0);
+  cltune::Tuner tuner(0, 1);
 
   // Adds a kernel which supports unrolling through the UNROLL parameter. Note that the kernel
   // itself needs to implement the UNROLL parameter and (in this case) only accepts a limited
