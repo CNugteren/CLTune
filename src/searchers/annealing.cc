@@ -44,6 +44,7 @@ Annealing::Annealing(const Configurations &configurations,
     current_state_(0),
     neighbour_state_(0),
     num_already_visisted_states_(0),
+    rd_(),
     generator_(rd_()),
     int_distribution_(0, configurations_.size()),
     probability_distribution_(0.0, 1.0) {
