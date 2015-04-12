@@ -25,7 +25,7 @@
 //
 // =================================================================================================
 
-#include "tuner/internal/kernel_info.h"
+#include "cltune/kernel_info.h"
 
 #include <memory>
 

@@ -25,13 +25,13 @@
 //
 // =================================================================================================
 
-#ifndef CLBLAS_TUNER_SEARCHERS_ANNEALING_H_
-#define CLBLAS_TUNER_SEARCHERS_ANNEALING_H_
+#ifndef CLTUNE_SEARCHERS_ANNEALING_H_
+#define CLTUNE_SEARCHERS_ANNEALING_H_
 
 #include <vector>
 #include <random>
 
-#include "tuner/internal/searcher.h"
+#include "cltune/searcher.h"
 
 namespace cltune {
 // =================================================================================================
@@ -91,5 +91,5 @@ class Annealing: public Searcher {
 // =================================================================================================
 } // namespace cltune
 
-// CLBLAS_TUNER_SEARCHERS_ANNEALING_H_
+// CLTUNE_SEARCHERS_ANNEALING_H_
 #endif

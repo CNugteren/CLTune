@@ -27,14 +27,13 @@
 //
 // =================================================================================================
 
-#ifndef CLBLAS_TUNER_OPENCL_H_
-#define CLBLAS_TUNER_OPENCL_H_
+#ifndef CLTUNE_OPENCL_H_
+#define CLTUNE_OPENCL_H_
 
 #include <string>
 #include <vector>
 #include <stdexcept>
 
-// The C++ OpenCL wrapper
 #include "cl.hpp"
 
 namespace cltune {
@@ -43,6 +42,12 @@ namespace cltune {
 // See comment at top of file for a description of the class
 class OpenCL {
  public:
+  
+  // Messages printed to stdout (in colours)
+  static const std::string kMessageFull;
+
+  // Types of devices to consider
+  const cl_device_type kDeviceType = CL_DEVICE_TYPE_ALL;
 
   // Converts an unsigned integer to a string by first casting it to a long long integer. This is
   // required for older compilers that do not fully implement std::to_string (part of C++11).
@@ -57,9 +62,6 @@ class OpenCL {
         std::runtime_error(message+" [code: "+ToString(status)+"]") {
     };
   };
-
-  // Types of devices to consider
-  const cl_device_type kDeviceType = CL_DEVICE_TYPE_ALL;
 
   // Initializes the OpenCL platform, device, and creates a context and a queue
   explicit OpenCL(const size_t platform_id, const size_t device_id);
@@ -97,5 +99,5 @@ class OpenCL {
 // =================================================================================================
 } // namespace cltune
 
-// CLBLAS_TUNER_OPENCL_H_
+// CLTUNE_OPENCL_H_
 #endif

@@ -34,7 +34,7 @@
 #include <vector>
 
 // Includes the OpenCL tuner library
-#include "tuner/tuner.h"
+#include "cltune.h"
 
 // Helper function to determine whether or not 'a' is a multiple of 'b'
 bool IsMultiple(int a, int b) {

@@ -27,18 +27,15 @@
 //
 // =================================================================================================
 
-#ifndef CLBLAS_TUNER_MEMORY_H_
-#define CLBLAS_TUNER_MEMORY_H_
+#ifndef CLTUNE_MEMORY_H_
+#define CLTUNE_MEMORY_H_
 
 #include <string>
 #include <vector>
 #include <stdexcept>
 #include <memory>
 
-// The C++ OpenCL wrapper
-#include "tuner/internal/opencl.h"
-
-#include "cl.hpp"
+#include "cltune/opencl.h"
 
 namespace cltune {
 // =================================================================================================
@@ -82,5 +79,5 @@ class Memory {
 // =================================================================================================
 } // namespace cltune
 
-// CLBLAS_TUNER_MEMORY_H_
+// CLTUNE_MEMORY_H_
 #endif

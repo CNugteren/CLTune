@@ -28,8 +28,8 @@
 //
 // =================================================================================================
 
-#ifndef CLBLAS_TUNER_KERNEL_INFO_H_
-#define CLBLAS_TUNER_KERNEL_INFO_H_
+#ifndef CLTUNE_KERNEL_INFO_H_
+#define CLTUNE_KERNEL_INFO_H_
 
 #include <string>
 #include <vector>
@@ -37,11 +37,8 @@
 #include <stdexcept>
 #include <functional>
 
-// The C++ OpenCL wrapper
 #include "cl.hpp"
-
-// Include other classes and structures
-#include "tuner/internal/string_range.h"
+#include "cltune/string_range.h"
 
 namespace cltune {
 // =================================================================================================
@@ -162,5 +159,5 @@ class KernelInfo {
 // =================================================================================================
 } // namespace cltune
 
-// CLBLAS_TUNER_KERNEL_INFO_H_
+// CLTUNE_KERNEL_INFO_H_
 #endif

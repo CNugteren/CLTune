@@ -30,7 +30,7 @@
 #include <vector>
 
 // Includes the OpenCL tuner library
-#include "tuner/tuner.h"
+#include "cltune.h"
 
 // =================================================================================================
 

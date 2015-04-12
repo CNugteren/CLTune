@@ -25,7 +25,7 @@
 //
 // =================================================================================================
 
-#include "tuner/tuner.h"
+#include "cltune.h"
 
 #include <algorithm>
 #include <iostream>
@@ -34,6 +34,10 @@
 #include <cmath>
 #include <limits>
 #include <regex>
+
+#include "cltune/searchers/full_search.h"
+#include "cltune/searchers/random_search.h"
+#include "cltune/searchers/annealing.h"
 
 namespace cltune {
 // =================================================================================================
@@ -470,49 +474,59 @@ Tuner::TunerResult Tuner::RunKernel(const std::string &source, const KernelInfo 
   auto global = kernel.global();
   auto local = kernel.local();
 
-  // Verifies the global/local thread-sizes against device properties
-  auto local_threads = opencl_->VerifyThreadSizes(global, local);
+  // In case of an exception, skip this run
+  try {
 
-  // Obtains and verifies the local memory usage of the kernel
-  auto local_memory = static_cast<size_t>(0);
-  status = tune_kernel.getWorkGroupInfo(opencl_->device(), CL_KERNEL_LOCAL_MEM_SIZE, &local_memory);
-  if (status != CL_SUCCESS) { throw OpenCL::Exception("Get kernel information error", status); }
-  opencl_->VerifyLocalMemory(local_memory);
+    // Verifies the global/local thread-sizes against device properties
+    auto local_threads = opencl_->VerifyThreadSizes(global, local);
 
-  // Prepares the kernel
-  status = opencl_->queue().finish();
-  if (status != CL_SUCCESS) { throw OpenCL::Exception("Command queue error", status); }
+    // Obtains and verifies the local memory usage of the kernel
+    auto local_memory = static_cast<size_t>(0);
+    status = tune_kernel.getWorkGroupInfo(opencl_->device(), CL_KERNEL_LOCAL_MEM_SIZE, &local_memory);
+    if (status != CL_SUCCESS) { throw OpenCL::Exception("Get kernel information error", status); }
+    opencl_->VerifyLocalMemory(local_memory);
 
-  // Runs the kernel (this is the timed part)
-  fprintf(stdout, "%s Running %s\n", kMessageRun.c_str(), kernel.name().c_str());
-  std::vector<cl::Event> events(kNumRuns);
-  for (auto t=0; t<kNumRuns; ++t) {
-    status = opencl_->queue().enqueueNDRangeKernel(tune_kernel, cl::NullRange, global, local, NULL, &events[t]);
-    if (status != CL_SUCCESS) { throw OpenCL::Exception("Kernel launch error", status); }
-    status = events[t].wait();
-    if (status != CL_SUCCESS) {
-      fprintf(stdout, "%s Kernel %s failed\n", kMessageFailure.c_str(), kernel.name().c_str());
-      throw OpenCL::Exception("Kernel error", status);
+    // Prepares the kernel
+    status = opencl_->queue().finish();
+    if (status != CL_SUCCESS) { throw OpenCL::Exception("Command queue error", status); }
+
+    // Runs the kernel (this is the timed part)
+    fprintf(stdout, "%s Running %s\n", kMessageRun.c_str(), kernel.name().c_str());
+    std::vector<cl::Event> events(kNumRuns);
+    for (auto t=0; t<kNumRuns; ++t) {
+      status = opencl_->queue().enqueueNDRangeKernel(tune_kernel, cl::NullRange, global, local, NULL, &events[t]);
+      if (status != CL_SUCCESS) { throw OpenCL::Exception("Kernel launch error", status); }
+      status = events[t].wait();
+      if (status != CL_SUCCESS) {
+        fprintf(stdout, "%s Kernel %s failed\n", kMessageFailure.c_str(), kernel.name().c_str());
+        throw OpenCL::Exception("Kernel error", status);
+      }
     }
+    opencl_->queue().finish();
+
+    // Collects the timing information
+    auto elapsed_time = std::numeric_limits<double>::max();
+    for (auto t=0; t<kNumRuns; ++t) {
+      auto start_time = events[t].getProfilingInfo<CL_PROFILING_COMMAND_START>(&status);
+      auto end_time = events[t].getProfilingInfo<CL_PROFILING_COMMAND_END>(&status);
+      elapsed_time = std::min(elapsed_time, (end_time - start_time) / (1000.0 * 1000.0));
+    }
+
+    // Prints diagnostic information
+    fprintf(stdout, "%s Completed %s (%.0lf ms) - %lu out of %lu\n",
+            kMessageOK.c_str(), kernel.name().c_str(), elapsed_time,
+            configuration_id+1, num_configurations);
+
+    // Computes the result of the tuning
+    TunerResult result = {kernel.name(), elapsed_time, local_threads, false, {}};
+    return result;
   }
-  opencl_->queue().finish();
 
-  // Collects the timing information
-  auto elapsed_time = std::numeric_limits<double>::max();
-  for (auto t=0; t<kNumRuns; ++t) {
-    auto start_time = events[t].getProfilingInfo<CL_PROFILING_COMMAND_START>(&status);
-    auto end_time = events[t].getProfilingInfo<CL_PROFILING_COMMAND_END>(&status);
-    elapsed_time = std::min(elapsed_time, (end_time - start_time) / (1000.0 * 1000.0));
+  // There was an exception, now return an invalid tuner results
+  catch(std::exception& e) {
+    TunerResult result = {kernel.name(), std::numeric_limits<double>::max(), 0, false, {}};
+    return result;
   }
-
-  // Prints diagnostic information
-  fprintf(stdout, "%s Completed %s (%.0lf ms) - %lu out of %lu\n",
-          kMessageOK.c_str(), kernel.name().c_str(), elapsed_time,
-          configuration_id+1, num_configurations);
-
-  // Computes the result of the tuning
-  TunerResult result = {kernel.name(), elapsed_time, local_threads, false, {}};
-  return result;
 }
 
 // =================================================================================================

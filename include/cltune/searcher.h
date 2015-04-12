@@ -5,8 +5,10 @@
 //
 // Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
 //
-// This file contains the StringRange class, which is the same as the OpenCL cl::NDRange class, but
-// with string-based representations of the dimensions instead.
+// This file contains a base class for search algorithms. It is meant to be inherited by other less
+// abstract search algorithms, such as full search or a random search. The pure virtual functions
+// declared here are customised in the derived classes. This class stores all configurations which
+// could be examined, and receives feedback from the tuner in the form of execution time.
 //
 // -------------------------------------------------------------------------------------------------
 //
@@ -26,37 +28,48 @@
 //
 // =================================================================================================
 
-#ifndef CLBLAS_TUNER_STRING_RANGE_H_
-#define CLBLAS_TUNER_STRING_RANGE_H_
+#ifndef CLTUNE_SEARCHER_H_
+#define CLTUNE_SEARCHER_H_
 
-#include <string>
 #include <vector>
+
+#include "cltune/kernel_info.h"
 
 namespace cltune {
 // =================================================================================================
 
 // See comment at top of file for a description of the class
-class StringRange {
+class Searcher {
  public:
-  // Initializes the class with 0, 1, 2, or 3 dimensions. These constructors are not explicit
-  // because they are used by clients in the form of initializer lists when for example calling
-  // cltuner::MulGlobalSize.
-  StringRange();
-  StringRange(std::string x);
-  StringRange(std::string x, std::string y);
-  StringRange(std::string x, std::string y, std::string z);
 
-  // Accessor of sizes per dimension (getter)
-  std::string sizes(int id) const { return sizes_[id]; }
+  // Short-hand for a list of configurations
+  using Configurations = std::vector<KernelInfo::Configuration>;
 
- private:
+  // Base constructor
+  Searcher(const Configurations &configurations);
 
-  // Member variables
-  std::vector<std::string> sizes_;
+  // Pushes feedback (in the form of execution time) from the tuner to the search algorithm
+  virtual void PushExecutionTime(const double execution_time);
+
+  // Prints the log of the search process
+  void PrintLog(FILE* fp) const;
+
+  // Pure virtual functions: these are overriden by the derived classes
+  virtual KernelInfo::Configuration GetConfiguration() = 0;
+  virtual void CalculateNextIndex() = 0;
+  virtual size_t NumConfigurations() = 0;
+
+ protected:
+
+  // Protected member variables accessible by derived classes
+  Configurations configurations_;
+  std::vector<double> execution_times_;
+  std::vector<size_t> explored_indices_;
+  size_t index_;
 };
 
 // =================================================================================================
 } // namespace cltune
 
-// CLBLAS_TUNER_STRING_RANGE_H_
+// CLTUNE_SEARCHER_H_
 #endif
