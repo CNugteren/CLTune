@@ -5,9 +5,8 @@
 //
 // Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
 //
-// This file implements the OpenCL Memory class, a container for both host and device data. The
-// device data is based on the OpenCL C++ API and the cl::Buffer class, while the host data is based
-// on the std::vector class. The Memory class is templated to support different types.
+// This file implements a random-search algorithm, testing the configurations randomly. However,
+// it does not consider the same configuration twice. It is derived from the basic search class.
 //
 // -------------------------------------------------------------------------------------------------
 //
@@ -27,57 +26,38 @@
 //
 // =================================================================================================
 
-#ifndef CLTUNE_MEMORY_H_
-#define CLTUNE_MEMORY_H_
+#ifndef CLTUNE_SEARCHERS_RANDOM_SEARCH_H_
+#define CLTUNE_SEARCHERS_RANDOM_SEARCH_H_
 
-#include <string>
 #include <vector>
-#include <stdexcept>
-#include <memory>
 
-#include "internal/opencl.h"
+#include "cltune/searcher.h"
 
 namespace cltune {
 // =================================================================================================
 
-// Enumeration of currently supported data-types by this class
-enum class MemType { kInt, kFloat, kDouble };
-
 // See comment at top of file for a description of the class
-template <typename T>
-class Memory {
+class RandomSearch: public Searcher {
  public:
 
-  // Static variable to get the memory type based on a template argument
-  const static MemType type;
+  // Takes additionally a fraction of configurations to try (1.0 == full search)
+  RandomSearch(const Configurations &configurations, const double fraction);
 
-  // Initializes the host and device data (with zeroes or based on a source-vector)
-  explicit Memory(const size_t size, cl::CommandQueue queue, const cl::Context &context);
-  explicit Memory(const size_t size, cl::CommandQueue queue, const cl::Context &context,
-                  const std::vector<T> &source);
+  // Retrieves the next configuration to test
+  virtual KernelInfo::Configuration GetConfiguration() override;
 
-  // Accessors to the host/device data
-  std::vector<T> host() const { return host_; }
-  std::shared_ptr<cl::Buffer> device() const { return device_; }
+  // Calculates the next index
+  virtual void CalculateNextIndex() override;
 
-  // Downloads the device data onto the host
-  void UploadToDevice();
-  void DownloadFromDevice();
+  // Retrieves the total number of configurations to try
+  virtual size_t NumConfigurations() override;
 
  private:
-
-  // The data (both host and device)
-  const size_t size_;
-  std::vector<T> host_;
-  std::shared_ptr<cl::Buffer> device_;
-
-  // Pointer to the OpenCL command queue
-  cl::CommandQueue queue_;
+    double fraction_;
 };
-
 
 // =================================================================================================
 } // namespace cltune
 
-// CLTUNE_MEMORY_H_
+// CLTUNE_SEARCHERS_RANDOM_SEARCH_H_
 #endif

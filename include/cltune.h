@@ -37,8 +37,8 @@
 #include <memory>
 #include <functional>
 
-#include "internal/memory.h"
-#include "internal/kernel_info.h"
+#include "cltune/memory.h"
+#include "cltune/kernel_info.h"
 
 namespace cltune {
 // =================================================================================================

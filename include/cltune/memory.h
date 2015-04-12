@@ -5,10 +5,9 @@
 //
 // Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
 //
-// This file contains a base class for search algorithms. It is meant to be inherited by other less
-// abstract search algorithms, such as full search or a random search. The pure virtual functions
-// declared here are customised in the derived classes. This class stores all configurations which
-// could be examined, and receives feedback from the tuner in the form of execution time.
+// This file implements the OpenCL Memory class, a container for both host and device data. The
+// device data is based on the OpenCL C++ API and the cl::Buffer class, while the host data is based
+// on the std::vector class. The Memory class is templated to support different types.
 //
 // -------------------------------------------------------------------------------------------------
 //
@@ -28,48 +27,57 @@
 //
 // =================================================================================================
 
-#ifndef CLTUNE_SEARCHER_H_
-#define CLTUNE_SEARCHER_H_
+#ifndef CLTUNE_MEMORY_H_
+#define CLTUNE_MEMORY_H_
 
+#include <string>
 #include <vector>
+#include <stdexcept>
+#include <memory>
 
-#include "internal/kernel_info.h"
+#include "cltune/opencl.h"
 
 namespace cltune {
 // =================================================================================================
 
+// Enumeration of currently supported data-types by this class
+enum class MemType { kInt, kFloat, kDouble };
+
 // See comment at top of file for a description of the class
-class Searcher {
+template <typename T>
+class Memory {
  public:
 
-  // Short-hand for a list of configurations
-  using Configurations = std::vector<KernelInfo::Configuration>;
+  // Static variable to get the memory type based on a template argument
+  const static MemType type;
 
-  // Base constructor
-  Searcher(const Configurations &configurations);
+  // Initializes the host and device data (with zeroes or based on a source-vector)
+  explicit Memory(const size_t size, cl::CommandQueue queue, const cl::Context &context);
+  explicit Memory(const size_t size, cl::CommandQueue queue, const cl::Context &context,
+                  const std::vector<T> &source);
 
-  // Pushes feedback (in the form of execution time) from the tuner to the search algorithm
-  virtual void PushExecutionTime(const double execution_time);
+  // Accessors to the host/device data
+  std::vector<T> host() const { return host_; }
+  std::shared_ptr<cl::Buffer> device() const { return device_; }
 
-  // Prints the log of the search process
-  void PrintLog(FILE* fp) const;
+  // Downloads the device data onto the host
+  void UploadToDevice();
+  void DownloadFromDevice();
 
-  // Pure virtual functions: these are overriden by the derived classes
-  virtual KernelInfo::Configuration GetConfiguration() = 0;
-  virtual void CalculateNextIndex() = 0;
-  virtual size_t NumConfigurations() = 0;
+ private:
 
- protected:
+  // The data (both host and device)
+  const size_t size_;
+  std::vector<T> host_;
+  std::shared_ptr<cl::Buffer> device_;
 
-  // Protected member variables accessible by derived classes
-  Configurations configurations_;
-  std::vector<double> execution_times_;
-  std::vector<size_t> explored_indices_;
-  size_t index_;
+  // Pointer to the OpenCL command queue
+  cl::CommandQueue queue_;
 };
+
 
 // =================================================================================================
 } // namespace cltune
 
-// CLTUNE_SEARCHER_H_
+// CLTUNE_MEMORY_H_
 #endif

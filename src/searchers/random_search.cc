@@ -25,7 +25,7 @@
 //
 // =================================================================================================
 
-#include "internal/searchers/random_search.h"
+#include "cltune/searchers/random_search.h"
 
 #include <algorithm>
 

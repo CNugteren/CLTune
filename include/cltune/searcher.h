@@ -5,8 +5,10 @@
 //
 // Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
 //
-// This file implements a full-search algorithm, testing all configurations exhaustively. It is
-// derived from the basic search class Searcher.
+// This file contains a base class for search algorithms. It is meant to be inherited by other less
+// abstract search algorithms, such as full search or a random search. The pure virtual functions
+// declared here are customised in the derived classes. This class stores all configurations which
+// could be examined, and receives feedback from the tuner in the form of execution time.
 //
 // -------------------------------------------------------------------------------------------------
 //
@@ -26,35 +28,48 @@
 //
 // =================================================================================================
 
-#ifndef CLTUNE_SEARCHERS_FULL_SEARCH_H_
-#define CLTUNE_SEARCHERS_FULL_SEARCH_H_
+#ifndef CLTUNE_SEARCHER_H_
+#define CLTUNE_SEARCHER_H_
 
 #include <vector>
 
-#include "internal/searcher.h"
+#include "cltune/kernel_info.h"
 
 namespace cltune {
 // =================================================================================================
 
 // See comment at top of file for a description of the class
-class FullSearch: public Searcher {
+class Searcher {
  public:
-  FullSearch(const Configurations &configurations);
 
-  // Retrieves the next configuration to test
-  virtual KernelInfo::Configuration GetConfiguration() override;
+  // Short-hand for a list of configurations
+  using Configurations = std::vector<KernelInfo::Configuration>;
 
-  // Calculates the next index
-  virtual void CalculateNextIndex() override;
+  // Base constructor
+  Searcher(const Configurations &configurations);
 
-  // Retrieves the total number of configurations to try
-  virtual size_t NumConfigurations() override;
+  // Pushes feedback (in the form of execution time) from the tuner to the search algorithm
+  virtual void PushExecutionTime(const double execution_time);
 
- private:
+  // Prints the log of the search process
+  void PrintLog(FILE* fp) const;
+
+  // Pure virtual functions: these are overriden by the derived classes
+  virtual KernelInfo::Configuration GetConfiguration() = 0;
+  virtual void CalculateNextIndex() = 0;
+  virtual size_t NumConfigurations() = 0;
+
+ protected:
+
+  // Protected member variables accessible by derived classes
+  Configurations configurations_;
+  std::vector<double> execution_times_;
+  std::vector<size_t> explored_indices_;
+  size_t index_;
 };
 
 // =================================================================================================
 } // namespace cltune
 
-// CLTUNE_SEARCHERS_FULL_SEARCH_H_
+// CLTUNE_SEARCHER_H_
 #endif

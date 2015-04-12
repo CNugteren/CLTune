@@ -35,9 +35,9 @@
 #include <limits>
 #include <regex>
 
-#include "internal/searchers/full_search.h"
-#include "internal/searchers/random_search.h"
-#include "internal/searchers/annealing.h"
+#include "cltune/searchers/full_search.h"
+#include "cltune/searchers/random_search.h"
+#include "cltune/searchers/annealing.h"
 
 namespace cltune {
 // =================================================================================================
