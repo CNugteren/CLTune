@@ -70,16 +70,18 @@ OpenCL::OpenCL(const size_t platform_id, const size_t device_id):
   context_ = cl::Context({device_});
   queue_ = cl::CommandQueue(context_, device_, CL_QUEUE_PROFILING_ENABLE);
 
-  // Gets device properties
-  device_name_       = device_.getInfo<CL_DEVICE_NAME>();
-  max_local_dims_    = device_.getInfo<CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS>();
-  max_local_threads_ = device_.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
-  max_local_sizes_   = device_.getInfo<CL_DEVICE_MAX_WORK_ITEM_SIZES>();
-  local_memory_size_ = device_.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>();
+  // Gets platform and device properties
+  auto opencl_version = device_.getInfo<CL_DEVICE_VERSION>();
+  device_name_        = device_.getInfo<CL_DEVICE_NAME>();
+  max_local_dims_     = device_.getInfo<CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS>();
+  max_local_threads_  = device_.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
+  max_local_sizes_    = device_.getInfo<CL_DEVICE_MAX_WORK_ITEM_SIZES>();
+  local_memory_size_  = device_.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>();
 
   // Prints the device name
   if (!suppress_output_) {
-    fprintf(stdout, "%s Device name: '%s'\n", Tuner::kMessageFull.c_str(), device_name_.c_str());
+    fprintf(stdout, "%s Device name: '%s' (%s)\n", Tuner::kMessageFull.c_str(),
+            device_name_.c_str(), opencl_version.c_str());
   }
 }
 
