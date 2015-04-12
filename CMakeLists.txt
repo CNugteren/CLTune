@@ -35,6 +35,14 @@ option(TESTS "Enable compilation of the Google tests" OFF)
 
 # ==================================================================================================
 
+# RPATH settings
+set(CMAKE_SKIP_BUILD_RPATH false) # Use, i.e. don't skip the full RPATH for the build tree
+set(CMAKE_BUILD_WITH_INSTALL_RPATH false) # When building, don't use the install RPATH already
+set(CMAKE_INSTALL_RPATH "") # The RPATH to be used when installing
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH false) # Don't add the automatically determined parts
+
+# ==================================================================================================
+
 # Compiler-version check
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
@@ -78,7 +86,16 @@ target_link_libraries(cltune ${OPENCL_LIBRARIES})
 
 # Installs the library
 install(TARGETS cltune DESTINATION lib)
-install(FILES include/cltune.h include/cl.hpp DESTINATION include)
+install(FILES
+    include/cltune.h
+    include/cl.hpp
+    DESTINATION include)
+install(FILES
+    include/cltune/opencl.h
+    include/cltune/memory.h
+    include/cltune/string_range.h
+    include/cltune/kernel_info.h
+    DESTINATION include/cltune)
 
 # ==================================================================================================
 # Optional: Enables compilation of sample programs
@@ -91,9 +108,8 @@ if (SAMPLES)
     target_link_libraries(sample_simple cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
     target_link_libraries(sample_gemm cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
     target_link_libraries(sample_gemm_annealing cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
-    install(TARGETS sample_simple DESTINATION bin)
-    install(TARGETS sample_gemm DESTINATION bin)
-    install(TARGETS sample_gemm_annealing DESTINATION bin)
+
+    # Note: these are not installed because they depend on their separate OpenCL kernel files
 
 endif()
 # ==================================================================================================
@@ -108,7 +124,6 @@ if (TESTS)
     # Compiles the tests
     add_executable(unit_tests test/tuner.cc test/kernel_info.cc)
     target_link_libraries(unit_tests gtest gtest_main cltune ${OPENCL_LIBRARIES})
-    install(TARGETS unit_tests DESTINATION bin)
 
     # Adds the tests
     add_test(
