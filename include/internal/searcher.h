@@ -28,12 +28,12 @@
 //
 // =================================================================================================
 
-#ifndef CLBLAS_TUNER_SEARCHER_H_
-#define CLBLAS_TUNER_SEARCHER_H_
+#ifndef CLTUNE_SEARCHER_H_
+#define CLTUNE_SEARCHER_H_
 
 #include <vector>
 
-#include "tuner/internal/kernel_info.h"
+#include "internal/kernel_info.h"
 
 namespace cltune {
 // =================================================================================================
@@ -71,5 +71,5 @@ class Searcher {
 // =================================================================================================
 } // namespace cltune
 
-// CLBLAS_TUNER_SEARCHER_H_
+// CLTUNE_SEARCHER_H_
 #endif

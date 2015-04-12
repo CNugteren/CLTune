@@ -25,7 +25,7 @@
 //
 // =================================================================================================
 
-#include "tuner/internal/searchers/random_search.h"
+#include "internal/searchers/random_search.h"
 
 #include <algorithm>
 

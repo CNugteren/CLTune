@@ -25,10 +25,14 @@
 //
 // =================================================================================================
 
-#include "tuner/internal/opencl.h"
-#include "cltune.h"
+#include "internal/opencl.h"
 
 namespace cltune {
+// =================================================================================================
+
+// Messages printed to stdout (in colours)
+const std::string OpenCL::kMessageFull = "\x1b[32m[==========]\x1b[0m";
+
 // =================================================================================================
 
 // Gets a list of all platforms/devices and chooses the selected ones. Initializes OpenCL and also
@@ -39,7 +43,7 @@ OpenCL::OpenCL(const size_t platform_id, const size_t device_id):
   // Starting on a new platform/device
   if (!suppress_output_) {
     fprintf(stdout, "\n%s Initializing OpenCL on platform %lu device %lu\n",
-            Tuner::kMessageFull.c_str(), platform_id, device_id);
+            kMessageFull.c_str(), platform_id, device_id);
   }
 
   // Initializes the OpenCL platform
@@ -78,7 +82,7 @@ OpenCL::OpenCL(const size_t platform_id, const size_t device_id):
 
   // Prints the device name
   if (!suppress_output_) {
-    fprintf(stdout, "%s Device name: '%s' (%s)\n", Tuner::kMessageFull.c_str(),
+    fprintf(stdout, "%s Device name: '%s' (%s)\n", kMessageFull.c_str(),
             device_name_.c_str(), opencl_version.c_str());
   }
 }

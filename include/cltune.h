@@ -37,11 +37,8 @@
 #include <memory>
 #include <functional>
 
-// Include other classes
-#include "tuner/internal/memory.h"
-#include "tuner/internal/opencl.h"
-#include "tuner/internal/kernel_info.h"
-#include "tuner/internal/string_range.h"
+#include "internal/memory.h"
+#include "internal/kernel_info.h"
 
 namespace cltune {
 // =================================================================================================

@@ -5,9 +5,8 @@
 //
 // Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
 //
-// This file implements the OpenCL Memory class, a container for both host and device data. The
-// device data is based on the OpenCL C++ API and the cl::Buffer class, while the host data is based
-// on the std::vector class. The Memory class is templated to support different types.
+// This file contains the StringRange class, which is the same as the OpenCL cl::NDRange class, but
+// with string-based representations of the dimensions instead.
 //
 // -------------------------------------------------------------------------------------------------
 //
@@ -27,60 +26,38 @@
 //
 // =================================================================================================
 
-#ifndef CLBLAS_TUNER_MEMORY_H_
-#define CLBLAS_TUNER_MEMORY_H_
+#ifndef CLTUNE_STRING_RANGE_H_
+#define CLTUNE_STRING_RANGE_H_
 
 #include <string>
 #include <vector>
-#include <stdexcept>
-#include <memory>
-
-// The C++ OpenCL wrapper
-#include "tuner/internal/opencl.h"
-
-#include "cl.hpp"
 
 namespace cltune {
 // =================================================================================================
 
-// Enumeration of currently supported data-types by this class
-enum class MemType { kInt, kFloat, kDouble };
-
 // See comment at top of file for a description of the class
-template <typename T>
-class Memory {
+class StringRange {
  public:
+  
+  // Initializes the class with 0, 1, 2, or 3 dimensions. These constructors are not explicit
+  // because they are used by clients in the form of initializer lists when for example calling
+  // cltuner::MulGlobalSize.
+  StringRange();
+  StringRange(std::string x);
+  StringRange(std::string x, std::string y);
+  StringRange(std::string x, std::string y, std::string z);
 
-  // Static variable to get the memory type based on a template argument
-  const static MemType type;
-
-  // Initializes the host and device data (with zeroes or based on a source-vector)
-  explicit Memory(const size_t size, cl::CommandQueue queue, const cl::Context &context);
-  explicit Memory(const size_t size, cl::CommandQueue queue, const cl::Context &context,
-                  const std::vector<T> &source);
-
-  // Accessors to the host/device data
-  std::vector<T> host() const { return host_; }
-  std::shared_ptr<cl::Buffer> device() const { return device_; }
-
-  // Downloads the device data onto the host
-  void UploadToDevice();
-  void DownloadFromDevice();
+  // Accessor of sizes per dimension (getter)
+  std::string sizes(int id) const { return sizes_[id]; }
 
  private:
 
-  // The data (both host and device)
-  const size_t size_;
-  std::vector<T> host_;
-  std::shared_ptr<cl::Buffer> device_;
-
-  // Pointer to the OpenCL command queue
-  cl::CommandQueue queue_;
+  // Member variables
+  std::vector<std::string> sizes_;
 };
-
 
 // =================================================================================================
 } // namespace cltune
 
-// CLBLAS_TUNER_MEMORY_H_
+// CLTUNE_STRING_RANGE_H_
 #endif

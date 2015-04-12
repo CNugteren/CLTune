@@ -25,7 +25,7 @@
 //
 // =================================================================================================
 
-#include "tuner/internal/searchers/annealing.h"
+#include "internal/searchers/annealing.h"
 
 #include <limits>
 #include <cmath>
