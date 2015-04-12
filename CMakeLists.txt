@@ -25,17 +25,20 @@
 # CMake project
 cmake_minimum_required(VERSION 2.8)
 project("cltune" C CXX)
+set(cltune_VERSION_MAJOR 1)
+set(cltune_VERSION_MINOR 3)
+set(cltune_VERSION_PATCH 2)
 
 # Options
-option(ENABLE_SAMPLES "Enable compilation of sample programs" ON)
-option(ENABLE_TESTS "Enable compilation of the Google tests" OFF)
+option(SAMPLES "Enable compilation of sample programs" ON)
+option(TESTS "Enable compilation of the Google tests" OFF)
 
 # ==================================================================================================
 
 # Compiler-version check
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
-        message(FATAL_ERROR "GCC version must be at least 4.7 (for C++11)")
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
+        message(FATAL_ERROR "GCC version must be at least 4.9 (for full C++11 compatibility)")
     endif()
 endif()
 
@@ -69,13 +72,17 @@ set(TUNER
     src/searchers/random_search.cc
     src/searchers/annealing.cc)
 
-# Links the library
+# Creates and links the library
 add_library(cltune SHARED ${TUNER})
 target_link_libraries(cltune ${OPENCL_LIBRARIES})
 
+# Installs the library
+install(TARGETS cltune DESTINATION lib)
+install(FILES include/cltune.h include/cl.hpp DESTINATION include)
+
 # ==================================================================================================
-# Optional: Enable compilation of sample programs
-if (ENABLE_SAMPLES)
+# Optional: Enables compilation of sample programs
+if (SAMPLES)
 
     # Adds sample programs
     add_executable(sample_simple samples/simple.cc)
@@ -84,11 +91,14 @@ if (ENABLE_SAMPLES)
     target_link_libraries(sample_simple cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
     target_link_libraries(sample_gemm cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
     target_link_libraries(sample_gemm_annealing cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
+    install(TARGETS sample_simple DESTINATION bin)
+    install(TARGETS sample_gemm DESTINATION bin)
+    install(TARGETS sample_gemm_annealing DESTINATION bin)
 
 endif()
 # ==================================================================================================
-# Optional: Enable compilation of the Google tests
-if (ENABLE_TESTS)
+# Optional: Enables compilation of the Google tests
+if (TESTS)
 
     # Enables Google Test tests (source-code is shipped with the project)
     add_subdirectory(external/gtest-1.7.0)
@@ -98,6 +108,7 @@ if (ENABLE_TESTS)
     # Compiles the tests
     add_executable(unit_tests test/tuner.cc test/kernel_info.cc)
     target_link_libraries(unit_tests gtest gtest_main cltune ${OPENCL_LIBRARIES})
+    install(TARGETS unit_tests DESTINATION bin)
 
     # Adds the tests
     add_test(
