@@ -28,8 +28,8 @@
 //
 // =================================================================================================
 
-#ifndef CLTUNE_TUNER_TUNER_H_
-#define CLTUNE_TUNER_TUNER_H_
+#ifndef CLTUNE_CLTUNE_H_
+#define CLTUNE_CLTUNE_H_
 
 #include <string>
 #include <vector>
@@ -42,9 +42,6 @@
 #include "tuner/internal/opencl.h"
 #include "tuner/internal/kernel_info.h"
 #include "tuner/internal/string_range.h"
-#include "tuner/internal/searchers/full_search.h"
-#include "tuner/internal/searchers/random_search.h"
-#include "tuner/internal/searchers/annealing.h"
 
 namespace cltune {
 // =================================================================================================
@@ -218,5 +215,5 @@ class Tuner {
 // =================================================================================================
 } // namespace cltune
 
-// CLTUNE_TUNER_TUNER_H_
+// CLTUNE_CLTUNE_H_
 #endif
