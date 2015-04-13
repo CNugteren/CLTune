@@ -367,7 +367,7 @@ void Tuner::PrintFormatted() const {
   }
 
   // Prints the best result in C++ database format
-  auto count = 0;
+  auto count = 0UL;
   PrintHeader("Printing best result in database format to stdout");
   fprintf(stdout, "{ \"%s\", { ", opencl_->device_name().c_str());
   for (auto &setting: best_result.configuration) {
@@ -602,7 +602,7 @@ bool Tuner::DownloadAndCompare(const MemArgument &device_buffer, const size_t i)
 
   // Compares the results (L2 norm)
   T* reference_output = (T*)reference_outputs_[i];
-  for (auto j=0; j<device_buffer.size; ++j) {
+  for (auto j=0UL; j<device_buffer.size; ++j) {
     l2_norm += fabs((double)reference_output[j] - (double)host_buffer[j]);
   }
 
