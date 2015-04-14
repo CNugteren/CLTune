@@ -51,9 +51,6 @@ class Tuner {
   static constexpr auto kMaxL2Norm = 1e-4; // This is the threshold for 'correctness'
   static constexpr auto kNumRuns = 1; // This is used for more-accurate execution time measurement
 
-  // Constants
-  static constexpr auto kMaxSearchArguments = 2;
-
   // Messages printed to stdout (in colours)
   static const std::string kMessageFull;
   static const std::string kMessageHead;
@@ -66,7 +63,7 @@ class Tuner {
   static const std::string kMessageBest;
 
   // Search methods
-  enum class SearchMethod{FullSearch, RandomSearch, Annealing};
+  enum class SearchMethod{FullSearch, RandomSearch, Annealing, PSO};
 
   // Helper structure to store an OpenCL memory argument for a kernel
   struct MemArgument {
@@ -138,6 +135,8 @@ class Tuner {
   void UseFullSearch();
   void UseRandomSearch(const float fraction);
   void UseAnnealing(const float fraction, const double max_temperature);
+  void UsePSO(const double fraction, const size_t swarm_size, const double influence_global,
+              const double influence_local, const double influence_random);
 
   // Output the search process to a file
   void OutputSearchLog(const std::string &filename);

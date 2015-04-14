@@ -69,7 +69,8 @@ int main() {
   // Configures the tuner to select the simulated annealing search method, setting the fraction of
   // the search space to explore (1/64th) and the maximum annealing temperature (relative to the
   // execution time in miliseconds).
-  tuner.UseAnnealing(1/64.0, 4.0);
+  //tuner.UseAnnealing(1/64.0, 4.0);
+  tuner.UsePSO(1/128.0f, 4, 0.4, 0.0, 0.2);
 
   // Outputs the search process to a file
   tuner.OutputSearchLog("search_log.txt");
