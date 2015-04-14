@@ -30,8 +30,27 @@
 // limitations under the License.
 //
 // =================================================================================================
-
-// Parameters set by the tuner
+//
+// Matrices are accessed as follows:
+// A: [k*M + m], with 'k' ranging from 0:K and 'm' from 0:M (m,k,m)
+// B: [k*N + n], with 'k' ranging from 0:K and 'n' from 0:N (n,k,n)
+// C: [n*M + m], with 'n' ranging from 0:N and 'm' from 0:M (m,n,m)
+//
+// Or as an image (assuming column-major)
+//       K                      
+//    o-------o                 
+//    |       |                 
+//  N | [B^T] |                 
+//    |       |                 
+//    o-------o                 
+//        K               N     
+//    o-------o        o-----o  
+//  M |  [A]  |      M | [C] |  
+//    |       |        |     |  
+//    o-------o        o-----o  
+//                              
+//
+// Parameters determined by the tuner
 // MWG       : Tile-size in dimension M (e.g. 64, 128)
 // NWG       : Tile-size in dimension N (e.g. 64, 128)
 // KWG       : Tile-size in dimension K (e.g. 8, 16)
@@ -47,6 +66,8 @@
 // SA        : Use local/shared memory to cache matrix A (1) or not (0)
 // SB        : Use local/shared memory to cache matrix B (1) or not (0)
 // PRECISION : Whether to use single (32) or double (64) precision data-types
+//
+// =================================================================================================
 
 // Helper parameters based on the above tuning parameters
 #define MWI (MWG/MDIMC)               // Work per work-item (M-dimension)
@@ -71,13 +92,17 @@
   typedef float8 real8;
   #define ZERO 0.0f
 #elif PRECISION == 64
-  #pragma OPENCL EXTENSION cl_khr_fp64 : enable
+  #if __OPENCL_VERSION__ <= CL_VERSION_1_1 // This the default on OpenCL 1.2 or higher
+     #pragma OPENCL EXTENSION cl_khr_fp64: enable
+  #endif
   typedef double real;
   typedef double2 real2;
   typedef double4 real4;
   typedef double8 real8;
   #define ZERO 0.0
 #endif
+
+// =================================================================================================
 
 // Data-widths in dimension M
 #if VWM == 1
@@ -106,7 +131,7 @@
 // Caches global off-chip memory into local (shared) memory on-chip. This function is specific for
 // caching the A input matrix.
 #if SA == 1
-inline void GlobalToLocalA(const __global realM* restrict agm, __local realM alm[KWG][MWG/VWM],
+inline void GlobalToLocalA(const __global realM* restrict agm, __local realM* alm,
                            const int kSizeM, const int tid, const int kwg) {
   const int la0 = tid % MDIMA;
   const int la1 = tid / MDIMA;
@@ -128,7 +153,7 @@ inline void GlobalToLocalA(const __global realM* restrict agm, __local realM alm
       int idk = kg + kwg;
 
       // Loads the data from global memory (not transposed) into the local memory
-      alm[kg][mg] = agm[idk*(kSizeM/VWM) + idm];
+      alm[kg*(MWG/VWM) + mg] = agm[idk*(kSizeM/VWM) + idm];
     }
   }
 }
@@ -136,7 +161,7 @@ inline void GlobalToLocalA(const __global realM* restrict agm, __local realM alm
 
 // Same as above, but now for the B input matrix
 #if SB == 1
-inline void GlobalToLocalB(const __global realN* restrict bgm, __local realN blm[KWG][NWG/VWN],
+inline void GlobalToLocalB(const __global realN* restrict bgm, __local realN* blm,
                            const int kSizeN, const int tid, const int kwg) {
   const int lb0 = tid % NDIMB;
   const int lb1 = tid / NDIMB;
@@ -158,7 +183,7 @@ inline void GlobalToLocalB(const __global realN* restrict bgm, __local realN blm
       int idk = kg + kwg;
 
       // Loads the data from global memory (transposed) into the local memory
-      blm[kg][ng] = bgm[idk*(kSizeN/VWN) + idn];
+      blm[kg*(NWG/VWN) + ng] = bgm[idk*(kSizeN/VWN) + idn];
     }
   }
 }
@@ -218,7 +243,7 @@ inline void GlobalToPrivateB(const __global realN* restrict bgm, realN bpm[NWI/V
 // Caches on-chip local memory into per-thread private memory (registers). This function is specific
 // for caching the A input matrix.
 #if SA == 1
-inline void LocalToPrivateA(__local realM alm[KWG][MWG/VWM], realM apm[MWI/VWM], const int kg) {
+inline void LocalToPrivateA(__local realM* alm, realM apm[MWI/VWM], const int kg) {
   #pragma unroll
   for (int mi=0; mi<MWI/VWM; ++mi) {
     #if STRM == 0
@@ -226,14 +251,14 @@ inline void LocalToPrivateA(__local realM alm[KWG][MWG/VWM], realM apm[MWI/VWM],
     #elif STRM == 1
       int mg = get_local_id(0) + mi*MDIMC;
     #endif
-    apm[mi] = alm[kg][mg];
+    apm[mi] = alm[kg*(MWG/VWM) + mg];
   }
 }
 #endif
 
 // Same as above, but now for the B input matrix
 #if SB == 1
-inline void LocalToPrivateB(__local realN blm[KWG][NWG/VWN], realN bpm[NWI/VWN], const int kg) {
+inline void LocalToPrivateB(__local realN* blm, realN bpm[NWI/VWN], const int kg) {
   #pragma unroll
   for (int ni=0; ni<NWI/VWN; ++ni) {
     #if STRN == 0
@@ -241,7 +266,7 @@ inline void LocalToPrivateB(__local realN blm[KWG][NWG/VWN], realN bpm[NWI/VWN],
     #elif STRN == 1
       int ng = get_local_id(1) + ni*NDIMC;
     #endif
-    bpm[ni] = blm[kg][ng];
+    bpm[ni] = blm[kg*(NWG/VWN) + ng];
   }
 }
 #endif
@@ -266,7 +291,8 @@ inline void StoreResults(__global realM* cgm, realM cpm[NWI][MWI/VWM], const int
       #endif
       int idm = mg + get_group_id(0)*(MWG/VWM);
       int idn = ng + get_group_id(1)*NWG;
-      cgm[idn*(kSizeM/VWM) + idm] = cpm[ni][mi];
+      int index = idn*(kSizeM/VWM) + idm;
+      cgm[index] = cpm[ni][mi];
     }
   }
 }
@@ -329,7 +355,7 @@ inline void MultiplyAccumulate(realM cpm[NWI][MWI/VWM], realM apm[MWI/VWM], real
 // =================================================================================================
 
 // Main entry of the kernel. This function contains the basic skeleton, the functionality is
-// provided by the inlined functions above
+// provided by the inlined functions above.
 __attribute__((reqd_work_group_size(MDIMC, NDIMC, 1)))
 __kernel void gemm_fast(const int kSizeM, const int kSizeN, const int kSizeK,
                         const __global realM* restrict agm,
@@ -343,10 +369,10 @@ __kernel void gemm_fast(const int kSizeM, const int kSizeN, const int kSizeK,
 
   // Allocates workgroup-private memory (local memory)
   #if SA == 1
-    __local realM alm[KWG][MWG/VWM];
+    __local realM alm[KWG * MWG/VWM];
   #endif
   #if SB == 1
-    __local realN blm[KWG][NWG/VWN];
+    __local realN blm[KWG * NWG/VWN];
   #endif
   
   // Allocates workitem-private memory (registers)
