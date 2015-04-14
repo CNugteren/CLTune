@@ -1,4 +1,8 @@
 
+Version 1.4.0
+- Added the particle swarm optimisation (PSO) search technique
+- Updated the example GEMM kernel
+
 Version 1.3.2
 - Now prints OpenCL version when running on a device
 - Added install targets to CMake
