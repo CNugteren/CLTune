@@ -38,6 +38,7 @@
 #include "cltune/searchers/full_search.h"
 #include "cltune/searchers/random_search.h"
 #include "cltune/searchers/annealing.h"
+#include "cltune/searchers/pso.h"
 
 namespace cltune {
 // =================================================================================================
@@ -63,7 +64,7 @@ Tuner::Tuner():
     output_search_process_(false),
     search_log_filename_(std::string{}),
     search_method_(SearchMethod::FullSearch),
-    search_args_(kMaxSearchArguments, 0.0),
+    search_args_(0),
     argument_counter_(0) {
 }
 
@@ -75,7 +76,7 @@ Tuner::Tuner(int platform_id, int device_id):
     output_search_process_(false),
     search_log_filename_(std::string{}),
     search_method_(SearchMethod::FullSearch),
-    search_args_(kMaxSearchArguments, 0.0),
+    search_args_(0),
     argument_counter_(0) {
 }
 
@@ -88,9 +89,6 @@ Tuner::~Tuner() {
     fprintf(stdout, "\n%s End of the tuning process\n\n", kMessageFull.c_str());
   }
 }
-
-// =================================================================================================
-
 
 // =================================================================================================
 
@@ -213,15 +211,27 @@ void Tuner::UseFullSearch() {
 // Use random search as a search strategy.
 void Tuner::UseRandomSearch(const float fraction) {
   search_method_ = SearchMethod::RandomSearch;
-  search_args_[0] = fraction;
+  search_args_.push_back(fraction);
 }
 
 // Use simulated annealing as a search strategy.
 void Tuner::UseAnnealing(const float fraction, const double max_temperature) {
   search_method_ = SearchMethod::Annealing;
-  search_args_[0] = fraction;
-  search_args_[1] = max_temperature;
+  search_args_.push_back(fraction);
+  search_args_.push_back(max_temperature);
 }
+
+// Use PSO as a search strategy.
+void Tuner::UsePSO(const double fraction, const size_t swarm_size, const double influence_global,
+                   const double influence_local, const double influence_random) {
+  search_method_ = SearchMethod::PSO;
+  search_args_.push_back(fraction);
+  search_args_.push_back(static_cast<double>(swarm_size));
+  search_args_.push_back(influence_global);
+  search_args_.push_back(influence_local);
+  search_args_.push_back(influence_random);
+}
+
 
 // Output the search process to a file. This is disabled per default.
 void Tuner::OutputSearchLog(const std::string &filename) {
@@ -275,6 +285,11 @@ void Tuner::Tune() {
           break;
         case SearchMethod::Annealing:
           search.reset(new Annealing{kernel.configurations(), search_args_[0], search_args_[1]});
+          break;
+        case SearchMethod::PSO:
+          search.reset(new PSO{kernel.configurations(), kernel.parameters(), search_args_[0],
+                               static_cast<size_t>(search_args_[1]), search_args_[2],
+                               search_args_[3], search_args_[4]});
           break;
       }
 
@@ -367,7 +382,7 @@ void Tuner::PrintFormatted() const {
   }
 
   // Prints the best result in C++ database format
-  auto count = 0;
+  auto count = 0UL;
   PrintHeader("Printing best result in database format to stdout");
   fprintf(stdout, "{ \"%s\", { ", opencl_->device_name().c_str());
   for (auto &setting: best_result.configuration) {
@@ -602,7 +617,7 @@ bool Tuner::DownloadAndCompare(const MemArgument &device_buffer, const size_t i)
 
   // Compares the results (L2 norm)
   T* reference_output = (T*)reference_outputs_[i];
-  for (auto j=0; j<device_buffer.size; ++j) {
+  for (auto j=0UL; j<device_buffer.size; ++j) {
     l2_norm += fabs((double)reference_output[j] - (double)host_buffer[j]);
   }
 

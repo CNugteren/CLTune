@@ -8,8 +8,9 @@
 // This file demonstrates the usage of CLTune with a more advanced matrix-multiplication example.
 // This matrix-matrix multiplication is also heavily tuned and competes performance-wise with the
 // clBLAS library.
-// In contrast to the regular 'gemm' example, the 'gemm_annealing' example searchers through a much
-// larger parameter space, but uses simulated annealing instead of full search.
+// In contrast to the regular 'gemm' example, the 'gemm_search_methods' example searchers through a
+// much larger parameter space, but uses smart search techniques instead of full search. Examples
+// are simulated annealing (the default) and particle swarm optimisation (see below).
 //
 // -------------------------------------------------------------------------------------------------
 //
@@ -67,9 +68,17 @@ int main() {
   cltune::Tuner tuner(0, 1);
 
   // Configures the tuner to select the simulated annealing search method, setting the fraction of
-  // the search space to explore (1/64th) and the maximum annealing temperature (relative to the
+  // the search space to explore (1/128th) and the maximum annealing temperature (relative to the
   // execution time in miliseconds).
-  tuner.UseAnnealing(1/64.0, 4.0);
+  #if 1
+    tuner.UseAnnealing(1/128.0, 4.0);
+  
+  // Or configures the tuner to use particle swarm optimisation (PSO). This version uses a swarm
+  // size of 4 particles, which a 40% chance to move towards the global best, a 0% chance to move
+  // towards the particle's best, and a 20% chance to move in a random direction.
+  #else
+    tuner.UsePSO(1/128.0f, 4, 0.4, 0.0, 0.2);
+  #endif
 
   // Outputs the search process to a file
   tuner.OutputSearchLog("search_log.txt");

@@ -24,10 +24,10 @@
 
 # CMake project
 cmake_minimum_required(VERSION 2.8)
-project("cltune" C CXX)
+project("cltune" CXX)
 set(cltune_VERSION_MAJOR 1)
-set(cltune_VERSION_MINOR 3)
-set(cltune_VERSION_PATCH 2)
+set(cltune_VERSION_MINOR 4)
+set(cltune_VERSION_PATCH 0)
 
 # Options
 option(SAMPLES "Enable compilation of sample programs" ON)
@@ -78,7 +78,8 @@ set(TUNER
     src/searcher.cc
     src/searchers/full_search.cc
     src/searchers/random_search.cc
-    src/searchers/annealing.cc)
+    src/searchers/annealing.cc
+    src/searchers/pso.cc)
 
 # Creates and links the library
 add_library(cltune SHARED ${TUNER})
@@ -104,10 +105,10 @@ if (SAMPLES)
     # Adds sample programs
     add_executable(sample_simple samples/simple.cc)
     add_executable(sample_gemm samples/gemm.cc)
-    add_executable(sample_gemm_annealing samples/gemm_annealing.cc)
+    add_executable(sample_gemm_search_methods samples/gemm_search_methods.cc)
     target_link_libraries(sample_simple cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
     target_link_libraries(sample_gemm cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
-    target_link_libraries(sample_gemm_annealing cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
+    target_link_libraries(sample_gemm_search_methods cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
 
     # Note: these are not installed because they depend on their separate OpenCL kernel files
 
