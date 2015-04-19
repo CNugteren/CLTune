@@ -1,4 +1,10 @@
 
+Version 1.4.1
+- Added 2D convolution as an example
+- Added command-line arguments to the GEMM search-method sample
+- Fixed a CUDA 7 related bug in the GEMM kernel
+- Fixed a logging bug in the PSO search technique
+
 Version 1.4.0
 - Added the particle swarm optimisation (PSO) search technique
 - Updated the example GEMM kernel
