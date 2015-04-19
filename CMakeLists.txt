@@ -106,9 +106,11 @@ if (SAMPLES)
     add_executable(sample_simple samples/simple.cc)
     add_executable(sample_gemm samples/gemm.cc)
     add_executable(sample_gemm_search_methods samples/gemm_search_methods.cc)
+    add_executable(sample_conv samples/conv.cc)
     target_link_libraries(sample_simple cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
     target_link_libraries(sample_gemm cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
     target_link_libraries(sample_gemm_search_methods cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
+    target_link_libraries(sample_conv cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
 
     # Note: these are not installed because they depend on their separate OpenCL kernel files
 
