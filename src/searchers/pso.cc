@@ -116,6 +116,7 @@ size_t PSO::NumConfigurations() {
 // Adds the resulting execution time to the back of the execution times vector. Also updates the
 // swarm best and global best configurations and execution times.
 void PSO::PushExecutionTime(const double execution_time) {
+  explored_indices_.push_back(index_);
   execution_times_[index_] = execution_time;
   if (execution_time < local_best_times_[particle_index_]) {
     local_best_times_[particle_index_] = execution_time;
