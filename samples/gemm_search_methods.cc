@@ -42,16 +42,36 @@ bool IsMultiple(int a, int b) {
   return ((a/b)*b == a) ? true : false;
 };
 
+// Constants
+constexpr auto kDefaultDevice = 0;
+constexpr auto kDefaultSearchMethod = 1;
+constexpr auto kDefaultSearchParameter1 = 4;
+
+// Data-size settings
+constexpr auto kSizeM = 2048;
+constexpr auto kSizeN = 2048;
+constexpr auto kSizeK = 2048;
+
 // =================================================================================================
 
 // Example showing how to tune an OpenCL SGEMM matrix-multiplication kernel. This assumes that
 // matrix B is pre-transposed, alpha equals 1 and beta equals 0: C = A * B^T
-int main() {
+int main(int argc, char* argv[]) {
 
-  // Creates data structures
-  constexpr auto kSizeM = 2048;
-  constexpr auto kSizeN = 2048;
-  constexpr auto kSizeK = 2048;
+  // Selects the device, the search method and its first parameter. These parameters are all
+  // optional and are thus also given default values.
+  auto device_id = kDefaultDevice;
+  auto method = kDefaultSearchMethod;
+  auto search_param_1 = kDefaultSearchParameter1;
+  if (argc >= 2) {
+    device_id = std::stoi(std::string{argv[1]});
+    if (argc >= 3) {
+      method = std::stoi(std::string{argv[2]});
+      if (argc >= 4) {
+        search_param_1 = std::stoi(std::string{argv[3]});
+      }
+    }
+  }
 
   // Creates input matrices
   auto mat_a = std::vector<float>(kSizeM*kSizeK);
@@ -64,38 +84,38 @@ int main() {
   for (auto &item: mat_b) { item = (float)rand() / (float)RAND_MAX; }
   for (auto &item: mat_c) { item = 0.0; }
 
-  // Initializes the tuner (platform 0, device 0)
-  cltune::Tuner tuner(0, 1);
+  // Initializes the tuner (platform 0, device 'device_id')
+  cltune::Tuner tuner(0, device_id);
 
-  // Configures the tuner to select the simulated annealing search method, setting the fraction of
-  // the search space to explore (1/128th) and the maximum annealing temperature (relative to the
-  // execution time in miliseconds).
-  #if 1
-    tuner.UseAnnealing(1/128.0, 4.0);
-  
-  // Or configures the tuner to use particle swarm optimisation (PSO). This version uses a swarm
-  // size of 4 particles, which a 40% chance to move towards the global best, a 0% chance to move
-  // towards the particle's best, and a 20% chance to move in a random direction.
-  #else
-    tuner.UsePSO(1/128.0f, 4, 0.4, 0.0, 0.2);
-  #endif
+  // Sets one of the following search methods:
+  // 0) Random search
+  // 1) Simulated annealing
+  // 2) Particle swarm optimisation (PSO)
+  // 3) Full search
+  auto fraction = 1/1000.0f;
+  if      (method == 0) { tuner.UseRandomSearch(fraction); }
+  else if (method == 1) { tuner.UseAnnealing(fraction, search_param_1); }
+  else if (method == 2) { tuner.UsePSO(fraction, search_param_1, 0.4, 0.0, 0.4); }
+  else                  { tuner.UseFullSearch(); }
 
   // Outputs the search process to a file
   tuner.OutputSearchLog("search_log.txt");
   
+  // ===============================================================================================
+
   // Adds a heavily tuneable kernel and some example parameter values. Others can be added, but for
   // this example this already leads to plenty of kernels to test.
   auto id = tuner.AddKernel("../samples/gemm_fast.opencl", "gemm_fast", {kSizeM, kSizeN}, {1, 1});
-  tuner.AddParameter(id, "MWG", {64, 128});
-  tuner.AddParameter(id, "NWG", {64, 128});
+  tuner.AddParameter(id, "MWG", {16, 32, 64, 128});
+  tuner.AddParameter(id, "NWG", {16, 32, 64, 128});
   tuner.AddParameter(id, "KWG", {16, 32});
   tuner.AddParameter(id, "MDIMC", {8, 16, 32});
   tuner.AddParameter(id, "NDIMC", {8, 16, 32});
-  tuner.AddParameter(id, "MDIMA", {16, 32});
-  tuner.AddParameter(id, "NDIMB", {16, 32});
-  tuner.AddParameter(id, "KWI", {8});
-  tuner.AddParameter(id, "VWM", {1, 2, 4});
-  tuner.AddParameter(id, "VWN", {1, 2, 4});
+  tuner.AddParameter(id, "MDIMA", {8, 16, 32});
+  tuner.AddParameter(id, "NDIMB", {8, 16, 32});
+  tuner.AddParameter(id, "KWI", {2, 8});
+  tuner.AddParameter(id, "VWM", {1, 2, 4, 8});
+  tuner.AddParameter(id, "VWN", {1, 2, 4, 8});
   tuner.AddParameter(id, "STRM", {1});
   tuner.AddParameter(id, "STRN", {1});
   tuner.AddParameter(id, "SA", {0, 1});
@@ -132,6 +152,8 @@ int main() {
   tuner.MulLocalSize(id, {"MDIMC", "NDIMC"});
   tuner.MulGlobalSize(id, {"MDIMC", "NDIMC"});
   tuner.DivGlobalSize(id, {"MWG", "NWG"});
+
+  // ===============================================================================================
 
   // Sets the tuner's golden reference function. This kernel contains the reference code to which
   // the output is compared. Supplying such a function is not required, but it is necessarily for
