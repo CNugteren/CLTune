@@ -44,6 +44,9 @@ class Annealing: public Searcher {
   // algorithm ends
   static constexpr auto kMaxAlreadyVisitedStates = 10;
 
+  // Maximum number of differences to consider this still a neighbour
+  static constexpr auto kMaxDifferences = 3;
+
   // Takes additionally a fraction of configurations to consider
   Annealing(const Configurations &configurations,
             const double fraction, const double max_temperature);
