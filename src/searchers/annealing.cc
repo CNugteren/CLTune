@@ -134,8 +134,8 @@ std::vector<size_t> Annealing::GetNeighboursOf(const size_t reference_id) const 
       ++setting_id;
     }
 
-    // Consider this configuration a neighbour if there is exactly one difference
-    if (differences == 1) {
+    // Consider this configuration a neighbour if there is at most a certain amount of differences
+    if (differences == kMaxDifferences) {
       neighbours.push_back(other_id);
     }
     ++other_id;
