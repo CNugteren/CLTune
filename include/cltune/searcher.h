@@ -32,6 +32,7 @@
 #define CLTUNE_SEARCHER_H_
 
 #include <vector>
+#include <chrono>
 
 #include "cltune/kernel_info.h"
 
@@ -60,6 +61,13 @@ class Searcher {
   virtual size_t NumConfigurations() = 0;
 
  protected:
+
+  // Pseudo-random seed based on the time
+  unsigned long RandomSeed() const {
+    // std::random_device rd;
+    // return rd();
+    return std::chrono::system_clock::now().time_since_epoch().count();
+  }
 
   // Protected member variables accessible by derived classes
   Configurations configurations_;
