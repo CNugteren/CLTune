@@ -106,7 +106,7 @@ int main(int argc, char* argv[]) {
   tuner.AddParameter(id, "WPTX", {1, 2, 4, 8});
   tuner.AddParameter(id, "WPTY", {1, 2, 4, 8});
   tuner.AddParameter(id, "VECTOR", {1, 2, 4});
-  tuner.AddParameter(id, "UNROLL_FACTOR", {FS});
+  tuner.AddParameter(id, "UNROLL_FACTOR", {1, FS});
 
   // Introduces a helper parameter to compute the proper number of threads for the LOCAL == 2 case
   tuner.AddParameter(id, "TBX_XL", {8, 8+2*HFS, 16, 16+2*HFS, 32, 32+2*HFS, 64, 64+2*HFS});
