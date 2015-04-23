@@ -71,7 +71,7 @@ template <typename T>
 void Memory<T>::DownloadFromDevice() {
   auto status = queue_.enqueueReadBuffer(*device_, CL_TRUE, 0,
                                                     size_*sizeof(T), host_.data());
-  if (status != CL_SUCCESS) { throw OpenCL::Exception("Write buffer error", status); }
+  if (status != CL_SUCCESS) { throw OpenCL::Exception("Read buffer error", status); }
 }
 
 // =================================================================================================
