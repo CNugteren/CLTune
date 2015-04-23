@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
   // 1) Simulated annealing
   // 2) Particle swarm optimisation (PSO)
   // 3) Full search
-  auto fraction = 1/1000.0f;
+  auto fraction = 1/2048.0f;
   if      (method == 0) { tuner.UseRandomSearch(fraction); }
   else if (method == 1) { tuner.UseAnnealing(fraction, search_param_1); }
   else if (method == 2) { tuner.UsePSO(fraction, search_param_1, 0.4, 0.0, 0.4); }
@@ -120,8 +120,8 @@ int main(int argc, char* argv[]) {
   tuner.AddParameter(id, "KWI", {2, 8});
   tuner.AddParameter(id, "VWM", {1, 2, 4, 8});
   tuner.AddParameter(id, "VWN", {1, 2, 4, 8});
-  tuner.AddParameter(id, "STRM", {1});
-  tuner.AddParameter(id, "STRN", {1});
+  tuner.AddParameter(id, "STRM", {0, 1});
+  tuner.AddParameter(id, "STRN", {0, 1});
   tuner.AddParameter(id, "SA", {0, 1});
   tuner.AddParameter(id, "SB", {0, 1});
 
