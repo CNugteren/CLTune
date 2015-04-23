@@ -28,9 +28,10 @@
 //
 // =================================================================================================
 
-
-// Filter settings
-#include "../samples/conv.h"
+// Settings (also change these in conv.cc, conv.opencl, and conv_reference.opencl!!)
+#define HFS (3)        // Half filter size (synchronise with other files)
+#define FS (HFS+HFS+1) // Filter size
+#define FA (FS*FS)     // Filter area
 
 // The filter values (max 7 x 7)
 __constant float coeff[FS][FS] = {

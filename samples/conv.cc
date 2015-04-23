@@ -41,8 +41,12 @@ constexpr auto kDefaultSearchParameter1 = 4;
 constexpr auto kMaxLocalThreads = 1024;
 constexpr auto kMaxLocalMemory = 32*1024;
 
-// Settings (convolution)
-#include "conv.h"             // Filter sizes (HFS and FS)
+// Settings (also change these in conv.cc, conv.opencl, and conv_reference.opencl!!)
+#define HFS (3)        // Half filter size (synchronise with other files)
+#define FS (HFS+HFS+1) // Filter size
+#define FA (FS*FS)     // Filter area
+
+// Settings (sizes)
 constexpr auto kSizeX = 8192; // Matrix dimension X
 constexpr auto kSizeY = 4096; // Matrix dimension Y
 
