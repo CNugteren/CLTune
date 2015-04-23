@@ -41,8 +41,12 @@ constexpr auto kDefaultSearchParameter1 = 4;
 constexpr auto kMaxLocalThreads = 1024;
 constexpr auto kMaxLocalMemory = 32*1024;
 
-// Settings (convolution)
-#include "conv.h"             // Filter sizes (HFS and FS)
+// Settings (also change these in conv.cc, conv.opencl, and conv_reference.opencl!!)
+#define HFS (3)        // Half filter size (synchronise with other files)
+#define FS (HFS+HFS+1) // Filter size
+#define FA (FS*FS)     // Filter area
+
+// Settings (sizes)
 constexpr auto kSizeX = 8192; // Matrix dimension X
 constexpr auto kSizeY = 4096; // Matrix dimension Y
 
@@ -102,7 +106,7 @@ int main(int argc, char* argv[]) {
   tuner.AddParameter(id, "WPTX", {1, 2, 4, 8});
   tuner.AddParameter(id, "WPTY", {1, 2, 4, 8});
   tuner.AddParameter(id, "VECTOR", {1, 2, 4});
-  tuner.AddParameter(id, "UNROLL_FACTOR", {FS});
+  tuner.AddParameter(id, "UNROLL_FACTOR", {1, FS});
 
   // Introduces a helper parameter to compute the proper number of threads for the LOCAL == 2 case
   tuner.AddParameter(id, "TBX_XL", {8, 8+2*HFS, 16, 16+2*HFS, 32, 32+2*HFS, 64, 64+2*HFS});

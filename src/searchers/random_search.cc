@@ -28,6 +28,7 @@
 #include "cltune/searchers/random_search.h"
 
 #include <algorithm>
+#include <random>
 
 namespace cltune {
 // =================================================================================================
@@ -36,6 +37,7 @@ namespace cltune {
 RandomSearch::RandomSearch(const Configurations &configurations, const double fraction):
     Searcher(configurations),
     fraction_(fraction) {
+  std::srand(RandomSeed());
   std::random_shuffle(configurations_.begin(), configurations_.end());
 }
 

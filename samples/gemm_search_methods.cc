@@ -47,7 +47,11 @@ constexpr auto kDefaultDevice = 0;
 constexpr auto kDefaultSearchMethod = 1;
 constexpr auto kDefaultSearchParameter1 = 4;
 
-// Data-size settings
+// Settings (device)
+constexpr auto kMaxLocalThreads = 1024;
+constexpr auto kMaxLocalMemory = 32*1024;
+
+// Settings (sizes)
 constexpr auto kSizeM = 2048;
 constexpr auto kSizeN = 2048;
 constexpr auto kSizeK = 2048;
@@ -92,7 +96,7 @@ int main(int argc, char* argv[]) {
   // 1) Simulated annealing
   // 2) Particle swarm optimisation (PSO)
   // 3) Full search
-  auto fraction = 1/1000.0f;
+  auto fraction = 1/2048.0f;
   if      (method == 0) { tuner.UseRandomSearch(fraction); }
   else if (method == 1) { tuner.UseAnnealing(fraction, search_param_1); }
   else if (method == 2) { tuner.UsePSO(fraction, search_param_1, 0.4, 0.0, 0.4); }
@@ -116,8 +120,8 @@ int main(int argc, char* argv[]) {
   tuner.AddParameter(id, "KWI", {2, 8});
   tuner.AddParameter(id, "VWM", {1, 2, 4, 8});
   tuner.AddParameter(id, "VWN", {1, 2, 4, 8});
-  tuner.AddParameter(id, "STRM", {1});
-  tuner.AddParameter(id, "STRN", {1});
+  tuner.AddParameter(id, "STRM", {0, 1});
+  tuner.AddParameter(id, "STRN", {0, 1});
   tuner.AddParameter(id, "SA", {0, 1});
   tuner.AddParameter(id, "SB", {0, 1});
 
@@ -147,6 +151,14 @@ int main(int argc, char* argv[]) {
   // Sets constraints: KWG has to be a multiple of KDIMA = ((MDIMC*NDIMC)/(MDIMA)) and KDIMB = (...)
   tuner.AddConstraint(id, MultipleOfXMulYDivZ, {"KWG", "MDIMC", "NDIMC", "MDIMA"});
   tuner.AddConstraint(id, MultipleOfXMulYDivZ, {"KWG", "MDIMC", "NDIMC", "NDIMB"});
+
+  // Set the constraints for architecture limitations
+  auto LocalWorkSize = [] (std::vector<int> v) { return (v[0]*v[1] <= kMaxLocalThreads); };
+  auto LocalMemorySize = [] (std::vector<int> v) {
+    return (((v[0]*v[1]*v[2]/v[3]) + (v[4]*v[5]*v[6]/v[7]))*sizeof(float) <= kMaxLocalMemory);
+  };
+  tuner.AddConstraint(id, LocalWorkSize, {"MDIMC", "NDIMC"});
+  tuner.AddConstraint(id, LocalMemorySize, {"SA", "KWG", "MWG", "VWM", "SB", "KWG", "NWG", "VWN"});
 
   // Modifies the thread-sizes (both global and local) based on the parameters
   tuner.MulLocalSize(id, {"MDIMC", "NDIMC"});

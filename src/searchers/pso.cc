@@ -50,8 +50,7 @@ PSO::PSO(const Configurations &configurations, const Parameters &parameters,
     global_best_config_(),
     local_best_configs_(swarm_size_),
     parameters_(parameters),
-    rd_(),
-    generator_(rd_()),
+    generator_(RandomSeed()),
     int_distribution_(0, configurations_.size()),
     probability_distribution_(0.0, 1.0) {
   for (auto &position: particle_positions_) {

@@ -95,7 +95,6 @@ class PSO: public Searcher {
   Parameters parameters_;
 
   // Random number generation
-  std::random_device rd_;
   std::default_random_engine generator_;
   std::uniform_int_distribution<int> int_distribution_;
   std::uniform_real_distribution<double> probability_distribution_;
