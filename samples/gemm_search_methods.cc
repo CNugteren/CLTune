@@ -48,7 +48,6 @@ constexpr auto kDefaultSearchMethod = 1;
 constexpr auto kDefaultSearchParameter1 = 4;
 
 // Settings (device)
-constexpr auto kMaxLocalThreads = 1024;
 constexpr auto kMaxLocalMemory = 32*1024;
 
 // Settings (sizes)
@@ -153,11 +152,9 @@ int main(int argc, char* argv[]) {
   tuner.AddConstraint(id, MultipleOfXMulYDivZ, {"KWG", "MDIMC", "NDIMC", "NDIMB"});
 
   // Set the constraints for architecture limitations
-  auto LocalWorkSize = [] (std::vector<int> v) { return (v[0]*v[1] <= kMaxLocalThreads); };
   auto LocalMemorySize = [] (std::vector<int> v) {
     return (((v[0]*v[1]*v[2]/v[3]) + (v[4]*v[5]*v[6]/v[7]))*sizeof(float) <= kMaxLocalMemory);
   };
-  tuner.AddConstraint(id, LocalWorkSize, {"MDIMC", "NDIMC"});
   tuner.AddConstraint(id, LocalMemorySize, {"SA", "KWG", "MWG", "VWM", "SB", "KWG", "NWG", "VWN"});
 
   // Modifies the thread-sizes (both global and local) based on the parameters

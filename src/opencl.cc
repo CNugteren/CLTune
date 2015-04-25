@@ -91,32 +91,31 @@ OpenCL::OpenCL(const size_t platform_id, const size_t device_id):
 
 // Verifies: 1) the local worksize in each dimension, 2) the local worksize in all dimensions
 // combined, and 3) the number of dimensions. For now, the global size is not verified.
-size_t OpenCL::VerifyThreadSizes(const cl::NDRange &global, const cl::NDRange &local) const {
+bool OpenCL::ValidThreadSizes(const cl::NDRange &global, const cl::NDRange &local) const {
   auto local_size = 1UL;
   auto global_size = 1UL;
   for (auto i=0UL; i<global.dimensions(); ++i) { global_size *= global[i]; }
   for (auto i=0UL; i<local.dimensions(); ++i) {
     local_size *= local[i];
-    if (local[i] > max_local_sizes_[i]) {
-      throw std::runtime_error("Local size in dimension "+ToString(i)+
-                               " larger than "+ToString(max_local_sizes_[i]));
-    }
+    if (local[i] > max_local_sizes_[i]) { return false; }
   }
-  if (local_size > max_local_threads_) {
-    throw std::runtime_error("Local size larger than "+ToString(max_local_threads_));
-  }
-  if (local.dimensions() > max_local_dims_) {
-    throw std::runtime_error("More thread-dimensions than "+ToString(max_local_dims_));
-  }
+  if (local_size > max_local_threads_) { return false; }
+  if (local.dimensions() > max_local_dims_) { return false; }
+  return true;
+}
+
+// Returns the total local size
+size_t OpenCL::GetLocalSize(const cl::NDRange &global, const cl::NDRange &local) const {
+  auto local_size = 1UL;
+  for (auto i=0UL; i<local.dimensions(); ++i) { local_size *= local[i]; }
   return local_size;
 }
 
 // Verifies the local memory usage of the kernel (provided as argument) against the device
 // limitation (obtained in the constructor).
-void OpenCL::VerifyLocalMemory(const size_t local_memory) const {
-  if (local_memory > local_memory_size_) {
-    throw std::runtime_error("Local memory size larger than "+ToString(local_memory_size_));
-  }
+bool OpenCL::ValidLocalMemory(const size_t local_memory) const {
+  if (local_memory > local_memory_size_) { return false; }
+  return true;
 }
 
 // =================================================================================================

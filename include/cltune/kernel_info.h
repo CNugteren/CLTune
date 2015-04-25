@@ -35,9 +35,11 @@
 #include <vector>
 #include <iostream>
 #include <stdexcept>
+#include <memory>
 #include <functional>
 
 #include "cl.hpp"
+#include "cltune/opencl.h"
 #include "cltune/string_range.h"
 
 namespace cltune {
@@ -89,7 +91,8 @@ class KernelInfo {
   };
 
   // Initializes the class with a given name and a string of OpenCL source-code
-  explicit KernelInfo(std::string name, std::string source);
+  explicit KernelInfo(const std::string name, const std::string source,
+                      std::shared_ptr<OpenCL> opencl);
 
   // Accessors (getters)
   std::string name() const { return name_; }
@@ -145,6 +148,9 @@ class KernelInfo {
   std::vector<Parameter> parameters_;
   std::vector<Configuration> configurations_;
   std::vector<Constraint> constraints_;
+
+  // OpenCL platform
+  std::shared_ptr<OpenCL> opencl_;
 
   // Global/local thread-sizes
   cl::NDRange global_base_;

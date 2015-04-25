@@ -99,7 +99,7 @@ int Tuner::AddKernel(const std::string &filename, const std::string &kernel_name
 
   // Loads the source-code and adds the kernel
   auto source = LoadFile(filename);
-  kernels_.push_back(KernelInfo(kernel_name, source));
+  kernels_.push_back(KernelInfo(kernel_name, source, opencl_));
 
   // Sets the global and local thread sizes
   auto id = kernels_.size() - 1;
@@ -117,7 +117,7 @@ void Tuner::SetReference(const std::string &filename, const std::string &kernel_
                          const cl::NDRange &global, const cl::NDRange &local) {
   has_reference_ = true;
   auto source = LoadFile(filename);
-  reference_kernel_.reset(new KernelInfo(kernel_name, source));
+  reference_kernel_.reset(new KernelInfo(kernel_name, source, opencl_));
   reference_kernel_->set_global_base(global);
   reference_kernel_->set_local_base(local);
 }
@@ -492,14 +492,11 @@ Tuner::TunerResult Tuner::RunKernel(const std::string &source, const KernelInfo 
   // In case of an exception, skip this run
   try {
 
-    // Verifies the global/local thread-sizes against device properties
-    auto local_threads = opencl_->VerifyThreadSizes(global, local);
-
     // Obtains and verifies the local memory usage of the kernel
     auto local_memory = static_cast<size_t>(0);
     status = tune_kernel.getWorkGroupInfo(opencl_->device(), CL_KERNEL_LOCAL_MEM_SIZE, &local_memory);
     if (status != CL_SUCCESS) { throw OpenCL::Exception("Get kernel information error", status); }
-    opencl_->VerifyLocalMemory(local_memory);
+    opencl_->ValidLocalMemory(local_memory);
 
     // Prepares the kernel
     status = opencl_->queue().finish();
@@ -533,6 +530,7 @@ Tuner::TunerResult Tuner::RunKernel(const std::string &source, const KernelInfo 
             configuration_id+1, num_configurations);
 
     // Computes the result of the tuning
+    auto local_threads = opencl_->GetLocalSize(global, local);
     TunerResult result = {kernel.name(), elapsed_time, local_threads, false, {}};
     return result;
   }

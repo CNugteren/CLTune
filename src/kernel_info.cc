@@ -34,12 +34,14 @@ namespace cltune {
 
 // Initializes the name and OpenCL source-code, creates empty containers for all other member
 // variables.
-KernelInfo::KernelInfo(std::string name, std::string source) :
+KernelInfo::KernelInfo(const std::string name, const std::string source,
+                      std::shared_ptr<OpenCL> opencl) :
   name_(name),
   source_(source),
   parameters_(),
   configurations_(),
   constraints_(),
+  opencl_(opencl),
   global_base_(), local_base_(),
   global_(), local_(),
   thread_size_modifiers_() {
@@ -205,6 +207,12 @@ bool KernelInfo::ValidConfiguration(const Configuration &config) {
       return false;
     }
   }
+
+  // Computes the global and local worksizes
+  ComputeRanges(config);
+
+  // Verifies the global/local thread-sizes against device properties
+  if (!opencl_->ValidThreadSizes(global_, local_)) { return false; };
 
   // Everything was OK: this configuration is valid
   return true;

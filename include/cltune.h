@@ -180,7 +180,7 @@ class Tuner {
   void PrintHeader(const std::string &header_name) const;
 
   // OpenCL platform
-  std::unique_ptr<OpenCL> opencl_;
+  std::shared_ptr<OpenCL> opencl_;
 
   // Settings
   bool has_reference_;
