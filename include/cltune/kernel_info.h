@@ -84,6 +84,13 @@ class KernelInfo {
     std::vector<std::string> parameters;
   };
 
+  // As above, but for local memory size.
+  using LocalMemoryFunction = std::function<size_t(std::vector<int>)>;
+  struct LocalMemory {
+    LocalMemoryFunction amount;
+    std::vector<std::string> parameters;
+  };
+
   // Exception of the KernelInfo class
   class Exception : public std::runtime_error {
    public:
@@ -125,6 +132,9 @@ class KernelInfo {
   // values.
   void AddConstraint(ConstraintFunction valid_if, const std::vector<std::string> &parameters);
 
+  // As above, but for local memory usage
+  void SetLocalMemoryUsage(LocalMemoryFunction amount, const std::vector<std::string> &parameters);
+
   // Computes the global/local ranges (in NDRange-form) based on all global/local thread-sizes (in
   // StringRange-form) and a single permutation (i.e. a configuration) containing a list of all
   // parameter names and their current values.
@@ -148,6 +158,7 @@ class KernelInfo {
   std::vector<Parameter> parameters_;
   std::vector<Configuration> configurations_;
   std::vector<Constraint> constraints_;
+  LocalMemory local_memory_;
 
   // OpenCL platform
   std::shared_ptr<OpenCL> opencl_;

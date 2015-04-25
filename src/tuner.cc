@@ -166,6 +166,17 @@ void Tuner::AddConstraint(const size_t id, KernelInfo::ConstraintFunction valid_
   kernels_[id].AddConstraint(valid_if, parameters);
 }
 
+// As above, but for the local memory usage
+void Tuner::SetLocalMemoryUsage(const size_t id, KernelInfo::LocalMemoryFunction amount,
+                                const std::vector<std::string> &parameters) {
+  if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
+  for (auto &parameter: parameters) {
+    if (!kernels_[id].ParameterExists(parameter)) { throw Exception("Invalid parameter"); }
+  }
+  kernels_[id].SetLocalMemoryUsage(amount, parameters);
+}
+
+
 // =================================================================================================
 
 // Creates a new buffer of type Memory (containing both host and device data) based on a source
@@ -496,7 +507,7 @@ Tuner::TunerResult Tuner::RunKernel(const std::string &source, const KernelInfo 
     auto local_memory = static_cast<size_t>(0);
     status = tune_kernel.getWorkGroupInfo(opencl_->device(), CL_KERNEL_LOCAL_MEM_SIZE, &local_memory);
     if (status != CL_SUCCESS) { throw OpenCL::Exception("Get kernel information error", status); }
-    opencl_->ValidLocalMemory(local_memory);
+    if (!opencl_->ValidLocalMemory(local_memory)) { throw Exception("Using too much local memory"); }
 
     // Prepares the kernel
     status = opencl_->queue().finish();

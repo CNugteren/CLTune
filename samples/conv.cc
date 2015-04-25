@@ -37,10 +37,6 @@ constexpr auto kDefaultDevice = 0;
 constexpr auto kDefaultSearchMethod = 1;
 constexpr auto kDefaultSearchParameter1 = 4;
 
-// Settings (device)
-constexpr auto kMaxLocalThreads = 1024;
-constexpr auto kMaxLocalMemory = 32*1024;
-
 // Settings (also change these in conv.cc, conv.opencl, and conv_reference.opencl!!)
 #define HFS (3)        // Half filter size (synchronise with other files)
 #define FS (HFS+HFS+1) // Filter size
@@ -122,13 +118,13 @@ int main(int argc, char* argv[]) {
   auto VectorConstraint = [] (std::vector<int> v) { return (v[0] <= v[1]); };
   tuner.AddConstraint(id, VectorConstraint, {"VECTOR", "WPTX"});
 
-  // Set the constraints for architecture limitations
-  auto LocalWorkSize = [] (std::vector<int> v) { return (v[0]*v[1] <= kMaxLocalThreads); };
+  // Sets the constraints for local memory size limitations
   auto LocalMemorySize = [] (std::vector<int> v) {
-    return (v[0]*v[1]*v[2]*v[3]*sizeof(float) <= kMaxLocalMemory);
+    if (v[0] == 1) { return ((v[3]*v[4] + 2*HFS) * (v[1]*v[2] + 2*HFS))*sizeof(float); }
+    if (v[0] == 2) { return (((v[3] + 2*HFS)*v[4]) * ((v[1] + 2*HFS)*v[2]))*sizeof(float); }
+    return 0UL;
   };
-  tuner.AddConstraint(id, LocalWorkSize, {"TBX_XL", "TBY_XL"});
-  tuner.AddConstraint(id, LocalMemorySize, {"TBX_XL", "WPTX", "TBY_XL", "WPTY"});
+  tuner.SetLocalMemoryUsage(id, LocalMemorySize, {"LOCAL", "TBX", "WPTX", "TBY", "WPTY"});
 
   // Modifies the thread-sizes based on the parameters
   tuner.MulLocalSize(id, {"TBX_XL", "TBY_XL"});

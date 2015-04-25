@@ -125,6 +125,10 @@ class Tuner {
   void AddConstraint(const size_t id, KernelInfo::ConstraintFunction valid_if,
                      const std::vector<std::string> &parameters);
 
+  // As above, but for local memory usage
+  void SetLocalMemoryUsage(const size_t id, KernelInfo::LocalMemoryFunction amount,
+                           const std::vector<std::string> &parameters);
+
   // Functions to add kernel-arguments for input buffers, output buffers, and scalars. Make sure to
   // call these in the order in which the arguments appear in the OpenCL kernel.
   template <typename T> void AddArgumentInput(const std::vector<T> &source);

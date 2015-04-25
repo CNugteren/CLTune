@@ -41,6 +41,7 @@ KernelInfo::KernelInfo(const std::string name, const std::string source,
   parameters_(),
   configurations_(),
   constraints_(),
+  local_memory_(LocalMemory{[] (std::vector<int> v) { return 0UL; }, std::vector<std::string>(0)}),
   opencl_(opencl),
   global_base_(), local_base_(),
   global_(), local_(),
@@ -75,6 +76,12 @@ void KernelInfo::AddModifier(const StringRange range, const ThreadSizeModifierTy
 void KernelInfo::AddConstraint(ConstraintFunction valid_if,
                                const std::vector<std::string> &parameters) {
   constraints_.push_back({valid_if, parameters});
+}
+
+// Sets the local memory size
+void KernelInfo::SetLocalMemoryUsage(LocalMemoryFunction amount,
+                                     const std::vector<std::string> &parameters) {
+  local_memory_ = LocalMemory{amount, parameters};
 }
 
 // =================================================================================================
@@ -213,6 +220,22 @@ bool KernelInfo::ValidConfiguration(const Configuration &config) {
 
   // Verifies the global/local thread-sizes against device properties
   if (!opencl_->ValidThreadSizes(global_, local_)) { return false; };
+
+  // Verifies the local memory usage
+  std::vector<int> values_local_memory(0);
+  for (auto &parameter: local_memory_.parameters) {
+    for (auto &setting: config) {
+      if (setting.name == parameter) {
+        values_local_memory.push_back(setting.value);
+        break;
+      }
+    }
+  }
+  if (local_memory_.parameters.size() != values_local_memory.size()) {
+    throw Exception("Invalid settings for the local memory usage constraint");
+  }
+  auto local_memory_usage = local_memory_.amount(values_local_memory);
+  if (!opencl_->ValidLocalMemory(local_memory_usage)) { return false; };
 
   // Everything was OK: this configuration is valid
   return true;
