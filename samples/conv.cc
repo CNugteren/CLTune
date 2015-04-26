@@ -28,6 +28,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <cmath>
 
 // Includes the OpenCL tuner library
 #include "cltune.h"
@@ -37,10 +38,9 @@ constexpr auto kDefaultDevice = 0;
 constexpr auto kDefaultSearchMethod = 1;
 constexpr auto kDefaultSearchParameter1 = 4;
 
-// Settings (also change these in conv.cc, conv.opencl, and conv_reference.opencl!!)
-#define HFS (3)        // Half filter size (synchronise with other files)
+// Settings (synchronise these with "conv.cc", "conv.opencl" and "conv_reference.opencl")
+#define HFS (3)        // Half filter size
 #define FS (HFS+HFS+1) // Filter size
-#define FA (FS*FS)     // Filter area
 
 // Settings (sizes)
 constexpr auto kSizeX = 8192; // Matrix dimension X
@@ -69,11 +69,27 @@ int main(int argc, char* argv[]) {
   // Creates data structures
   auto mat_a = std::vector<float>((2*HFS+kSizeX)*(2*HFS+kSizeY));
   auto mat_b = std::vector<float>(kSizeX*kSizeY);
+  auto coeff = std::vector<float>(FS*FS);
 
   // Populates data structures
   srand(time(nullptr));
   for (auto &item: mat_a) { item = (float)rand() / (float)RAND_MAX; }
   for (auto &item: mat_b) { item = 0.0; }
+
+  // Creates the filter coefficients (gaussian blur)
+  auto sigma = 1.0f;
+  auto mean = FS/2.0f;
+  auto sum = 0.0f;
+  for (auto x=0; x<FS; ++x) {
+    for (auto y=0; y<FS; ++y) {
+      auto exponent = -0.5 * (pow((x-mean)/sigma, 2.0) + pow((y-mean)/sigma,2.0));
+      coeff[y*FS + x] = exp(exponent) / (2 * M_PI * sigma * sigma);
+      sum += coeff[y*FS + x];
+    }
+  }
+  for (auto &item: coeff) { item = item / sum; }
+    
+  // ===============================================================================================
 
   // Initializes the tuner (platform 0, device 'device_id')
   cltune::Tuner tuner(0, device_id);
@@ -144,6 +160,7 @@ int main(int argc, char* argv[]) {
   tuner.AddArgumentScalar(kSizeX);
   tuner.AddArgumentScalar(kSizeY);
   tuner.AddArgumentInput(mat_a);
+  tuner.AddArgumentInput(coeff);
   tuner.AddArgumentOutput(mat_b);
 
   // Starts the tuner

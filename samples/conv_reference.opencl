@@ -28,27 +28,16 @@
 //
 // =================================================================================================
 
-// Settings (also change these in conv.cc, conv.opencl, and conv_reference.opencl!!)
-#define HFS (3)        // Half filter size (synchronise with other files)
+// Settings (synchronise these with "conv.cc", "conv.opencl" and "conv_reference.opencl")
+#define HFS (3)        // Half filter size
 #define FS (HFS+HFS+1) // Filter size
-#define FA (FS*FS)     // Filter area
-
-// The filter values (max 7 x 7)
-__constant float coeff[FS][FS] = {
-  {1/98.0, 1/98.0, 1/98.0, 2/98.0, 1/98.0, 1/98.0, 1/98.0},
-  {1/98.0, 1/98.0, 1/98.0, 2/98.0, 1/98.0, 1/98.0, 1/98.0},
-  {1/98.0, 1/98.0, 2/98.0, 4/98.0, 2/98.0, 1/98.0, 1/98.0},
-  {2/98.0, 2/98.0, 4/98.0, 8/98.0, 4/98.0, 2/98.0, 2/98.0},
-  {1/98.0, 1/98.0, 2/98.0, 4/98.0, 2/98.0, 1/98.0, 1/98.0},
-  {1/98.0, 1/98.0, 1/98.0, 2/98.0, 1/98.0, 1/98.0, 1/98.0},
-  {1/98.0, 1/98.0, 1/98.0, 2/98.0, 1/98.0, 1/98.0, 1/98.0},
-};
 
 // =================================================================================================
 
 // Reference implementation of the 2D convolution example
 __kernel void conv_reference(const int size_x, const int size_y,
                              const __global float* src,
+                             __constant float* coeff,
                              __global float* dest) {
 
   // Thread identifiers
@@ -65,13 +54,13 @@ __kernel void conv_reference(const int size_x, const int size_y,
       const int index_y = tid_y + HFS + fy;
 
       // Performs the accumulation
-      float coefficient = coeff[fy+HFS][fx+HFS];
+      float coefficient = coeff[(fy+HFS)*FS + (fx+HFS)];
       acc += coefficient * src[index_y*size_x + index_x];
     }
   }
 
-  // Computes and stores the result
-  dest[tid_y*size_x + tid_x] = acc / (FS * FS);
+  // Stores the result
+  dest[tid_y*size_x + tid_x] = acc;
 }
 
 // =================================================================================================
