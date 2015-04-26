@@ -159,6 +159,18 @@ inline void AccumulateLocal(__local float *lmem, const int loff,
                             __constant float* coeff, float acc[WPTY][WPTX],
                             const int lid_x, const int lid_y) {
 
+  // Caches data from local memory into registers
+  float rmem[FS+WPTY-1][FS+WPTX-1];
+  #pragma unroll
+  for (int x=0; x<FS+(WPTX-1); ++x) {
+    const int lx = lid_x*WPTX + x;
+    #pragma unroll
+    for (int y=0; y<FS+(WPTY-1); ++y) {
+      const int ly = lid_y*WPTY + y;
+      rmem[y][x] = lmem[ly*loff + lx];
+    }
+  }
+
   // Loops over the neighbourhood
   #pragma unroll UNROLL_FACTOR
   for (int fx=0; fx<FS; ++fx) {
@@ -169,11 +181,9 @@ inline void AccumulateLocal(__local float *lmem, const int loff,
       // Performs the accumulation
       #pragma unroll
       for (int wx=0; wx<WPTX; ++wx) {
-        const int lx = lid_x*WPTX + wx;
         #pragma unroll
         for (int wy=0; wy<WPTY; ++wy) {
-          const int ly = lid_y*WPTY + wy;
-          acc[wy][wx] += coefficient * lmem[(ly+fy)*loff + (lx+fx)];
+          acc[wy][wx] += coefficient * rmem[wy+fy][wx+fx];
         }
       }
     }
@@ -187,6 +197,18 @@ inline void AccumulateGlobal(const __global float* src, const int goff,
                              __constant float* coeff, float acc[WPTY][WPTX],
                              const int gid_x, const int gid_y) {
 
+  // Caches data from global memory into registers
+  float rmem[FS+WPTY-1][FS+WPTX-1];
+  #pragma unroll
+  for (int x=0; x<FS+(WPTX-1); ++x) {
+    const int gx = gid_x*WPTX + x;
+    #pragma unroll
+    for (int y=0; y<FS+(WPTY-1); ++y) {
+      const int gy = gid_y*WPTY + y;
+      rmem[y][x] = src[gy*goff + gx];
+    }
+  }
+
   // Loops over the neighbourhood
   #pragma unroll UNROLL_FACTOR
   for (int fx=0; fx<FS; ++fx) {
@@ -197,11 +219,9 @@ inline void AccumulateGlobal(const __global float* src, const int goff,
       // Performs the accumulation
       #pragma unroll
       for (int wx=0; wx<WPTX; ++wx) {
-        const int gx = gid_x*WPTX + wx;
         #pragma unroll
         for (int wy=0; wy<WPTY; ++wy) {
-          const int gy = gid_y*WPTY + wy;
-          acc[wy][wx] += coefficient * src[(gy+fy)*goff + (gx+fx)];
+          acc[wy][wx] += coefficient * rmem[wy+fy][wx+fx];
         }
       }
     }
