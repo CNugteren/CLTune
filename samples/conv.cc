@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
   // 1) Simulated annealing
   // 2) Particle swarm optimisation (PSO)
   // 3) Full search
-  auto fraction = 1/16.0f;
+  auto fraction = 1/32.0f;
   if      (method == 0) { tuner.UseRandomSearch(fraction); }
   else if (method == 1) { tuner.UseAnnealing(fraction, search_param_1); }
   else if (method == 2) { tuner.UsePSO(fraction, search_param_1, 0.4, 0.0, 0.4); }
@@ -128,14 +128,16 @@ int main(int argc, char* argv[]) {
   tuner.AddParameter(id, "WPTY", {1, 2, 4, 8});
   tuner.AddParameter(id, "VECTOR", {1, 2, 4});
   tuner.AddParameter(id, "UNROLL_FACTOR", {1, FS});
+  tuner.AddParameter(id, "PADDING", {0, 1});
 
   // Introduces a helper parameter to compute the proper number of threads for the LOCAL == 2 case.
   // In this case, the workgroup size (TBX by TBY) is extra large (TBX_XL by TBY_XL) because it uses
   // extra threads to compute the halo threads. How many extra threads are needed is dependend on
-  // the filter size. Here we support a couple of sizes
-  auto integers = {8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,
-                   35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,
-                   61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80};
+  // the filter size. Here we support a the TBX and TBY size plus up to 10 extra threads.
+  auto integers = {8,9,10,11,12,13,14,15,
+                   16,17,18,19,20,21,22,23,24,25,26,
+                   32,33,34,35,36,37,38,39,40,41,42,
+                   64,65,66,67,68,69,70,71,72,73,74};
   tuner.AddParameter(id, "TBX_XL", integers);
   tuner.AddParameter(id, "TBY_XL", integers);
   auto HaloThreads = [] (std::vector<int> v) {
@@ -152,12 +154,16 @@ int main(int argc, char* argv[]) {
   };
   tuner.AddConstraint(id, VectorConstraint, {"LOCAL", "VECTOR", "WPTX"});
 
+  // Sets padding to zero in case local memory is not used
+  auto PaddingConstraint = [] (std::vector<int> v) { return (v[1] == 0 || v[0] != 0); };
+  tuner.AddConstraint(id, PaddingConstraint, {"LOCAL", "PADDING"});
+
   // Sets the constraints for local memory size limitations
   auto LocalMemorySize = [] (std::vector<int> v) {
-    if (v[0] != 0) { return ((v[3]*v[4] + 2*HFS) * (v[1]*v[2] + 2*HFS))*sizeof(float); }
+    if (v[0] != 0) { return ((v[3]*v[4] + 2*HFS) * (v[1]*v[2] + 2*HFS + v[5]))*sizeof(float); }
     else           { return 0UL; }
   };
-  tuner.SetLocalMemoryUsage(id, LocalMemorySize, {"LOCAL", "TBX", "WPTX", "TBY", "WPTY"});
+  tuner.SetLocalMemoryUsage(id, LocalMemorySize, {"LOCAL", "TBX", "WPTX", "TBY", "WPTY", "PADDING"});
 
   // Modifies the thread-sizes based on the parameters
   tuner.MulLocalSize(id, {"TBX_XL", "TBY_XL"});

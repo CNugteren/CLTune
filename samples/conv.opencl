@@ -309,8 +309,8 @@ __kernel void conv(const int goff, const int dummy,
   // Local memory
   const int lid_x = get_local_id(0); // From 0 to TBX
   const int lid_y = get_local_id(1); // From 0 to TBY
-  __local float lmem[(TBY*WPTY + 2*HFS) * (TBX*WPTX + 2*HFS)];
-  const int loff = TBX*WPTX + 2*HFS;
+  __local float lmem[(TBY*WPTY + 2*HFS) * (TBX*WPTX + 2*HFS + PADDING)];
+  const int loff = TBX*WPTX + 2*HFS + PADDING;
 
   // Caches data into local memory
   LoadLocalPlusHalo(lmem, loff, src, goff, gid_x, gid_y, lid_x, lid_y);
@@ -347,8 +347,8 @@ __kernel void conv(const int goff, const int dummy,
   // Local memory
   const int lid_x = get_local_id(0); // From 0 to (TBX + 2*HFS)
   const int lid_y = get_local_id(1); // From 0 to (TBY + 2*HFS)
-  __local float lmem[(TBY*WPTY + 2*HFS) * (TBX*WPTX + 2*HFS)];
-  const int loff = TBX*WPTX + 2*HFS;
+  __local float lmem[(TBY*WPTY + 2*HFS) * (TBX*WPTX + 2*HFS + PADDING)];
+  const int loff = TBX*WPTX + 2*HFS + PADDING;
 
   // Caches data into local memory
   LoadLocalFull(lmem, loff, src, goff, gid_x, gid_y, lid_x, lid_y);
