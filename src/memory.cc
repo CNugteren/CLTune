@@ -39,20 +39,21 @@ template <> const MemType Memory<double>::type = MemType::kDouble;
 // Initializes the memory class, creating a host array with zeroes and an uninitialized device
 // buffer.
 template <typename T>
-Memory<T>::Memory(const size_t size, cl::CommandQueue queue, const cl::Context &context):
+Memory<T>::Memory(const size_t size, cl::CommandQueue queue, const cl::Context &context,
+                  const cl_mem_flags flags):
     size_(size),
     host_(size, static_cast<T>(0)),
-    device_(new cl::Buffer(context, CL_MEM_READ_WRITE, size*sizeof(T))),
+    device_(new cl::Buffer(context, flags, size*sizeof(T))),
     queue_(queue) {
 }
 
 // As above, but now initializes to a specific value based on a source vector.
 template <typename T>
 Memory<T>::Memory(const size_t size, cl::CommandQueue queue, const cl::Context &context,
-                  const std::vector<T> &source):
+                  const cl_mem_flags flags, const std::vector<T> &source):
     size_(size),
     host_(source),
-    device_(new cl::Buffer(context, CL_MEM_READ_WRITE, size*sizeof(T))),
+    device_(new cl::Buffer(context, flags, size*sizeof(T))),
     queue_(queue) {
 }
 
