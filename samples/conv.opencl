@@ -28,21 +28,9 @@
 //
 // =================================================================================================
 
-// Settings (also change these in conv.cc, conv.opencl, and conv_reference.opencl!!)
-#define HFS (3)        // Half filter size (synchronise with other files)
+// Settings (synchronise these with "conv.cc", "conv.opencl" and "conv_reference.opencl")
+#define HFS (3)        // Half filter size
 #define FS (HFS+HFS+1) // Filter size
-#define FA (FS*FS)     // Filter area
-
-// The filter values (max 7 x 7)
-__constant float coeff[FS][FS] = {
-  {1/98.0, 1/98.0, 1/98.0, 2/98.0, 1/98.0, 1/98.0, 1/98.0},
-  {1/98.0, 1/98.0, 1/98.0, 2/98.0, 1/98.0, 1/98.0, 1/98.0},
-  {1/98.0, 1/98.0, 2/98.0, 4/98.0, 2/98.0, 1/98.0, 1/98.0},
-  {2/98.0, 2/98.0, 4/98.0, 8/98.0, 4/98.0, 2/98.0, 2/98.0},
-  {1/98.0, 1/98.0, 2/98.0, 4/98.0, 2/98.0, 1/98.0, 1/98.0},
-  {1/98.0, 1/98.0, 1/98.0, 2/98.0, 1/98.0, 1/98.0, 1/98.0},
-  {1/98.0, 1/98.0, 1/98.0, 2/98.0, 1/98.0, 1/98.0, 1/98.0},
-};
 
 // Vector data-types
 #if VECTOR == 1
@@ -80,34 +68,44 @@ inline void LoadLocalFull(__local float *lmem, const int loff,
   #pragma unroll
   for (int wx=0; wx<WPTX/VECTOR; ++wx) {
     const int lx = lid_x*WPTX/VECTOR + wx;
-    const int gx = gid_x*WPTX/VECTOR + wx;
-    #pragma unroll
-    for (int wy=0; wy<WPTY; ++wy) {
-      const int ly = lid_y*WPTY + wy;
-      const int gy = gid_y*WPTY + wy;
+    #if WPTX > 0
+      if (lx < TBX*WPTX/VECTOR + (2*HFS)/VECTOR)
+    #endif
+    {
+      const int gx = gid_x*WPTX/VECTOR + wx;
+      #pragma unroll
+      for (int wy=0; wy<WPTY; ++wy) {
+        const int ly = lid_y*WPTY + wy;
+        #if WPTY > 0
+          if (ly < TBY*WPTY + 2*HFS)
+        #endif
+        {
+          const int gy = gid_y*WPTY + wy;
 
-      // Load the data into local memory (WPTX elements per thread)
-      floatvec temp = src[gy*goff/VECTOR + gx];
-      #if VECTOR == 1
-        lmem[(ly)*loff + (lx*VECTOR  )] = temp;
-      #elif VECTOR == 2
-        lmem[(ly)*loff + (lx*VECTOR  )] = temp.x;
-        lmem[(ly)*loff + (lx*VECTOR+1)] = temp.y;
-      #elif VECTOR == 4
-        lmem[(ly)*loff + (lx*VECTOR  )] = temp.x;
-        lmem[(ly)*loff + (lx*VECTOR+1)] = temp.y;
-        lmem[(ly)*loff + (lx*VECTOR+2)] = temp.z;
-        lmem[(ly)*loff + (lx*VECTOR+3)] = temp.w;
-      #elif VECTOR == 8
-        lmem[(ly)*loff + (lx*VECTOR  )] = temp.s0;
-        lmem[(ly)*loff + (lx*VECTOR+1)] = temp.s1;
-        lmem[(ly)*loff + (lx*VECTOR+2)] = temp.s2;
-        lmem[(ly)*loff + (lx*VECTOR+3)] = temp.s3;
-        lmem[(ly)*loff + (lx*VECTOR+4)] = temp.s4;
-        lmem[(ly)*loff + (lx*VECTOR+5)] = temp.s5;
-        lmem[(ly)*loff + (lx*VECTOR+6)] = temp.s6;
-        lmem[(ly)*loff + (lx*VECTOR+7)] = temp.s7;
-      #endif
+          // Load the data into local memory (WPTX elements per thread)
+          floatvec temp = src[gy*goff/VECTOR + gx];
+          #if VECTOR == 1
+            lmem[(ly)*loff + (lx*VECTOR  )] = temp;
+          #elif VECTOR == 2
+            lmem[(ly)*loff + (lx*VECTOR  )] = temp.x;
+            lmem[(ly)*loff + (lx*VECTOR+1)] = temp.y;
+          #elif VECTOR == 4
+            lmem[(ly)*loff + (lx*VECTOR  )] = temp.x;
+            lmem[(ly)*loff + (lx*VECTOR+1)] = temp.y;
+            lmem[(ly)*loff + (lx*VECTOR+2)] = temp.z;
+            lmem[(ly)*loff + (lx*VECTOR+3)] = temp.w;
+          #elif VECTOR == 8
+            lmem[(ly)*loff + (lx*VECTOR  )] = temp.s0;
+            lmem[(ly)*loff + (lx*VECTOR+1)] = temp.s1;
+            lmem[(ly)*loff + (lx*VECTOR+2)] = temp.s2;
+            lmem[(ly)*loff + (lx*VECTOR+3)] = temp.s3;
+            lmem[(ly)*loff + (lx*VECTOR+4)] = temp.s4;
+            lmem[(ly)*loff + (lx*VECTOR+5)] = temp.s5;
+            lmem[(ly)*loff + (lx*VECTOR+6)] = temp.s6;
+            lmem[(ly)*loff + (lx*VECTOR+7)] = temp.s7;
+          #endif
+        }
+      }
     }
   }
 }
@@ -157,24 +155,35 @@ inline void LoadLocalPlusHalo(__local float *lmem, const int loff,
 
 // Accumulates in the local memory
 #if LOCAL == 1 || LOCAL == 2
-inline void AccumulateLocal(__local float *lmem, const int loff, float acc[WPTY][WPTX],
+inline void AccumulateLocal(__local float *lmem, const int loff,
+                            __constant float* coeff, float acc[WPTY][WPTX],
                             const int lid_x, const int lid_y) {
+
+  // Caches data from local memory into registers
+  float rmem[FS+WPTY-1][FS+WPTX-1];
+  #pragma unroll
+  for (int x=0; x<FS+(WPTX-1); ++x) {
+    const int lx = lid_x*WPTX + x;
+    #pragma unroll
+    for (int y=0; y<FS+(WPTY-1); ++y) {
+      const int ly = lid_y*WPTY + y;
+      rmem[y][x] = lmem[ly*loff + lx];
+    }
+  }
 
   // Loops over the neighbourhood
   #pragma unroll UNROLL_FACTOR
   for (int fx=0; fx<FS; ++fx) {
     #pragma unroll UNROLL_FACTOR
     for (int fy=0; fy<FS; ++fy) {
-      const float coefficient = coeff[fy][fx];
+      const float coefficient = coeff[fy*FS + fx];
 
       // Performs the accumulation
       #pragma unroll
       for (int wx=0; wx<WPTX; ++wx) {
-        const int lx = lid_x*WPTX + wx;
         #pragma unroll
         for (int wy=0; wy<WPTY; ++wy) {
-          const int ly = lid_y*WPTY + wy;
-          acc[wy][wx] += coefficient * lmem[(ly+fy)*loff + (lx+fx)];
+          acc[wy][wx] += coefficient * rmem[wy+fy][wx+fx];
         }
       }
     }
@@ -184,24 +193,35 @@ inline void AccumulateLocal(__local float *lmem, const int loff, float acc[WPTY]
 
 // Accumulates in the global memory
 #if LOCAL == 0
-inline void AccumulateGlobal(const __global float* src, const int goff, float acc[WPTY][WPTX],
+inline void AccumulateGlobal(const __global float* src, const int goff,
+                             __constant float* coeff, float acc[WPTY][WPTX],
                              const int gid_x, const int gid_y) {
+
+  // Caches data from global memory into registers
+  float rmem[FS+WPTY-1][FS+WPTX-1];
+  #pragma unroll
+  for (int x=0; x<FS+(WPTX-1); ++x) {
+    const int gx = gid_x*WPTX + x;
+    #pragma unroll
+    for (int y=0; y<FS+(WPTY-1); ++y) {
+      const int gy = gid_y*WPTY + y;
+      rmem[y][x] = src[gy*goff + gx];
+    }
+  }
 
   // Loops over the neighbourhood
   #pragma unroll UNROLL_FACTOR
   for (int fx=0; fx<FS; ++fx) {
     #pragma unroll UNROLL_FACTOR
     for (int fy=0; fy<FS; ++fy) {
-      float coefficient = coeff[fy][fx];
+      const float coefficient = coeff[fy*FS + fx];
 
       // Performs the accumulation
       #pragma unroll
       for (int wx=0; wx<WPTX; ++wx) {
-        const int gx = gid_x*WPTX + wx;
         #pragma unroll
         for (int wy=0; wy<WPTY; ++wy) {
-          const int gy = gid_y*WPTY + wy;
-          acc[wy][wx] += coefficient * src[(gy+fy)*goff + (gx+fx)];
+          acc[wy][wx] += coefficient * rmem[wy+fy][wx+fx];
         }
       }
     }
@@ -222,24 +242,24 @@ inline void StoreResult(__global floatvec* dest, const int goff, float acc[WPTY]
       const int gy = gid_y*WPTY + wy;
       floatvec temp;
       #if VECTOR == 1
-        temp = acc[wy][wx*VECTOR] / (FS * FS);
+        temp = acc[wy][wx*VECTOR];
       #elif VECTOR == 2
-        temp.x = acc[wy][wx*VECTOR  ] / (FS * FS);
-        temp.y = acc[wy][wx*VECTOR+1] / (FS * FS);
+        temp.x = acc[wy][wx*VECTOR  ];
+        temp.y = acc[wy][wx*VECTOR+1];
       #elif VECTOR == 4
-        temp.x = acc[wy][wx*VECTOR  ] / (FS * FS);
-        temp.y = acc[wy][wx*VECTOR+1] / (FS * FS);
-        temp.z = acc[wy][wx*VECTOR+2] / (FS * FS);
-        temp.w = acc[wy][wx*VECTOR+3] / (FS * FS);
+        temp.x = acc[wy][wx*VECTOR  ];
+        temp.y = acc[wy][wx*VECTOR+1];
+        temp.z = acc[wy][wx*VECTOR+2];
+        temp.w = acc[wy][wx*VECTOR+3];
       #elif VECTOR == 8
-        temp.s0 = acc[wy][wx*VECTOR  ] / (FS * FS);
-        temp.s1 = acc[wy][wx*VECTOR+1] / (FS * FS);
-        temp.s2 = acc[wy][wx*VECTOR+2] / (FS * FS);
-        temp.s3 = acc[wy][wx*VECTOR+3] / (FS * FS);
-        temp.s4 = acc[wy][wx*VECTOR+4] / (FS * FS);
-        temp.s5 = acc[wy][wx*VECTOR+5] / (FS * FS);
-        temp.s6 = acc[wy][wx*VECTOR+6] / (FS * FS);
-        temp.s7 = acc[wy][wx*VECTOR+7] / (FS * FS);
+        temp.s0 = acc[wy][wx*VECTOR  ];
+        temp.s1 = acc[wy][wx*VECTOR+1];
+        temp.s2 = acc[wy][wx*VECTOR+2];
+        temp.s3 = acc[wy][wx*VECTOR+3];
+        temp.s4 = acc[wy][wx*VECTOR+4];
+        temp.s5 = acc[wy][wx*VECTOR+5];
+        temp.s6 = acc[wy][wx*VECTOR+6];
+        temp.s7 = acc[wy][wx*VECTOR+7];
       #endif
       dest[gy*goff/VECTOR + gx] = temp;
     }
@@ -253,6 +273,7 @@ inline void StoreResult(__global floatvec* dest, const int goff, float acc[WPTY]
 __attribute__((reqd_work_group_size(TBX, TBY, 1)))
 __kernel void conv(const int goff, const int dummy,
                    const __global float* src,
+                   __constant float* coeff,
                    __global floatvec* dest) {
 
   // Thread identifiers
@@ -264,7 +285,7 @@ __kernel void conv(const int goff, const int dummy,
   InitAccRegisters(acc);
 
   // Accumulates in global memory
-  AccumulateGlobal(src, goff, acc, gid_x, gid_y);
+  AccumulateGlobal(src, goff, coeff, acc, gid_x, gid_y);
 
   // Computes and stores the result
   StoreResult(dest, goff, acc, gid_x, gid_y);
@@ -278,6 +299,7 @@ __kernel void conv(const int goff, const int dummy,
 __attribute__((reqd_work_group_size(TBX, TBY, 1)))
 __kernel void conv(const int goff, const int dummy,
                    const __global float* src,
+                   __constant float* coeff,
                    __global floatvec* dest) {
 
   // Thread identifiers
@@ -287,8 +309,8 @@ __kernel void conv(const int goff, const int dummy,
   // Local memory
   const int lid_x = get_local_id(0); // From 0 to TBX
   const int lid_y = get_local_id(1); // From 0 to TBY
-  __local float lmem[(TBY*WPTY + 2*HFS) * (TBX*WPTX + 2*HFS)];
-  const int loff = TBX*WPTX + 2*HFS;
+  __local float lmem[(TBY*WPTY + 2*HFS) * (TBX*WPTX + 2*HFS + PADDING)];
+  const int loff = TBX*WPTX + 2*HFS + PADDING;
 
   // Caches data into local memory
   LoadLocalPlusHalo(lmem, loff, src, goff, gid_x, gid_y, lid_x, lid_y);
@@ -301,7 +323,7 @@ __kernel void conv(const int goff, const int dummy,
   InitAccRegisters(acc);
 
   // Accumulates in local memory
-  AccumulateLocal(lmem, loff, acc, lid_x, lid_y);
+  AccumulateLocal(lmem, loff, coeff, acc, lid_x, lid_y);
 
   // Computes and stores the result
   StoreResult(dest, goff, acc, gid_x, gid_y);
@@ -312,9 +334,10 @@ __kernel void conv(const int goff, const int dummy,
 
 // Tuneable implementation of the 2D convolution example
 #if LOCAL == 2
-__attribute__((reqd_work_group_size(TBX+2*HFS, TBY+2*HFS, 1)))
+__attribute__((reqd_work_group_size(TBX_XL, TBY_XL, 1)))
 __kernel void conv(const int goff, const int dummy,
                    const __global floatvec* src,
+                   __constant float* coeff,
                    __global floatvec* dest) {
 
   // Thread identifiers
@@ -324,8 +347,8 @@ __kernel void conv(const int goff, const int dummy,
   // Local memory
   const int lid_x = get_local_id(0); // From 0 to (TBX + 2*HFS)
   const int lid_y = get_local_id(1); // From 0 to (TBY + 2*HFS)
-  __local float lmem[((TBY + 2*HFS)*WPTY) * ((TBX + 2*HFS)*WPTX)];
-  const int loff = (TBX + 2*HFS)*WPTX;
+  __local float lmem[(TBY*WPTY + 2*HFS) * (TBX*WPTX + 2*HFS + PADDING)];
+  const int loff = TBX*WPTX + 2*HFS + PADDING;
 
   // Caches data into local memory
   LoadLocalFull(lmem, loff, src, goff, gid_x, gid_y, lid_x, lid_y);
@@ -333,7 +356,7 @@ __kernel void conv(const int goff, const int dummy,
   // Synchronizes all threads in a workgroup
   barrier(CLK_LOCAL_MEM_FENCE);
 
-  // Cancels some threads (those that were only used for loading data)
+  // Cancels some threads (those that were only used for loading halo data)
   if ((lid_x >= TBX) || (lid_y >= TBY)) {
     return;
   }
@@ -343,7 +366,7 @@ __kernel void conv(const int goff, const int dummy,
   InitAccRegisters(acc);
 
   // Accumulates in local memory
-  AccumulateLocal(lmem, loff, acc, lid_x, lid_y);
+  AccumulateLocal(lmem, loff, coeff, acc, lid_x, lid_y);
 
   // Computes and stores the result
   StoreResult(dest, goff, acc, gid_x, gid_y);

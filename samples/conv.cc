@@ -28,19 +28,28 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <cmath>
+#include <numeric>
 
 // Includes the OpenCL tuner library
 #include "cltune.h"
+
+// Helper function to perform an integer division + ceiling (round-up)
+int CeilDiv(int a, int b) { return (a + b - 1)/b; }
+
+// Helper function to determine whether or not 'a' is a multiple of 'b'
+bool IsMultiple(int a, int b) {
+  return ((a/b)*b == a) ? true : false;
+};
 
 // Constants
 constexpr auto kDefaultDevice = 0;
 constexpr auto kDefaultSearchMethod = 1;
 constexpr auto kDefaultSearchParameter1 = 4;
 
-// Settings (also change these in conv.cc, conv.opencl, and conv_reference.opencl!!)
-#define HFS (3)        // Half filter size (synchronise with other files)
+// Settings (synchronise these with "conv.cc", "conv.opencl" and "conv_reference.opencl")
+#define HFS (3)        // Half filter size
 #define FS (HFS+HFS+1) // Filter size
-#define FA (FS*FS)     // Filter area
 
 // Settings (sizes)
 constexpr auto kSizeX = 8192; // Matrix dimension X
@@ -69,11 +78,27 @@ int main(int argc, char* argv[]) {
   // Creates data structures
   auto mat_a = std::vector<float>((2*HFS+kSizeX)*(2*HFS+kSizeY));
   auto mat_b = std::vector<float>(kSizeX*kSizeY);
+  auto coeff = std::vector<float>(FS*FS);
 
   // Populates data structures
   srand(time(nullptr));
   for (auto &item: mat_a) { item = (float)rand() / (float)RAND_MAX; }
   for (auto &item: mat_b) { item = 0.0; }
+
+  // Creates the filter coefficients (gaussian blur)
+  auto sigma = 1.0f;
+  auto mean = FS/2.0f;
+  auto sum = 0.0f;
+  for (auto x=0; x<FS; ++x) {
+    for (auto y=0; y<FS; ++y) {
+      auto exponent = -0.5 * (pow((x-mean)/sigma, 2.0) + pow((y-mean)/sigma,2.0));
+      coeff[y*FS + x] = exp(exponent) / (2 * M_PI * sigma * sigma);
+      sum += coeff[y*FS + x];
+    }
+  }
+  for (auto &item: coeff) { item = item / sum; }
+
+  // ===============================================================================================
 
   // Initializes the tuner (platform 0, device 'device_id')
   cltune::Tuner tuner(0, device_id);
@@ -83,7 +108,7 @@ int main(int argc, char* argv[]) {
   // 1) Simulated annealing
   // 2) Particle swarm optimisation (PSO)
   // 3) Full search
-  auto fraction = 1/16.0f;
+  auto fraction = 1/32.0f;
   if      (method == 0) { tuner.UseRandomSearch(fraction); }
   else if (method == 1) { tuner.UseAnnealing(fraction, search_param_1); }
   else if (method == 2) { tuner.UsePSO(fraction, search_param_1, 0.4, 0.0, 0.4); }
@@ -103,28 +128,42 @@ int main(int argc, char* argv[]) {
   tuner.AddParameter(id, "WPTY", {1, 2, 4, 8});
   tuner.AddParameter(id, "VECTOR", {1, 2, 4});
   tuner.AddParameter(id, "UNROLL_FACTOR", {1, FS});
+  tuner.AddParameter(id, "PADDING", {0, 1});
 
-  // Introduces a helper parameter to compute the proper number of threads for the LOCAL == 2 case
-  tuner.AddParameter(id, "TBX_XL", {8, 8+2*HFS, 16, 16+2*HFS, 32, 32+2*HFS, 64, 64+2*HFS});
-  tuner.AddParameter(id, "TBY_XL", {8, 8+2*HFS, 16, 16+2*HFS, 32, 32+2*HFS, 64, 64+2*HFS});
+  // Introduces a helper parameter to compute the proper number of threads for the LOCAL == 2 case.
+  // In this case, the workgroup size (TBX by TBY) is extra large (TBX_XL by TBY_XL) because it uses
+  // extra threads to compute the halo threads. How many extra threads are needed is dependend on
+  // the filter size. Here we support a the TBX and TBY size plus up to 10 extra threads.
+  auto integers = {8,9,10,11,12,13,14,15,
+                   16,17,18,19,20,21,22,23,24,25,26,
+                   32,33,34,35,36,37,38,39,40,41,42,
+                   64,65,66,67,68,69,70,71,72,73,74};
+  tuner.AddParameter(id, "TBX_XL", integers);
+  tuner.AddParameter(id, "TBY_XL", integers);
   auto HaloThreads = [] (std::vector<int> v) {
-    if (v[0] == 2) { return (v[1] == v[2] + 2*HFS); } // With halo threads
-    else           { return (v[1] == v[2]); }          // Without halo threads
+    if (v[0] == 2) { return (v[1] == v[2] + CeilDiv(2*HFS,v[3])); } // With halo threads
+    else           { return (v[1] == v[2]); }                       // Without halo threads
   };
-  tuner.AddConstraint(id, HaloThreads, {"LOCAL", "TBX_XL", "TBX"});
-  tuner.AddConstraint(id, HaloThreads, {"LOCAL", "TBY_XL", "TBY"});
+  tuner.AddConstraint(id, HaloThreads, {"LOCAL", "TBX_XL", "TBX", "WPTX"});
+  tuner.AddConstraint(id, HaloThreads, {"LOCAL", "TBY_XL", "TBY", "WPTY"});
 
   // Sets the constrains on the vector size
-  auto VectorConstraint = [] (std::vector<int> v) { return (v[0] <= v[1]); };
-  tuner.AddConstraint(id, VectorConstraint, {"VECTOR", "WPTX"});
+  auto VectorConstraint = [] (std::vector<int> v) {
+    if (v[0] == 2) { return IsMultiple(v[2],v[1]) && IsMultiple(2*HFS,v[1]); }
+    else           { return IsMultiple(v[2],v[1]); }
+  };
+  tuner.AddConstraint(id, VectorConstraint, {"LOCAL", "VECTOR", "WPTX"});
+
+  // Sets padding to zero in case local memory is not used
+  auto PaddingConstraint = [] (std::vector<int> v) { return (v[1] == 0 || v[0] != 0); };
+  tuner.AddConstraint(id, PaddingConstraint, {"LOCAL", "PADDING"});
 
   // Sets the constraints for local memory size limitations
   auto LocalMemorySize = [] (std::vector<int> v) {
-    if (v[0] == 1) { return ((v[3]*v[4] + 2*HFS) * (v[1]*v[2] + 2*HFS))*sizeof(float); }
-    if (v[0] == 2) { return (((v[3] + 2*HFS)*v[4]) * ((v[1] + 2*HFS)*v[2]))*sizeof(float); }
-    return 0UL;
+    if (v[0] != 0) { return ((v[3]*v[4] + 2*HFS) * (v[1]*v[2] + 2*HFS + v[5]))*sizeof(float); }
+    else           { return 0UL; }
   };
-  tuner.SetLocalMemoryUsage(id, LocalMemorySize, {"LOCAL", "TBX", "WPTX", "TBY", "WPTY"});
+  tuner.SetLocalMemoryUsage(id, LocalMemorySize, {"LOCAL", "TBX", "WPTX", "TBY", "WPTY", "PADDING"});
 
   // Modifies the thread-sizes based on the parameters
   tuner.MulLocalSize(id, {"TBX_XL", "TBY_XL"});
@@ -144,6 +183,7 @@ int main(int argc, char* argv[]) {
   tuner.AddArgumentScalar(kSizeX);
   tuner.AddArgumentScalar(kSizeY);
   tuner.AddArgumentInput(mat_a);
+  tuner.AddArgumentInput(coeff);
   tuner.AddArgumentOutput(mat_b);
 
   // Starts the tuner

@@ -52,9 +52,10 @@ class Memory {
   const static MemType type;
 
   // Initializes the host and device data (with zeroes or based on a source-vector)
-  explicit Memory(const size_t size, cl::CommandQueue queue, const cl::Context &context);
   explicit Memory(const size_t size, cl::CommandQueue queue, const cl::Context &context,
-                  const std::vector<T> &source);
+                  const cl_mem_flags flags);
+  explicit Memory(const size_t size, cl::CommandQueue queue, const cl::Context &context,
+                  const cl_mem_flags flags, const std::vector<T> &source);
 
   // Accessors to the host/device data
   std::vector<T> host() const { return host_; }
