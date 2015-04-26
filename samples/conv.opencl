@@ -68,34 +68,44 @@ inline void LoadLocalFull(__local float *lmem, const int loff,
   #pragma unroll
   for (int wx=0; wx<WPTX/VECTOR; ++wx) {
     const int lx = lid_x*WPTX/VECTOR + wx;
-    const int gx = gid_x*WPTX/VECTOR + wx;
-    #pragma unroll
-    for (int wy=0; wy<WPTY; ++wy) {
-      const int ly = lid_y*WPTY + wy;
-      const int gy = gid_y*WPTY + wy;
+    #if WPTX > 0
+      if (lx < TBX*WPTX/VECTOR + (2*HFS)/VECTOR)
+    #endif
+    {
+      const int gx = gid_x*WPTX/VECTOR + wx;
+      #pragma unroll
+      for (int wy=0; wy<WPTY; ++wy) {
+        const int ly = lid_y*WPTY + wy;
+        #if WPTY > 0
+          if (ly < TBY*WPTY + 2*HFS)
+        #endif
+        {
+          const int gy = gid_y*WPTY + wy;
 
-      // Load the data into local memory (WPTX elements per thread)
-      floatvec temp = src[gy*goff/VECTOR + gx];
-      #if VECTOR == 1
-        lmem[(ly)*loff + (lx*VECTOR  )] = temp;
-      #elif VECTOR == 2
-        lmem[(ly)*loff + (lx*VECTOR  )] = temp.x;
-        lmem[(ly)*loff + (lx*VECTOR+1)] = temp.y;
-      #elif VECTOR == 4
-        lmem[(ly)*loff + (lx*VECTOR  )] = temp.x;
-        lmem[(ly)*loff + (lx*VECTOR+1)] = temp.y;
-        lmem[(ly)*loff + (lx*VECTOR+2)] = temp.z;
-        lmem[(ly)*loff + (lx*VECTOR+3)] = temp.w;
-      #elif VECTOR == 8
-        lmem[(ly)*loff + (lx*VECTOR  )] = temp.s0;
-        lmem[(ly)*loff + (lx*VECTOR+1)] = temp.s1;
-        lmem[(ly)*loff + (lx*VECTOR+2)] = temp.s2;
-        lmem[(ly)*loff + (lx*VECTOR+3)] = temp.s3;
-        lmem[(ly)*loff + (lx*VECTOR+4)] = temp.s4;
-        lmem[(ly)*loff + (lx*VECTOR+5)] = temp.s5;
-        lmem[(ly)*loff + (lx*VECTOR+6)] = temp.s6;
-        lmem[(ly)*loff + (lx*VECTOR+7)] = temp.s7;
-      #endif
+          // Load the data into local memory (WPTX elements per thread)
+          floatvec temp = src[gy*goff/VECTOR + gx];
+          #if VECTOR == 1
+            lmem[(ly)*loff + (lx*VECTOR  )] = temp;
+          #elif VECTOR == 2
+            lmem[(ly)*loff + (lx*VECTOR  )] = temp.x;
+            lmem[(ly)*loff + (lx*VECTOR+1)] = temp.y;
+          #elif VECTOR == 4
+            lmem[(ly)*loff + (lx*VECTOR  )] = temp.x;
+            lmem[(ly)*loff + (lx*VECTOR+1)] = temp.y;
+            lmem[(ly)*loff + (lx*VECTOR+2)] = temp.z;
+            lmem[(ly)*loff + (lx*VECTOR+3)] = temp.w;
+          #elif VECTOR == 8
+            lmem[(ly)*loff + (lx*VECTOR  )] = temp.s0;
+            lmem[(ly)*loff + (lx*VECTOR+1)] = temp.s1;
+            lmem[(ly)*loff + (lx*VECTOR+2)] = temp.s2;
+            lmem[(ly)*loff + (lx*VECTOR+3)] = temp.s3;
+            lmem[(ly)*loff + (lx*VECTOR+4)] = temp.s4;
+            lmem[(ly)*loff + (lx*VECTOR+5)] = temp.s5;
+            lmem[(ly)*loff + (lx*VECTOR+6)] = temp.s6;
+            lmem[(ly)*loff + (lx*VECTOR+7)] = temp.s7;
+          #endif
+        }
+      }
     }
   }
 }
@@ -304,7 +314,7 @@ __kernel void conv(const int goff, const int dummy,
 
 // Tuneable implementation of the 2D convolution example
 #if LOCAL == 2
-__attribute__((reqd_work_group_size(TBX+2*HFS, TBY+2*HFS, 1)))
+__attribute__((reqd_work_group_size(TBX_XL, TBY_XL, 1)))
 __kernel void conv(const int goff, const int dummy,
                    const __global floatvec* src,
                    __constant float* coeff,
@@ -317,8 +327,8 @@ __kernel void conv(const int goff, const int dummy,
   // Local memory
   const int lid_x = get_local_id(0); // From 0 to (TBX + 2*HFS)
   const int lid_y = get_local_id(1); // From 0 to (TBY + 2*HFS)
-  __local float lmem[((TBY + 2*HFS)*WPTY) * ((TBX + 2*HFS)*WPTX)];
-  const int loff = (TBX + 2*HFS)*WPTX;
+  __local float lmem[(TBY*WPTY + 2*HFS) * (TBX*WPTX + 2*HFS)];
+  const int loff = TBX*WPTX + 2*HFS;
 
   // Caches data into local memory
   LoadLocalFull(lmem, loff, src, goff, gid_x, gid_y, lid_x, lid_y);

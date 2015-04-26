@@ -29,9 +29,18 @@
 #include <sstream>
 #include <vector>
 #include <cmath>
+#include <numeric>
 
 // Includes the OpenCL tuner library
 #include "cltune.h"
+
+// Helper function to perform an integer division + ceiling (round-up)
+int CeilDiv(int a, int b) { return (a + b - 1)/b; }
+
+// Helper function to determine whether or not 'a' is a multiple of 'b'
+bool IsMultiple(int a, int b) {
+  return ((a/b)*b == a) ? true : false;
+};
 
 // Constants
 constexpr auto kDefaultDevice = 0;
@@ -88,7 +97,7 @@ int main(int argc, char* argv[]) {
     }
   }
   for (auto &item: coeff) { item = item / sum; }
-    
+
   // ===============================================================================================
 
   // Initializes the tuner (platform 0, device 'device_id')
@@ -120,25 +129,33 @@ int main(int argc, char* argv[]) {
   tuner.AddParameter(id, "VECTOR", {1, 2, 4});
   tuner.AddParameter(id, "UNROLL_FACTOR", {1, FS});
 
-  // Introduces a helper parameter to compute the proper number of threads for the LOCAL == 2 case
-  tuner.AddParameter(id, "TBX_XL", {8, 8+2*HFS, 16, 16+2*HFS, 32, 32+2*HFS, 64, 64+2*HFS});
-  tuner.AddParameter(id, "TBY_XL", {8, 8+2*HFS, 16, 16+2*HFS, 32, 32+2*HFS, 64, 64+2*HFS});
+  // Introduces a helper parameter to compute the proper number of threads for the LOCAL == 2 case.
+  // In this case, the workgroup size (TBX by TBY) is extra large (TBX_XL by TBY_XL) because it uses
+  // extra threads to compute the halo threads. How many extra threads are needed is dependend on
+  // the filter size. Here we support a couple of sizes
+  auto integers = {8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,
+                   35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,
+                   61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80};
+  tuner.AddParameter(id, "TBX_XL", integers);
+  tuner.AddParameter(id, "TBY_XL", integers);
   auto HaloThreads = [] (std::vector<int> v) {
-    if (v[0] == 2) { return (v[1] == v[2] + 2*HFS); } // With halo threads
-    else           { return (v[1] == v[2]); }          // Without halo threads
+    if (v[0] == 2) { return (v[1] == v[2] + CeilDiv(2*HFS,v[3])); } // With halo threads
+    else           { return (v[1] == v[2]); }                       // Without halo threads
   };
-  tuner.AddConstraint(id, HaloThreads, {"LOCAL", "TBX_XL", "TBX"});
-  tuner.AddConstraint(id, HaloThreads, {"LOCAL", "TBY_XL", "TBY"});
+  tuner.AddConstraint(id, HaloThreads, {"LOCAL", "TBX_XL", "TBX", "WPTX"});
+  tuner.AddConstraint(id, HaloThreads, {"LOCAL", "TBY_XL", "TBY", "WPTY"});
 
   // Sets the constrains on the vector size
-  auto VectorConstraint = [] (std::vector<int> v) { return (v[0] <= v[1]); };
-  tuner.AddConstraint(id, VectorConstraint, {"VECTOR", "WPTX"});
+  auto VectorConstraint = [] (std::vector<int> v) {
+    if (v[0] == 2) { return IsMultiple(v[2],v[1]) && IsMultiple(2*HFS,v[1]); }
+    else           { return IsMultiple(v[2],v[1]); }
+  };
+  tuner.AddConstraint(id, VectorConstraint, {"LOCAL", "VECTOR", "WPTX"});
 
   // Sets the constraints for local memory size limitations
   auto LocalMemorySize = [] (std::vector<int> v) {
-    if (v[0] == 1) { return ((v[3]*v[4] + 2*HFS) * (v[1]*v[2] + 2*HFS))*sizeof(float); }
-    if (v[0] == 2) { return (((v[3] + 2*HFS)*v[4]) * ((v[1] + 2*HFS)*v[2]))*sizeof(float); }
-    return 0UL;
+    if (v[0] != 0) { return ((v[3]*v[4] + 2*HFS) * (v[1]*v[2] + 2*HFS))*sizeof(float); }
+    else           { return 0UL; }
   };
   tuner.SetLocalMemoryUsage(id, LocalMemorySize, {"LOCAL", "TBX", "WPTX", "TBY", "WPTY"});
 
