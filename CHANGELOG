@@ -1,4 +1,15 @@
 
+Version 1.5.0
+- OpenCL local work size and memory size constraints are now automatically handled
+- Greatly improved the new 2D convolution example:
+  * Filter coefficients are now dynamic
+  * Added support for local memory padding
+  * In-lined the convolution header into the kernels and host code
+  * Fixed various bugs
+- Moved the examples to separate subfolders
+- Uses chrono timers as seed in favor of random device
+- Bugfix for simulated annealing when 2 variables can only change together.
+
 Version 1.4.1
 - Added 2D convolution as an example
 - Added command-line arguments to the GEMM search-method sample
