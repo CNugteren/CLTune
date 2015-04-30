@@ -76,7 +76,8 @@ int main(int argc, char* argv[]) {
   }
 
   // Creates data structures
-  auto mat_a = std::vector<float>((2*HFS+kSizeX)*(2*HFS+kSizeY));
+  constexpr auto kExtraSize = FS*8;
+  auto mat_a = std::vector<float>((kExtraSize+kSizeX)*(kExtraSize+kSizeY));
   auto mat_b = std::vector<float>(kSizeX*kSizeY);
   auto coeff = std::vector<float>(FS*FS);
 
@@ -120,7 +121,7 @@ int main(int argc, char* argv[]) {
   // ===============================================================================================
 
   // Adds a heavily tuneable kernel and some example parameter values
-  auto id = tuner.AddKernel("../samples/conv.opencl", "conv", {kSizeX, kSizeY}, {1, 1});
+  auto id = tuner.AddKernel("../samples/conv/conv.opencl", "conv", {kSizeX, kSizeY}, {1, 1});
   tuner.AddParameter(id, "TBX", {8, 16, 32, 64});
   tuner.AddParameter(id, "TBY", {8, 16, 32, 64});
   tuner.AddParameter(id, "LOCAL", {0, 1, 2});
@@ -154,6 +155,10 @@ int main(int argc, char* argv[]) {
   };
   tuner.AddConstraint(id, VectorConstraint, {"LOCAL", "VECTOR", "WPTX"});
 
+  // Makes sure the work per thread is not too high, otherwise too many registers would be used.
+  //auto WorkPerThreadConstraint = [] (std::vector<int> v) { return (v[0]*v[1] < 32); };
+  //tuner.AddConstraint(id, WorkPerThreadConstraint, {"WPTX", "WPTY"});
+
   // Sets padding to zero in case local memory is not used
   auto PaddingConstraint = [] (std::vector<int> v) { return (v[1] == 0 || v[0] != 0); };
   tuner.AddConstraint(id, PaddingConstraint, {"LOCAL", "PADDING"});
@@ -176,7 +181,7 @@ int main(int argc, char* argv[]) {
   // Sets the tuner's golden reference function. This kernel contains the reference code to which
   // the output is compared. Supplying such a function is not required, but it is necessary for
   // correctness checks to be enabled.
-  tuner.SetReference("../samples/conv_reference.opencl", "conv_reference", {kSizeX, kSizeY}, {8,8});
+  tuner.SetReference("../samples/conv/conv_reference.opencl", "conv_reference", {kSizeX, kSizeY}, {8,8});
 
   // Sets the function's arguments. Note that all kernels have to accept (but not necessarily use)
   // all input arguments.
