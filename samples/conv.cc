@@ -76,7 +76,8 @@ int main(int argc, char* argv[]) {
   }
 
   // Creates data structures
-  auto mat_a = std::vector<float>((2*HFS+kSizeX)*(2*HFS+kSizeY));
+  constexpr auto kExtraSize = FS*8;
+  auto mat_a = std::vector<float>((kExtraSize+kSizeX)*(kExtraSize+kSizeY));
   auto mat_b = std::vector<float>(kSizeX*kSizeY);
   auto coeff = std::vector<float>(FS*FS);
 
@@ -153,6 +154,10 @@ int main(int argc, char* argv[]) {
     else           { return IsMultiple(v[2],v[1]); }
   };
   tuner.AddConstraint(id, VectorConstraint, {"LOCAL", "VECTOR", "WPTX"});
+
+  // Makes sure the work per thread is not too high, otherwise too many registers would be used.
+  //auto WorkPerThreadConstraint = [] (std::vector<int> v) { return (v[0]*v[1] < 32); };
+  //tuner.AddConstraint(id, WorkPerThreadConstraint, {"WPTX", "WPTY"});
 
   // Sets padding to zero in case local memory is not used
   auto PaddingConstraint = [] (std::vector<int> v) { return (v[1] == 0 || v[0] != 0); };
