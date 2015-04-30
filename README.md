@@ -49,7 +49,7 @@ Before we start using the tuner, we'll have to create one. The constructor takes
 
 Now that we have a tuner, we can add a tuning kernel. This is done by providing the path to an OpenCL kernel (first argument), the name of the kernel (second argument), a list of global thread dimensions (third argument), and a list of local thread or workgroup dimensions (fourth argument). Here is an example:
 
-    auto id = my_tuner.AddKernel("path/to/kernel.opencl", "my_kernel", {1024,512}, {16,8});
+    int id = my_tuner.AddKernel("path/to/kernel.opencl", "my_kernel", {1024,512}, {16,8});
 
 Notice that the AddKernel function returns an integer: it is the ID of the added kernel. We'll need this ID when we want to add tuning parameters to this kernel. Let's say that our kernel has two pre-processor parameters named `PARAM_1` and `PARAM_2`:
 
@@ -62,7 +62,7 @@ Now that we've added a kernel and its parameters, we can add another one if we w
 
 The tuner also needs to know which arguments the kernels take. Scalar arguments can be provided as-is and are passed-by-value, whereas arrays have to be provided as C++ `std::vector`s. That's right, we won't have to create OpenCL buffers, CLTune will handle that for us! Here is an example:
 
-    auto my_variable = 900;
+    int my_variable = 900;
     std::vector<float> input_vector(8192);
     std::vector<float> output_vector(8192);
     my_tuner.AddArgumentScalar(my_variable);
@@ -82,10 +82,11 @@ Other examples
 Examples are included as part of the CLTune distribution. They illustrate some more advanced features, such as modifying the thread dimensions based on the parameters and adding user-defined parameter constraints. The examples are compiled when providing `-ENABLE_SAMPLES=ON` to CMake (default option). The included examples are:
 
 * `simple.cc` providing a basic example of matrix-vector multiplication
-* `gemm.cc` providing a more advanced and heavily tuned implementation of matrix-matrix
-  multiplication or SGEMM
-* `gemm_annealing.cc` demonstrating an alternative search technique: simulated annealing
+* `gemm.cc` providing an advanced and heavily tuned implementation of matrix-matrix
+  multiplication (GEMM)
+* `conv.cc` providing an advanced and heavily tuned implementation of 2D convolution
 
+The latter two take optionally command-line arguments. The first argument is an integer for the device to run on, the second argument is an integer to select a search strategy (0=random, 1=annealing, 2=PSO, 3=fullsearch), and the third an optional search-strategy parameter.
 
 Development and tests
 -------------
@@ -102,5 +103,7 @@ providing the `-TESTS=ON` option to CMake. Running the tests goes as follows:
 
     ./unit_tests
 
-Other useful tests are the provided examples, since they include a verification kernel.
+Other useful tests are the provided examples, since they include a verification kernel:
 
+    ./sample_conv 0 0
+    ./sample_gemm 0 0
