@@ -80,7 +80,8 @@
 #define NWB (NWG/NDIMB)               // Amount of loads-per-thread for matrix B (N-dimension)
 
 // Settings
-#define USE_MAD 0                     // Uses the non IEEE-754 compliant mad() function
+#define USE_VECTOR_MAD 1              // Don't unroll the vector MAD computation
+#define USE_CL_MAD 0                  // Uses the non-IEEE754 compliant OpenCL mad() (if above is 0)
 
 // =================================================================================================
 
@@ -90,6 +91,7 @@
   typedef float2 real2;
   typedef float4 real4;
   typedef float8 real8;
+  typedef float16 real16;
   #define ZERO 0.0f
 #elif PRECISION == 64
   #if __OPENCL_VERSION__ <= CL_VERSION_1_1 // This the default on OpenCL 1.2 or higher
@@ -99,6 +101,7 @@
   typedef double2 real2;
   typedef double4 real4;
   typedef double8 real8;
+  typedef double16 real16;
   #define ZERO 0.0
 #endif
 
@@ -113,6 +116,8 @@
     typedef real4 realM;
 #elif VWM == 8
     typedef real8 realM;
+#elif VWM == 16
+    typedef real16 realM;
 #endif
 
 // Data-widths in dimension N
@@ -124,6 +129,8 @@
     typedef real4 realN;
 #elif VWN == 8
     typedef real8 realN;
+#elif VWN == 16
+    typedef real16 realN;
 #endif
 
 // =================================================================================================
@@ -300,7 +307,7 @@ inline void StoreResults(__global realM* cgm, realM cpm[NWI][MWI/VWM], const int
 // =================================================================================================
 
 // The basic scalar multiply-add function
-#if USE_MAD == 1
+#if USE_CL_MAD == 1
   #define MultiplyAdd(cval, aval, bval) (cval = mad(aval, bval, cval))
 #else
   #define MultiplyAdd(cval, aval, bval) (cval += (aval) * (bval))
@@ -308,25 +315,46 @@ inline void StoreResults(__global realM* cgm, realM cpm[NWI][MWI/VWM], const int
 
 // The vectorised multiply-add function
 inline realM MultiplyAddVector(realM cvec, const realM avec, const real bval) {
-  #if VWM == 1
-    MultiplyAdd(cvec,    avec,    bval);
-  #elif VWM == 2
-    MultiplyAdd(cvec.x , avec.x,  bval);
-    MultiplyAdd(cvec.y , avec.y,  bval);
-  #elif VWM == 4
-    MultiplyAdd(cvec.x , avec.x,  bval);
-    MultiplyAdd(cvec.y , avec.y,  bval);
-    MultiplyAdd(cvec.z , avec.z,  bval);
-    MultiplyAdd(cvec.w , avec.w,  bval);
-  #elif VWM == 8
-    MultiplyAdd(cvec.s0, avec.s0, bval);
-    MultiplyAdd(cvec.s1, avec.s1, bval);
-    MultiplyAdd(cvec.s2, avec.s2, bval);
-    MultiplyAdd(cvec.s3, avec.s3, bval);
-    MultiplyAdd(cvec.s4, avec.s4, bval);
-    MultiplyAdd(cvec.s5, avec.s5, bval);
-    MultiplyAdd(cvec.s6, avec.s6, bval);
-    MultiplyAdd(cvec.s7, avec.s7, bval);
+  #if USE_VECTOR_MAD == 1
+    cvec += avec * bval;
+  #else
+    #if VWM == 1
+      MultiplyAdd(cvec,    avec,    bval);
+    #elif VWM == 2
+      MultiplyAdd(cvec.x , avec.x,  bval);
+      MultiplyAdd(cvec.y , avec.y,  bval);
+    #elif VWM == 4
+      MultiplyAdd(cvec.x , avec.x,  bval);
+      MultiplyAdd(cvec.y , avec.y,  bval);
+      MultiplyAdd(cvec.z , avec.z,  bval);
+      MultiplyAdd(cvec.w , avec.w,  bval);
+    #elif VWM == 8
+      MultiplyAdd(cvec.s0, avec.s0, bval);
+      MultiplyAdd(cvec.s1, avec.s1, bval);
+      MultiplyAdd(cvec.s2, avec.s2, bval);
+      MultiplyAdd(cvec.s3, avec.s3, bval);
+      MultiplyAdd(cvec.s4, avec.s4, bval);
+      MultiplyAdd(cvec.s5, avec.s5, bval);
+      MultiplyAdd(cvec.s6, avec.s6, bval);
+      MultiplyAdd(cvec.s7, avec.s7, bval);
+    #elif VWM == 16
+      MultiplyAdd(cvec.s0, avec.s0, bval);
+      MultiplyAdd(cvec.s1, avec.s1, bval);
+      MultiplyAdd(cvec.s2, avec.s2, bval);
+      MultiplyAdd(cvec.s3, avec.s3, bval);
+      MultiplyAdd(cvec.s4, avec.s4, bval);
+      MultiplyAdd(cvec.s5, avec.s5, bval);
+      MultiplyAdd(cvec.s6, avec.s6, bval);
+      MultiplyAdd(cvec.s7, avec.s7, bval);
+      MultiplyAdd(cvec.s8, avec.s8, bval);
+      MultiplyAdd(cvec.s9, avec.s9, bval);
+      MultiplyAdd(cvec.sA, avec.sA, bval);
+      MultiplyAdd(cvec.sB, avec.sB, bval);
+      MultiplyAdd(cvec.sC, avec.sC, bval);
+      MultiplyAdd(cvec.sD, avec.sD, bval);
+      MultiplyAdd(cvec.sE, avec.sE, bval);
+      MultiplyAdd(cvec.sF, avec.sF, bval);
+    #endif
   #endif
   return cvec;
 }
@@ -356,6 +384,23 @@ inline void MultiplyAccumulate(realM cpm[NWI][MWI/VWM], realM apm[MWI/VWM], real
         cpm[ni*VWN + 5][mi] = MultiplyAddVector(cpm[ni*VWN + 5][mi], apm[mi], bpm[ni].s5);
         cpm[ni*VWN + 6][mi] = MultiplyAddVector(cpm[ni*VWN + 6][mi], apm[mi], bpm[ni].s6);
         cpm[ni*VWN + 7][mi] = MultiplyAddVector(cpm[ni*VWN + 7][mi], apm[mi], bpm[ni].s7);
+      #elif VWN == 16
+        cpm[ni*VWN + 0 ][mi] = MultiplyAddVector(cpm[ni*VWN + 0 ][mi], apm[mi], bpm[ni].s0);
+        cpm[ni*VWN + 1 ][mi] = MultiplyAddVector(cpm[ni*VWN + 1 ][mi], apm[mi], bpm[ni].s1);
+        cpm[ni*VWN + 2 ][mi] = MultiplyAddVector(cpm[ni*VWN + 2 ][mi], apm[mi], bpm[ni].s2);
+        cpm[ni*VWN + 3 ][mi] = MultiplyAddVector(cpm[ni*VWN + 3 ][mi], apm[mi], bpm[ni].s3);
+        cpm[ni*VWN + 4 ][mi] = MultiplyAddVector(cpm[ni*VWN + 4 ][mi], apm[mi], bpm[ni].s4);
+        cpm[ni*VWN + 5 ][mi] = MultiplyAddVector(cpm[ni*VWN + 5 ][mi], apm[mi], bpm[ni].s5);
+        cpm[ni*VWN + 6 ][mi] = MultiplyAddVector(cpm[ni*VWN + 6 ][mi], apm[mi], bpm[ni].s6);
+        cpm[ni*VWN + 7 ][mi] = MultiplyAddVector(cpm[ni*VWN + 7 ][mi], apm[mi], bpm[ni].s7);
+        cpm[ni*VWN + 8 ][mi] = MultiplyAddVector(cpm[ni*VWN + 8 ][mi], apm[mi], bpm[ni].s8);
+        cpm[ni*VWN + 9 ][mi] = MultiplyAddVector(cpm[ni*VWN + 9 ][mi], apm[mi], bpm[ni].s9);
+        cpm[ni*VWN + 10][mi] = MultiplyAddVector(cpm[ni*VWN + 10][mi], apm[mi], bpm[ni].sA);
+        cpm[ni*VWN + 11][mi] = MultiplyAddVector(cpm[ni*VWN + 11][mi], apm[mi], bpm[ni].sB);
+        cpm[ni*VWN + 12][mi] = MultiplyAddVector(cpm[ni*VWN + 12][mi], apm[mi], bpm[ni].sC);
+        cpm[ni*VWN + 13][mi] = MultiplyAddVector(cpm[ni*VWN + 13][mi], apm[mi], bpm[ni].sD);
+        cpm[ni*VWN + 14][mi] = MultiplyAddVector(cpm[ni*VWN + 14][mi], apm[mi], bpm[ni].sE);
+        cpm[ni*VWN + 15][mi] = MultiplyAddVector(cpm[ni*VWN + 15][mi], apm[mi], bpm[ni].sF);
       #endif
     }
   }
