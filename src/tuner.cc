@@ -94,11 +94,14 @@ Tuner::~Tuner() {
 
 // Loads the OpenCL source-code from a file and creates a new variable of type KernelInfo to store
 // all the kernel-information.
-int Tuner::AddKernel(const std::string &filename, const std::string &kernel_name,
-                      const cl::NDRange &global, const cl::NDRange &local) {
+size_t Tuner::AddKernel(const std::vector<std::string> &filenames, const std::string &kernel_name,
+                        const cl::NDRange &global, const cl::NDRange &local) {
 
   // Loads the source-code and adds the kernel
-  auto source = LoadFile(filename);
+  auto source = std::string{};
+  for (auto &filename: filenames) {
+    source += LoadFile(filename);
+  }
   kernels_.push_back(KernelInfo(kernel_name, source, opencl_));
 
   // Sets the global and local thread sizes
@@ -113,10 +116,13 @@ int Tuner::AddKernel(const std::string &filename, const std::string &kernel_name
 // Sets the reference kernel (source-code location, kernel name, global/local thread-sizes) and
 // sets a flag to indicate that there is now a reference. Calling this function again will simply
 // overwrite the old reference.
-void Tuner::SetReference(const std::string &filename, const std::string &kernel_name,
+void Tuner::SetReference(const std::vector<std::string> &filenames, const std::string &kernel_name,
                          const cl::NDRange &global, const cl::NDRange &local) {
   has_reference_ = true;
-  auto source = LoadFile(filename);
+  auto source = std::string{};
+  for (auto &filename: filenames) {
+    source += LoadFile(filename);
+  }
   reference_kernel_.reset(new KernelInfo(kernel_name, source, opencl_));
   reference_kernel_->set_global_base(global);
   reference_kernel_->set_local_base(local);
@@ -211,6 +217,7 @@ void Tuner::AddArgumentScalar(const T argument) {
   arguments_scalar_.push_back({argument_counter_++, argument});
 }
 template void Tuner::AddArgumentScalar<int>(const int);
+template void Tuner::AddArgumentScalar<size_t>(const size_t);
 template void Tuner::AddArgumentScalar<float>(const float);
 template void Tuner::AddArgumentScalar<double>(const double);
 

@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
 
   // Adds a heavily tuneable kernel and some example parameter values. Others can be added, but for
   // this example this already leads to plenty of kernels to test.
-  auto id = tuner.AddKernel("../samples/gemm/gemm.opencl", "gemm_fast", {kSizeM, kSizeN}, {1, 1});
+  auto id = tuner.AddKernel({"../samples/gemm/gemm.opencl"}, "gemm_fast", {kSizeM, kSizeN}, {1, 1});
   tuner.AddParameter(id, "MWG", {16, 32, 64, 128});
   tuner.AddParameter(id, "NWG", {16, 32, 64, 128});
   tuner.AddParameter(id, "KWG", {16, 32});
@@ -164,7 +164,7 @@ int main(int argc, char* argv[]) {
   // Sets the tuner's golden reference function. This kernel contains the reference code to which
   // the output is compared. Supplying such a function is not required, but it is necessarily for
   // correctness checks to be enabled.
-  tuner.SetReference("../samples/gemm/gemm_reference.opencl", "gemm_reference", {kSizeM, kSizeN}, {8,8});
+  tuner.SetReference({"../samples/gemm/gemm_reference.opencl"}, "gemm_reference", {kSizeM, kSizeN}, {8,8});
 
   // Sets the function's arguments. Note that all kernels have to accept (but not necessarily use)
   // all input arguments.
