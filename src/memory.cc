@@ -35,6 +35,8 @@ namespace cltune {
 template <> const MemType Memory<int>::type = MemType::kInt;
 template <> const MemType Memory<float>::type = MemType::kFloat;
 template <> const MemType Memory<double>::type = MemType::kDouble;
+template <> const MemType Memory<float2>::type = MemType::kFloat2;
+template <> const MemType Memory<double2>::type = MemType::kDouble2;
 
 // Initializes the memory class, creating a host array with zeroes and an uninitialized device
 // buffer.
@@ -42,7 +44,7 @@ template <typename T>
 Memory<T>::Memory(const size_t size, cl::CommandQueue queue, const cl::Context &context,
                   const cl_mem_flags flags):
     size_(size),
-    host_(size, static_cast<T>(0)),
+    host_(size, T{0}),
     device_(new cl::Buffer(context, flags, size*sizeof(T))),
     queue_(queue) {
 }
@@ -81,6 +83,8 @@ void Memory<T>::DownloadFromDevice() {
 template class Memory<int>;
 template class Memory<float>;
 template class Memory<double>;
+template class Memory<float2>;
+template class Memory<double2>;
 
 // =================================================================================================
 } // namespace cltune

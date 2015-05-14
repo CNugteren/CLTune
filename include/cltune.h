@@ -173,6 +173,7 @@ class Tuner {
   // Downloads the output of a tuning run and compares it against the reference run
   bool VerifyOutput();
   template <typename T> bool DownloadAndCompare(const MemArgument &device_buffer, const size_t i);
+  template <typename T> double AbsoluteDifference(const T reference, const T result);
 
   // Prints results of a particular kernel run
   void PrintResult(FILE* fp, const TunerResult &result, const std::string &message) const;
@@ -201,7 +202,12 @@ class Tuner {
   std::vector<KernelInfo> kernels_;
   std::vector<MemArgument> arguments_input_;
   std::vector<MemArgument> arguments_output_;
-  std::vector<std::pair<int,int>> arguments_scalar_;
+  std::vector<std::pair<int,int>> arguments_int_;
+  std::vector<std::pair<int,size_t>> arguments_size_t_;
+  std::vector<std::pair<int,float>> arguments_float_;
+  std::vector<std::pair<int,double>> arguments_double_;
+  std::vector<std::pair<int,float2>> arguments_float2_;
+  std::vector<std::pair<int,double2>> arguments_double2_;
 
   // Storage for the reference kernel and output
   std::unique_ptr<KernelInfo> reference_kernel_;
