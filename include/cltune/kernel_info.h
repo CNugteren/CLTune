@@ -55,14 +55,14 @@ class KernelInfo {
   // Helper structure holding a parameter name and a list of all values
   struct Parameter {
     std::string name;
-    std::vector<int> values;
+    std::vector<size_t> values;
   };
 
   // Helper structure holding a setting: a name and a value. Multiple settings combined make a
   // single configuration.
   struct Setting {
     std::string name;
-    int value;
+    size_t value;
     std::string GetDefine() const { return "#define "+name+" "+GetValueString()+"\n"; }
     std::string GetConfig() const { return name+" "+GetValueString(); }
     std::string GetDatabase() const { return "{\""+name+"\","+GetValueString()+"}"; }
@@ -78,14 +78,14 @@ class KernelInfo {
 
   // Helper structure holding a constraint on parameters. This constraint consists of a constraint
   // function object and a vector of paramater names represented as strings.
-  using ConstraintFunction = std::function<bool(std::vector<int>)>;
+  using ConstraintFunction = std::function<bool(std::vector<size_t>)>;
   struct Constraint {
     ConstraintFunction valid_if;
     std::vector<std::string> parameters;
   };
 
   // As above, but for local memory size.
-  using LocalMemoryFunction = std::function<size_t(std::vector<int>)>;
+  using LocalMemoryFunction = std::function<size_t(std::vector<size_t>)>;
   struct LocalMemory {
     LocalMemoryFunction amount;
     std::vector<std::string> parameters;
@@ -116,7 +116,7 @@ class KernelInfo {
   void set_local_base(cl::NDRange local) { local_base_ = local; local_ = local; }
 
   // Adds a new parameter with a name and a vector of possible values
-  void AddParameter(const std::string name, const std::vector<int> values);
+  void AddParameter(const std::string &name, const std::vector<size_t> &values);
 
   // Checks wheter a parameter exists, returns "true" if it does exist
   bool ParameterExists(const std::string parameter_name);

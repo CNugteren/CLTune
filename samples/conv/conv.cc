@@ -35,10 +35,10 @@
 #include "cltune.h"
 
 // Helper function to perform an integer division + ceiling (round-up)
-int CeilDiv(int a, int b) { return (a + b - 1)/b; }
+size_t CeilDiv(size_t a, size_t b) { return (a + b - 1)/b; }
 
 // Helper function to determine whether or not 'a' is a multiple of 'b'
-bool IsMultiple(int a, int b) {
+bool IsMultiple(size_t a, size_t b) {
   return ((a/b)*b == a) ? true : false;
 };
 
@@ -135,13 +135,15 @@ int main(int argc, char* argv[]) {
   // In this case, the workgroup size (TBX by TBY) is extra large (TBX_XL by TBY_XL) because it uses
   // extra threads to compute the halo threads. How many extra threads are needed is dependend on
   // the filter size. Here we support a the TBX and TBY size plus up to 10 extra threads.
-  auto integers = {8,9,10,11,12,13,14,15,
-                   16,17,18,19,20,21,22,23,24,25,26,
-                   32,33,34,35,36,37,38,39,40,41,42,
-                   64,65,66,67,68,69,70,71,72,73,74};
+  auto integers = std::initializer_list<size_t>{
+    8,9,10,11,12,13,14,15,
+    16,17,18,19,20,21,22,23,24,25,26,
+    32,33,34,35,36,37,38,39,40,41,42,
+    64,65,66,67,68,69,70,71,72,73,74
+  };
   tuner.AddParameter(id, "TBX_XL", integers);
   tuner.AddParameter(id, "TBY_XL", integers);
-  auto HaloThreads = [] (std::vector<int> v) {
+  auto HaloThreads = [] (std::vector<size_t> v) {
     if (v[0] == 2) { return (v[1] == v[2] + CeilDiv(2*HFS,v[3])); } // With halo threads
     else           { return (v[1] == v[2]); }                       // Without halo threads
   };
@@ -149,22 +151,22 @@ int main(int argc, char* argv[]) {
   tuner.AddConstraint(id, HaloThreads, {"LOCAL", "TBY_XL", "TBY", "WPTY"});
 
   // Sets the constrains on the vector size
-  auto VectorConstraint = [] (std::vector<int> v) {
+  auto VectorConstraint = [] (std::vector<size_t> v) {
     if (v[0] == 2) { return IsMultiple(v[2],v[1]) && IsMultiple(2*HFS,v[1]); }
     else           { return IsMultiple(v[2],v[1]); }
   };
   tuner.AddConstraint(id, VectorConstraint, {"LOCAL", "VECTOR", "WPTX"});
 
   // Makes sure the work per thread is not too high, otherwise too many registers would be used.
-  //auto WorkPerThreadConstraint = [] (std::vector<int> v) { return (v[0]*v[1] < 32); };
+  //auto WorkPerThreadConstraint = [] (std::vector<size_t> v) { return (v[0]*v[1] < 32); };
   //tuner.AddConstraint(id, WorkPerThreadConstraint, {"WPTX", "WPTY"});
 
   // Sets padding to zero in case local memory is not used
-  auto PaddingConstraint = [] (std::vector<int> v) { return (v[1] == 0 || v[0] != 0); };
+  auto PaddingConstraint = [] (std::vector<size_t> v) { return (v[1] == 0 || v[0] != 0); };
   tuner.AddConstraint(id, PaddingConstraint, {"LOCAL", "PADDING"});
 
   // Sets the constraints for local memory size limitations
-  auto LocalMemorySize = [] (std::vector<int> v) {
+  auto LocalMemorySize = [] (std::vector<size_t> v) {
     if (v[0] != 0) { return ((v[3]*v[4] + 2*HFS) * (v[1]*v[2] + 2*HFS + v[5]))*sizeof(float); }
     else           { return 0UL; }
   };

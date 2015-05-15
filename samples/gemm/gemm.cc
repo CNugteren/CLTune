@@ -38,7 +38,7 @@
 #include "cltune.h"
 
 // Helper function to determine whether or not 'a' is a multiple of 'b'
-bool IsMultiple(int a, int b) {
+bool IsMultiple(size_t a, size_t b) {
   return ((a/b)*b == a) ? true : false;
 };
 
@@ -129,9 +129,9 @@ int main(int argc, char* argv[]) {
   // a boolean value whether or not the tuning configuration is legal. In this case, the helper
   // function 'IsMultiple' is employed for convenience. In the calls to 'AddConstraint' below, the
   // vector of parameter names (as strings) matches the input integer vector of the lambda's.
-  auto MultipleOfX = [] (std::vector<int> v) { return IsMultiple(v[0], v[1]); };
-  auto MultipleOfXMulY = [] (std::vector<int> v) { return IsMultiple(v[0], v[1]*v[2]); };
-  auto MultipleOfXMulYDivZ = [] (std::vector<int> v) { return IsMultiple(v[0], (v[1]*v[2])/v[3]); };
+  auto MultipleOfX = [] (std::vector<size_t> v) { return IsMultiple(v[0], v[1]); };
+  auto MultipleOfXMulY = [] (std::vector<size_t> v) { return IsMultiple(v[0], v[1]*v[2]); };
+  auto MultipleOfXMulYDivZ = [] (std::vector<size_t> v) { return IsMultiple(v[0], (v[1]*v[2])/v[3]); };
 
   // Sets constraints: Requirement for unrolling the KWG loop
   tuner.AddConstraint(id, MultipleOfX, {"KWG", "KWI"});
@@ -149,7 +149,7 @@ int main(int argc, char* argv[]) {
   tuner.AddConstraint(id, MultipleOfXMulYDivZ, {"KWG", "MDIMC", "NDIMC", "NDIMB"});
 
   // Sets the constraints for local memory size limitations
-  auto LocalMemorySize = [] (std::vector<int> v) {
+  auto LocalMemorySize = [] (std::vector<size_t> v) {
     return (((v[0]*v[1]*v[2]/v[3]) + (v[4]*v[5]*v[6]/v[7]))*sizeof(float));
   };
   tuner.SetLocalMemoryUsage(id, LocalMemorySize, {"SA", "KWG", "MWG", "VWM", "SB", "KWG", "NWG", "VWN"});

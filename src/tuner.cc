@@ -69,7 +69,7 @@ Tuner::Tuner():
 }
 
 // Initializes with a custom platform and device
-Tuner::Tuner(int platform_id, int device_id):
+Tuner::Tuner(size_t platform_id, size_t device_id):
     opencl_(new OpenCL(platform_id, device_id)),
     has_reference_(false),
     suppress_output_(false),
@@ -131,8 +131,8 @@ void Tuner::SetReference(const std::vector<std::string> &filenames, const std::s
 // =================================================================================================
 
 // Adds parameters for a kernel to tune. Also checks whether this parameter already exists.
-void Tuner::AddParameter(const size_t id, const std::string parameter_name,
-                         const std::initializer_list<int> values) {
+void Tuner::AddParameter(const size_t id, const std::string &parameter_name,
+                         const std::initializer_list<size_t> &values) {
   if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
   if (kernels_[id].ParameterExists(parameter_name)) {
     throw Exception("Parameter already exists");
@@ -243,13 +243,13 @@ void Tuner::UseFullSearch() {
 }
 
 // Use random search as a search strategy.
-void Tuner::UseRandomSearch(const float fraction) {
+void Tuner::UseRandomSearch(const double fraction) {
   search_method_ = SearchMethod::RandomSearch;
   search_args_.push_back(fraction);
 }
 
 // Use simulated annealing as a search strategy.
-void Tuner::UseAnnealing(const float fraction, const double max_temperature) {
+void Tuner::UseAnnealing(const double fraction, const double max_temperature) {
   search_method_ = SearchMethod::Annealing;
   search_args_.push_back(fraction);
   search_args_.push_back(max_temperature);
@@ -458,7 +458,7 @@ void Tuner::PrintToFile(const std::string &filename) const {
       fprintf(file, "%.2lf;", tuning_result.time);
       fprintf(file, "%lu;", tuning_result.threads);
       for (auto &setting: tuning_result.configuration) {
-        fprintf(file, "%d;", setting.value);
+        fprintf(file, "%lu;", setting.value);
       }
       fprintf(file, "\n");
     }

@@ -67,7 +67,7 @@ class Tuner {
 
   // Helper structure to store an OpenCL memory argument for a kernel
   struct MemArgument {
-    int index;          // The OpenCL kernel-argument index
+    size_t index;       // The OpenCL kernel-argument index
     size_t size;        // The number of elements (not bytes)
     MemType type;       // The data-type (e.g. float)
     cl::Buffer buffer;  // The host memory and OpenCL buffer on the device
@@ -91,7 +91,7 @@ class Tuner {
 
   // Initialize either with platform 0 and device 0 or with a custom platform/device
   explicit Tuner();
-  explicit Tuner(int platform_id, int device_id);
+  explicit Tuner(size_t platform_id, size_t device_id);
   ~Tuner();
 
   // Adds a new kernel to the list of tuning-kernels and returns a unique ID (to be used when
@@ -108,8 +108,8 @@ class Tuner {
   // number of values, and a list of values.
   // TODO: Remove all following functions (those that take "const size_t id" as first argument) and
   // make the KernelInfo class publicly accessible instead.
-  void AddParameter(const size_t id, const std::string parameter_name,
-                    const std::initializer_list<int> values);
+  void AddParameter(const size_t id, const std::string &parameter_name,
+                    const std::initializer_list<size_t> &values);
 
   // Modifies the global or local thread-size (in NDRange form) by one of the parameters (in
   // StringRange form). The modifier can be multiplication or division.
@@ -137,8 +137,8 @@ class Tuner {
 
   // Configures a specific search method. The default search method is "FullSearch"
   void UseFullSearch();
-  void UseRandomSearch(const float fraction);
-  void UseAnnealing(const float fraction, const double max_temperature);
+  void UseRandomSearch(const double fraction);
+  void UseAnnealing(const double fraction, const double max_temperature);
   void UsePSO(const double fraction, const size_t swarm_size, const double influence_global,
               const double influence_local, const double influence_random);
 
@@ -198,16 +198,16 @@ class Tuner {
   std::vector<double> search_args_;
 
   // Storage of kernel sources, arguments, and parameters
-  int argument_counter_;
+  size_t argument_counter_;
   std::vector<KernelInfo> kernels_;
   std::vector<MemArgument> arguments_input_;
   std::vector<MemArgument> arguments_output_;
-  std::vector<std::pair<int,int>> arguments_int_;
-  std::vector<std::pair<int,size_t>> arguments_size_t_;
-  std::vector<std::pair<int,float>> arguments_float_;
-  std::vector<std::pair<int,double>> arguments_double_;
-  std::vector<std::pair<int,float2>> arguments_float2_;
-  std::vector<std::pair<int,double2>> arguments_double2_;
+  std::vector<std::pair<size_t,int>> arguments_int_;
+  std::vector<std::pair<size_t,size_t>> arguments_size_t_;
+  std::vector<std::pair<size_t,float>> arguments_float_;
+  std::vector<std::pair<size_t,double>> arguments_double_;
+  std::vector<std::pair<size_t,float2>> arguments_float2_;
+  std::vector<std::pair<size_t,double2>> arguments_double2_;
 
   // Storage for the reference kernel and output
   std::unique_ptr<KernelInfo> reference_kernel_;

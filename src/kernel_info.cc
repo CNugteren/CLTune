@@ -41,7 +41,7 @@ KernelInfo::KernelInfo(const std::string name, const std::string source,
   parameters_(),
   configurations_(),
   constraints_(),
-  local_memory_(LocalMemory{[] (std::vector<int> v) { return 0UL; }, std::vector<std::string>(0)}),
+  local_memory_(LocalMemory{[] (std::vector<size_t> v) { return 0UL; }, std::vector<std::string>(0)}),
   opencl_(opencl),
   global_base_(), local_base_(),
   global_(), local_(),
@@ -51,7 +51,7 @@ KernelInfo::KernelInfo(const std::string name, const std::string source,
 // =================================================================================================
 
 // Pushes a new parameter to the list of parameters
-void KernelInfo::AddParameter(const std::string name, const std::vector<int> values) {
+void KernelInfo::AddParameter(const std::string &name, const std::vector<size_t> &values) {
   Parameter parameter = {name, values};
   parameters_.push_back(parameter);
 }
@@ -196,7 +196,7 @@ bool KernelInfo::ValidConfiguration(const Configuration &config) {
   for (auto &constraint: constraints_) {
 
     // Finds the values of the parameters
-    std::vector<int> values(0);
+    std::vector<size_t> values(size_t{0});
     for (auto &parameter: constraint.parameters) {
       for (auto &setting: config) {
         if (setting.name == parameter) {
@@ -222,7 +222,7 @@ bool KernelInfo::ValidConfiguration(const Configuration &config) {
   if (!opencl_->ValidThreadSizes(global_, local_)) { return false; };
 
   // Verifies the local memory usage
-  std::vector<int> values_local_memory(0);
+  std::vector<size_t> values_local_memory(size_t{0});
   for (auto &parameter: local_memory_.parameters) {
     for (auto &setting: config) {
       if (setting.name == parameter) {
