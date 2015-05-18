@@ -27,7 +27,7 @@ cmake_minimum_required(VERSION 2.8)
 project("cltune" CXX)
 set(cltune_VERSION_MAJOR 1)
 set(cltune_VERSION_MINOR 5)
-set(cltune_VERSION_PATCH 0)
+set(cltune_VERSION_PATCH 1)
 
 # Options
 option(SAMPLES "Enable compilation of sample programs" ON)
@@ -46,12 +46,34 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH false) # Don't add the automatically deter
 # Compiler-version check
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
-        message(FATAL_ERROR "GCC version must be at least 4.9 (for full C++11 compatibility)")
+        message(FATAL_ERROR "GCC version must be at least 4.9")
+    endif()
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3)
+        message(FATAL_ERROR "Clang version must be at least 3.3")
+    endif()
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0)
+        message(FATAL_ERROR "Clang version must be at least 5.0")
+    endif()
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14.0)
+        message(FATAL_ERROR "ICC version must be at least 14.0")
+    endif()
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 18.0)
+        message(FATAL_ERROR "Visual Studio version must be at least 18.0")
     endif()
 endif()
 
-# C++11 compiler settings
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++11 -Wall -Wno-comment")
+# C++ compiler settings
+set(FLAGS "-O3 -std=c++11")
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  set(FLAGS "${FLAGS} -Wall -Wno-comment")
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+  #set(FLAGS "${FLAGS} -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded")
+endif()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS}")
 
 # ==================================================================================================
 

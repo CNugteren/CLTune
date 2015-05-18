@@ -69,7 +69,7 @@ Tuner::Tuner():
 }
 
 // Initializes with a custom platform and device
-Tuner::Tuner(int platform_id, int device_id):
+Tuner::Tuner(size_t platform_id, size_t device_id):
     opencl_(new OpenCL(platform_id, device_id)),
     has_reference_(false),
     suppress_output_(false),
@@ -94,11 +94,14 @@ Tuner::~Tuner() {
 
 // Loads the OpenCL source-code from a file and creates a new variable of type KernelInfo to store
 // all the kernel-information.
-int Tuner::AddKernel(const std::string &filename, const std::string &kernel_name,
-                      const cl::NDRange &global, const cl::NDRange &local) {
+size_t Tuner::AddKernel(const std::vector<std::string> &filenames, const std::string &kernel_name,
+                        const cl::NDRange &global, const cl::NDRange &local) {
 
   // Loads the source-code and adds the kernel
-  auto source = LoadFile(filename);
+  auto source = std::string{};
+  for (auto &filename: filenames) {
+    source += LoadFile(filename);
+  }
   kernels_.push_back(KernelInfo(kernel_name, source, opencl_));
 
   // Sets the global and local thread sizes
@@ -113,10 +116,13 @@ int Tuner::AddKernel(const std::string &filename, const std::string &kernel_name
 // Sets the reference kernel (source-code location, kernel name, global/local thread-sizes) and
 // sets a flag to indicate that there is now a reference. Calling this function again will simply
 // overwrite the old reference.
-void Tuner::SetReference(const std::string &filename, const std::string &kernel_name,
+void Tuner::SetReference(const std::vector<std::string> &filenames, const std::string &kernel_name,
                          const cl::NDRange &global, const cl::NDRange &local) {
   has_reference_ = true;
-  auto source = LoadFile(filename);
+  auto source = std::string{};
+  for (auto &filename: filenames) {
+    source += LoadFile(filename);
+  }
   reference_kernel_.reset(new KernelInfo(kernel_name, source, opencl_));
   reference_kernel_->set_global_base(global);
   reference_kernel_->set_local_base(local);
@@ -125,8 +131,8 @@ void Tuner::SetReference(const std::string &filename, const std::string &kernel_
 // =================================================================================================
 
 // Adds parameters for a kernel to tune. Also checks whether this parameter already exists.
-void Tuner::AddParameter(const size_t id, const std::string parameter_name,
-                         const std::initializer_list<int> values) {
+void Tuner::AddParameter(const size_t id, const std::string &parameter_name,
+                         const std::initializer_list<size_t> &values) {
   if (id >= kernels_.size()) { throw Exception("Invalid kernel ID"); }
   if (kernels_[id].ParameterExists(parameter_name)) {
     throw Exception("Parameter already exists");
@@ -192,6 +198,8 @@ void Tuner::AddArgumentInput(const std::vector<T> &source) {
 template void Tuner::AddArgumentInput<int>(const std::vector<int>&);
 template void Tuner::AddArgumentInput<float>(const std::vector<float>&);
 template void Tuner::AddArgumentInput<double>(const std::vector<double>&);
+template void Tuner::AddArgumentInput<float2>(const std::vector<float2>&);
+template void Tuner::AddArgumentInput<double2>(const std::vector<double2>&);
 
 // As above, but now marked as output buffer
 template <typename T>
@@ -204,15 +212,28 @@ void Tuner::AddArgumentOutput(const std::vector<T> &source) {
 template void Tuner::AddArgumentOutput<int>(const std::vector<int>&);
 template void Tuner::AddArgumentOutput<float>(const std::vector<float>&);
 template void Tuner::AddArgumentOutput<double>(const std::vector<double>&);
+template void Tuner::AddArgumentOutput<float2>(const std::vector<float2>&);
+template void Tuner::AddArgumentOutput<double2>(const std::vector<double2>&);
 
-// Sets a simple scalar value as an argument to the kernel
-template <typename T>
-void Tuner::AddArgumentScalar(const T argument) {
-  arguments_scalar_.push_back({argument_counter_++, argument});
+// Sets a scalar value as an argument to the kernel
+template <> void Tuner::AddArgumentScalar<int>(const int argument) {
+  arguments_int_.push_back({argument_counter_++, argument});
 }
-template void Tuner::AddArgumentScalar<int>(const int);
-template void Tuner::AddArgumentScalar<float>(const float);
-template void Tuner::AddArgumentScalar<double>(const double);
+template <> void Tuner::AddArgumentScalar<size_t>(const size_t argument) {
+  arguments_size_t_.push_back({argument_counter_++, argument});
+}
+template <> void Tuner::AddArgumentScalar<float>(const float argument) {
+  arguments_float_.push_back({argument_counter_++, argument});
+}
+template <> void Tuner::AddArgumentScalar<double>(const double argument) {
+  arguments_double_.push_back({argument_counter_++, argument});
+}
+template <> void Tuner::AddArgumentScalar<float2>(const float2 argument) {
+  arguments_float2_.push_back({argument_counter_++, argument});
+}
+template <> void Tuner::AddArgumentScalar<double2>(const double2 argument) {
+  arguments_double2_.push_back({argument_counter_++, argument});
+}
 
 // =================================================================================================
 
@@ -222,13 +243,13 @@ void Tuner::UseFullSearch() {
 }
 
 // Use random search as a search strategy.
-void Tuner::UseRandomSearch(const float fraction) {
+void Tuner::UseRandomSearch(const double fraction) {
   search_method_ = SearchMethod::RandomSearch;
   search_args_.push_back(fraction);
 }
 
 // Use simulated annealing as a search strategy.
-void Tuner::UseAnnealing(const float fraction, const double max_temperature) {
+void Tuner::UseAnnealing(const double fraction, const double max_temperature) {
   search_method_ = SearchMethod::Annealing;
   search_args_.push_back(fraction);
   search_args_.push_back(max_temperature);
@@ -437,7 +458,7 @@ void Tuner::PrintToFile(const std::string &filename) const {
       fprintf(file, "%.2lf;", tuning_result.time);
       fprintf(file, "%lu;", tuning_result.threads);
       for (auto &setting: tuning_result.configuration) {
-        fprintf(file, "%d;", setting.value);
+        fprintf(file, "%lu;", setting.value);
       }
       fprintf(file, "\n");
     }
@@ -488,6 +509,8 @@ Tuner::TunerResult Tuner::RunKernel(const std::string &source, const KernelInfo 
       case MemType::kInt: ResetMemArgument<int>(output); break;
       case MemType::kFloat: ResetMemArgument<float>(output); break;
       case MemType::kDouble: ResetMemArgument<double>(output); break;
+      case MemType::kFloat2: ResetMemArgument<float2>(output); break;
+      case MemType::kDouble2: ResetMemArgument<double2>(output); break;
       default: throw Exception("Unsupported reference output data-type");
     }
   }
@@ -496,7 +519,12 @@ Tuner::TunerResult Tuner::RunKernel(const std::string &source, const KernelInfo 
   auto tune_kernel = cl::Kernel(program, kernel.name().c_str());
   for (auto &i: arguments_input_)  { tune_kernel.setArg(i.index, i.buffer); }
   for (auto &i: arguments_output_) { tune_kernel.setArg(i.index, i.buffer); }
-  for (auto &i: arguments_scalar_) { tune_kernel.setArg(i.first, i.second); }
+  for (auto &i: arguments_int_) { tune_kernel.setArg(i.first, i.second); }
+  for (auto &i: arguments_size_t_) { tune_kernel.setArg(i.first, i.second); }
+  for (auto &i: arguments_float_) { tune_kernel.setArg(i.first, i.second); }
+  for (auto &i: arguments_double_) { tune_kernel.setArg(i.first, i.second); }
+  for (auto &i: arguments_float2_) { tune_kernel.setArg(i.first, i.second); }
+  for (auto &i: arguments_double2_) { tune_kernel.setArg(i.first, i.second); }
 
   // Sets the global and local thread-sizes
   auto global = kernel.global();
@@ -562,7 +590,7 @@ template <typename T>
 void Tuner::ResetMemArgument(MemArgument &argument) {
 
   // Create an array with zeroes
-  std::vector<T> buffer(argument.size, static_cast<T>(0));
+  std::vector<T> buffer(argument.size, T{0});
 
   // Copy the new array to the OpenCL buffer on the device
   auto bytes = sizeof(T)*argument.size;
@@ -582,6 +610,8 @@ void Tuner::StoreReferenceOutput() {
       case MemType::kInt: DownloadReference<int>(output_buffer); break;
       case MemType::kFloat: DownloadReference<float>(output_buffer); break;
       case MemType::kDouble: DownloadReference<double>(output_buffer); break;
+      case MemType::kFloat2: DownloadReference<float2>(output_buffer); break;
+      case MemType::kDouble2: DownloadReference<double2>(output_buffer); break;
       default: throw Exception("Unsupported reference output data-type");
     }
   }
@@ -608,6 +638,8 @@ bool Tuner::VerifyOutput() {
         case MemType::kInt: status &= DownloadAndCompare<int>(output_buffer, i); break;
         case MemType::kFloat: status &= DownloadAndCompare<float>(output_buffer, i); break;
         case MemType::kDouble: status &= DownloadAndCompare<double>(output_buffer, i); break;
+        case MemType::kFloat2: status &= DownloadAndCompare<float2>(output_buffer, i); break;
+        case MemType::kDouble2: status &= DownloadAndCompare<double2>(output_buffer, i); break;
         default: throw Exception("Unsupported output data-type");
       }
       ++i;
@@ -629,7 +661,7 @@ bool Tuner::DownloadAndCompare(const MemArgument &device_buffer, const size_t i)
   // Compares the results (L2 norm)
   T* reference_output = (T*)reference_outputs_[i];
   for (auto j=0UL; j<device_buffer.size; ++j) {
-    l2_norm += fabs((double)reference_output[j] - (double)host_buffer[j]);
+    l2_norm += AbsoluteDifference(reference_output[j], host_buffer[j]);
   }
 
   // Verifies if everything was OK, if not: print the L2 norm
@@ -639,6 +671,22 @@ bool Tuner::DownloadAndCompare(const MemArgument &device_buffer, const size_t i)
     return false;
   }
   return true;
+}
+
+// Computes the absolute difference
+template <typename T>
+double Tuner::AbsoluteDifference(const T reference, const T result) {
+  return fabs(static_cast<double>(reference) - static_cast<double>(result));
+}
+template <> double Tuner::AbsoluteDifference(const float2 reference, const float2 result) {
+  auto real = fabs(static_cast<double>(reference.real()) - static_cast<double>(result.real()));
+  auto imag = fabs(static_cast<double>(reference.imag()) - static_cast<double>(result.imag()));
+  return real + imag;
+}
+template <> double Tuner::AbsoluteDifference(const double2 reference, const double2 result) {
+  auto real = fabs(reference.real() - result.real());
+  auto imag = fabs(reference.imag() - result.imag());
+  return real + imag;
 }
 
 // =================================================================================================

@@ -47,9 +47,9 @@ Before we start using the tuner, we'll have to create one. The constructor takes
 
     cltune::Tuner my_tuner(0, 1); // Tuner on device 1 of OpenCL platform 0
 
-Now that we have a tuner, we can add a tuning kernel. This is done by providing the path to an OpenCL kernel (first argument), the name of the kernel (second argument), a list of global thread dimensions (third argument), and a list of local thread or workgroup dimensions (fourth argument). Here is an example:
+Now that we have a tuner, we can add a tuning kernel. This is done by providing a list of paths to OpenCL kernel files (first argument), the name of the kernel (second argument), a list of global thread dimensions (third argument), and a list of local thread or workgroup dimensions (fourth argument). Here is an example:
 
-    int id = my_tuner.AddKernel("path/to/kernel.opencl", "my_kernel", {1024,512}, {16,8});
+    size_t id = my_tuner.AddKernel({"path/to/kernel.opencl"}, "my_kernel", {1024,512}, {16,8});
 
 Notice that the AddKernel function returns an integer: it is the ID of the added kernel. We'll need this ID when we want to add tuning parameters to this kernel. Let's say that our kernel has two pre-processor parameters named `PARAM_1` and `PARAM_2`:
 
@@ -58,7 +58,7 @@ Notice that the AddKernel function returns an integer: it is the ID of the added
 
 Now that we've added a kernel and its parameters, we can add another one if we wish. When we're done, there are a couple of things left to be done. Let's start with adding an reference kernel. This reference kernel can provide the tuner with the ground-truth and is optional - only when it is provided will the tuner perform verification checks to ensure correctness.
 
-    my_tuner.SetReference("path/to/reference.opencl", "my_reference", {8192}, {128});
+    my_tuner.SetReference({"path/to/reference.opencl"}, "my_reference", {8192}, {128});
 
 The tuner also needs to know which arguments the kernels take. Scalar arguments can be provided as-is and are passed-by-value, whereas arrays have to be provided as C++ `std::vector`s. That's right, we won't have to create OpenCL buffers, CLTune will handle that for us! Here is an example:
 
