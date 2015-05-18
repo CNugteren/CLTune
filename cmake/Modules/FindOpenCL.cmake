@@ -50,15 +50,17 @@
 find_path(OPENCL_INCLUDE_DIRS
     NAMES OpenCL/cl.h CL/cl.h
     HINTS
-        ${OPENCL_ROOT}/include
-        $ENV{AMDAPPSDKROOT}/include
-        $ENV{CUDA_PATH}/include
+        ${OPENCL_ROOT}
+        $ENV{OPENCL_ROOT}
+        $ENV{AMDAPPSDKROOT}
+        $ENV{CUDA_PATH}
+    DOC "OpenCL header file path"
+    PATH_SUFFIXES include
     PATHS
         /usr/include
         /usr/local/include
         /usr/local/cuda/include
         /opt/cuda/include
-    DOC "OpenCL header file path"
 )
 mark_as_advanced( OPENCL_INCLUDE_DIRS )
 
@@ -69,11 +71,12 @@ if( LIB64 )
     find_library( OPENCL_LIBRARIES
         NAMES OpenCL
         HINTS
-            ${OPENCL_ROOT}/lib
-            $ENV{AMDAPPSDKROOT}/lib
-            $ENV{CUDA_PATH}/lib
+            ${OPENCL_ROOT}
+            $ENV{OPENCL_ROOT}
+            $ENV{AMDAPPSDKROOT}
+            $ENV{CUDA_PATH}
         DOC "OpenCL dynamic library path"
-        PATH_SUFFIXES x86_64 x64
+        PATH_SUFFIXES lib lib64 lib/x86_64 lib/x64
         PATHS
             /usr/lib
             /usr/local/cuda/lib
