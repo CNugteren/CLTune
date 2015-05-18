@@ -1,4 +1,12 @@
 
+Version 1.5.1
+- Improved the GEMM example to support the Intel MIC (Xeon Phi) accelerators
+- Updated compiler check and compiler flags
+- Adds support for multiple OpenCL kernel files at once (e.g. when wanting to include a header file)
+- Adds support for the std::complex data-types
+- Fixed some compilation warnings regarding size_t conversions
+- Updated the FindOpenCL.cmake file
+
 Version 1.5.0
 - OpenCL local work size and memory size constraints are now automatically handled
 - Greatly improved the new 2D convolution example:
