@@ -38,6 +38,7 @@
 #include <iostream> // FILE
 #include <limits> // std::numeric_limits
 #include <regex> // std::regex, std::regex_replace
+#include <algorithm> // std::min
 
 namespace cltune {
 // =================================================================================================
@@ -261,7 +262,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
   try {
 
     // Obtains and verifies the local memory usage of the kernel
-    auto local_memory = static_cast<size_t>(0);
+    auto local_memory = size_t{0};
     status = tune_kernel.getWorkGroupInfo(opencl_->device(), CL_KERNEL_LOCAL_MEM_SIZE,
                                           &local_memory);
     if (status != CL_SUCCESS) { throw OpenCL::Exception("Get kernel information error", status); }
@@ -275,12 +276,14 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
     // Runs the kernel (this is the timed part)
     fprintf(stdout, "%s Running %s\n", kMessageRun.c_str(), kernel.name().c_str());
-    std::vector<cl::Event> events(kNumRuns);
+    auto events = std::vector<cl_event>(kNumRuns);
     for (auto t=0; t<kNumRuns; ++t) {
-      status = opencl_->queue().enqueueNDRangeKernel(tune_kernel, cl::NullRange, global_temp,
-                                                     local_temp, nullptr, &events[t]);
+      status = clEnqueueNDRangeKernel(opencl_->queue()(), tune_kernel(),
+                                      static_cast<cl_uint>(global.size()), nullptr,
+                                      global.data(), local.data(), 0, nullptr, &events[t]);
+
       if (status != CL_SUCCESS) { throw OpenCL::Exception("Kernel launch error", status); }
-      status = events[t].wait();
+      status = clWaitForEvents(1, &events[t]);;
       if (status != CL_SUCCESS) {
         fprintf(stdout, "%s Kernel %s failed\n", kMessageFailure.c_str(), kernel.name().c_str());
         throw OpenCL::Exception("Kernel error", status);
@@ -291,9 +294,11 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     // Collects the timing information
     auto elapsed_time = std::numeric_limits<double>::max();
     for (auto t=0; t<kNumRuns; ++t) {
-      auto start_time = events[t].getProfilingInfo<CL_PROFILING_COMMAND_START>(&status);
-      auto end_time = events[t].getProfilingInfo<CL_PROFILING_COMMAND_END>(&status);
-      elapsed_time = std::min(elapsed_time, (end_time - start_time) / (1000.0 * 1000.0));
+      auto start_time = static_cast<unsigned long>(0);
+      auto end_time = static_cast<unsigned long>(0);
+      clGetEventProfilingInfo(events[t], CL_PROFILING_COMMAND_START, 8, &start_time, nullptr);
+      clGetEventProfilingInfo(events[t], CL_PROFILING_COMMAND_END, 8, &end_time, nullptr);
+      elapsed_time = std::min(elapsed_time, (end_time - start_time) * 1.0e-6);
     }
 
     // Prints diagnostic information
