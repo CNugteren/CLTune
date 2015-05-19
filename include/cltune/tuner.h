@@ -119,7 +119,7 @@ class TunerImpl {
   std::string search_log_filename_;
 
   // The search method and its arguments
-  Tuner::SearchMethod search_method_;
+  SearchMethod search_method_;
   std::vector<double> search_args_;
 
   // Storage of kernel sources, arguments, and parameters

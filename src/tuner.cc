@@ -64,7 +64,7 @@ TunerImpl::TunerImpl():
     suppress_output_(false),
     output_search_process_(false),
     search_log_filename_(std::string{}),
-    search_method_(Tuner::SearchMethod::FullSearch),
+    search_method_(SearchMethod::FullSearch),
     search_args_(0),
     argument_counter_(0) {
 }
@@ -76,7 +76,7 @@ TunerImpl::TunerImpl(size_t platform_id, size_t device_id):
     suppress_output_(false),
     output_search_process_(false),
     search_log_filename_(std::string{}),
-    search_method_(Tuner::SearchMethod::FullSearch),
+    search_method_(SearchMethod::FullSearch),
     search_args_(0),
     argument_counter_(0) {
 }

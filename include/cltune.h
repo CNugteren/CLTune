@@ -5,10 +5,8 @@
 //
 // Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
 //
-// This file contains the externally visible Tuner class. This class contains a vector of KernelInfo
-// objects, holding the actual kernels and parameters. This class interfaces between them. This
-// class is also responsible for the actual tuning and the collection and dissemination of the
-// results.
+// This file contains the externally visible Tuner class. This forms the public API, implemenation
+// details are hidden in the TunerImpl class.
 //
 // -------------------------------------------------------------------------------------------------
 //
@@ -39,23 +37,23 @@
 namespace cltune {
 // =================================================================================================
 
-// Forward declaration of the other CLTune classes
+// Forward declaration of the implemenation class
 class TunerImpl;
 
-// Data-types
+// CLTune's custom data-types
 using IntRange = std::vector<size_t>;
 using StringRange = std::vector<std::string>;
 using ConstraintFunction = std::function<bool(std::vector<size_t>)>;
 using LocalMemoryFunction = std::function<size_t(std::vector<size_t>)>;
 
-// See comment at top of file for a description of the class
+// Enumeration for search strategies
+enum class SearchMethod{FullSearch, RandomSearch, Annealing, PSO};
+
+// The tuner class and its public API
 class Tuner {
  public:
 
-  // Search methods
-  enum class SearchMethod{FullSearch, RandomSearch, Annealing, PSO};
-
-  // Initialize either with platform 0 and device 0 or with a custom platform/device
+  // Initializes the tuner either with platform 0 and device 0 or with a custom platform/device
   explicit Tuner();
   explicit Tuner(size_t platform_id, size_t device_id);
   ~Tuner();
@@ -72,13 +70,11 @@ class Tuner {
 
   // Adds a new tuning parameter for a kernel with a specific ID. The parameter has a name, the
   // number of values, and a list of values.
-  // TODO: Remove all following functions (those that take "const size_t id" as first argument) and
-  // make the KernelInfo class publicly accessible instead.
   void AddParameter(const size_t id, const std::string &parameter_name,
                     const std::initializer_list<size_t> &values);
 
-  // Modifies the global or local thread-size (in NDRange form) by one of the parameters (in
-  // StringRange form). The modifier can be multiplication or division.
+  // Modifies the global or local thread-size (integers) by one of the parameters (strings). The
+  // modifier can be multiplication or division.
   void MulGlobalSize(const size_t id, const StringRange range);
   void DivGlobalSize(const size_t id, const StringRange range);
   void MulLocalSize(const size_t id, const StringRange range);
@@ -91,7 +87,8 @@ class Tuner {
   void AddConstraint(const size_t id, ConstraintFunction valid_if,
                      const std::vector<std::string> &parameters);
 
-  // As above, but for local memory usage
+  // As above, but for local memory usage. If this function is not called, it is assumed that the
+  // local memory usage is 0: no configurations will be excluded because of too much local memory.
   void SetLocalMemoryUsage(const size_t id, LocalMemoryFunction amount,
                            const std::vector<std::string> &parameters);
 
@@ -101,14 +98,15 @@ class Tuner {
   template <typename T> void AddArgumentOutput(const std::vector<T> &source);
   template <typename T> void AddArgumentScalar(const T argument);
 
-  // Configures a specific search method. The default search method is "FullSearch"
+  // Configures a specific search method. The default search method is "FullSearch". These are
+  // implemented as separate functions since they each take a different number of arguments.
   void UseFullSearch();
   void UseRandomSearch(const double fraction);
   void UseAnnealing(const double fraction, const double max_temperature);
   void UsePSO(const double fraction, const size_t swarm_size, const double influence_global,
               const double influence_local, const double influence_random);
 
-  // Output the search process to a file
+  // Outputs the search process to a file
   void OutputSearchLog(const std::string &filename);
 
   // Starts the tuning process: compile all kernels and run them for each permutation of the tuning-
@@ -121,14 +119,14 @@ class Tuner {
   void PrintFormatted() const;
   void PrintToFile(const std::string &filename) const;
 
-  // Disable all further printing to stdout
+  // Disables all further printing to stdout
   void SuppressOutput();
 
  private:
 
-  // This implements the pointer to implementation idiom (pimpl)
+  // This implements the pointer to implementation idiom (pimpl) and hides all private functions and
+  // member variables.
   std::unique_ptr<TunerImpl> pimpl_;
-
 };
 
 // =================================================================================================
