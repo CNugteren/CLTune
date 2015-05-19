@@ -317,6 +317,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     // Computes the result of the tuning
     auto local_threads = opencl_->GetLocalSize(global, local);
     TunerResult result = {kernel.name(), elapsed_time, local_threads, false, {}};
+    clReleaseProgram(program);
     clReleaseKernel(tune_kernel);
     return result;
   }
@@ -324,6 +325,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
   // There was an exception, now return an invalid tuner results
   catch(std::exception& e) {
     TunerResult result = {kernel.name(), std::numeric_limits<double>::max(), 0, false, {}};
+    clReleaseProgram(program);
     clReleaseKernel(tune_kernel);
     return result;
   }
@@ -340,8 +342,8 @@ void TunerImpl::ResetMemArgument(MemArgument &argument) {
 
   // Copy the new array to the OpenCL buffer on the device
   auto bytes = sizeof(T)*argument.size;
-  auto status = opencl_->queue().enqueueWriteBuffer(argument.buffer, CL_TRUE, 0, bytes,
-                                                    buffer.data());
+  auto status = clEnqueueWriteBuffer(opencl_->queue()(), argument.buffer, CL_TRUE, 0, bytes,
+                                    buffer.data(), 0, nullptr, nullptr);
   if (status != CL_SUCCESS) { throw OpenCL::Exception("Write buffer error", status); }
 }
 
@@ -365,7 +367,9 @@ void TunerImpl::StoreReferenceOutput() {
 template <typename T> void TunerImpl::DownloadReference(const MemArgument &device_buffer) {
   T* host_buffer = new T[device_buffer.size];
   auto bytes = sizeof(T)*device_buffer.size;
-  opencl_->queue().enqueueReadBuffer(device_buffer.buffer, CL_TRUE, 0, bytes, host_buffer);
+  auto status = clEnqueueReadBuffer(opencl_->queue()(), device_buffer.buffer, CL_TRUE, 0, bytes,
+                                    host_buffer, 0, nullptr, nullptr);
+  if (status != CL_SUCCESS) { throw OpenCL::Exception("Read buffer error", status); }
   reference_outputs_.push_back(host_buffer);
 }
 
@@ -402,7 +406,9 @@ bool TunerImpl::DownloadAndCompare(const MemArgument &device_buffer, const size_
   // Downloads the results to the host
   std::vector<T> host_buffer(device_buffer.size);
   auto bytes = sizeof(T)*device_buffer.size;
-  opencl_->queue().enqueueReadBuffer(device_buffer.buffer, CL_TRUE, 0, bytes, host_buffer.data());
+  auto status = clEnqueueReadBuffer(opencl_->queue()(), device_buffer.buffer, CL_TRUE, 0, bytes,
+                                    host_buffer.data(), 0, nullptr, nullptr);
+  if (status != CL_SUCCESS) { throw OpenCL::Exception("Read buffer error", status); }
 
   // Compares the results (L2 norm)
   T* reference_output = (T*)reference_outputs_[i];

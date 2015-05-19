@@ -6,7 +6,7 @@
 // Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
 //
 // This file implements the OpenCL Memory class, a container for both host and device data. The
-// device data is based on the OpenCL C++ API and the cl::Buffer class, while the host data is based
+// device data is based on the OpenCL C API and the cl_mem class, while the host data is based
 // on the std::vector class. The Memory class is templated to support different types.
 //
 // -------------------------------------------------------------------------------------------------
@@ -33,7 +33,6 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include <memory>
 #include <complex>
 
 #include "internal/opencl.h"
@@ -66,7 +65,7 @@ class Memory {
 
   // Accessors to the host/device data
   std::vector<T> host() const { return host_; }
-  std::shared_ptr<cl::Buffer> device() const { return device_; }
+  cl_mem device() const { return device_; }
 
   // Downloads the device data onto the host
   void UploadToDevice();
@@ -77,7 +76,7 @@ class Memory {
   // The data (both host and device)
   const size_t size_;
   std::vector<T> host_;
-  std::shared_ptr<cl::Buffer> device_;
+  cl_mem device_;
 
   // Pointer to the OpenCL command queue
   cl::CommandQueue queue_;

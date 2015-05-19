@@ -67,7 +67,7 @@ class TunerImpl {
     size_t index;       // The OpenCL kernel-argument index
     size_t size;        // The number of elements (not bytes)
     MemType type;       // The data-type (e.g. float)
-    cl::Buffer buffer;  // The host memory and OpenCL buffer on the device
+    cl_mem buffer;  // The host memory and OpenCL buffer on the device
   };
 
   // Helper structure to hold the results of a tuning run

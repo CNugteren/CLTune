@@ -154,7 +154,7 @@ void Tuner::AddArgumentInput(const std::vector<T> &source) {
                           CL_MEM_READ_ONLY, source};
   buffer.UploadToDevice();
   TunerImpl::MemArgument argument = {pimpl->argument_counter_++, source.size(),
-                                     buffer.type, *buffer.device()};
+                                     buffer.type, buffer.device()};
   pimpl->arguments_input_.push_back(argument);
 }
 
@@ -173,7 +173,7 @@ void Tuner::AddArgumentOutput(const std::vector<T> &source) {
   auto buffer = Memory<T>{source.size(), pimpl->opencl_->queue(), pimpl->opencl_->context(),
                           CL_MEM_READ_WRITE, source};
   TunerImpl::MemArgument argument = {pimpl->argument_counter_++, source.size(),
-                                     buffer.type, *buffer.device()};
+                                     buffer.type, buffer.device()};
   pimpl->arguments_output_.push_back(argument);
 }
 

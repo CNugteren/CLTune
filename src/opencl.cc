@@ -95,9 +95,9 @@ OpenCL::OpenCL(const size_t platform_id, const size_t device_id):
 bool OpenCL::ValidThreadSizes(const IntRange &global, const IntRange &local) const {
   auto local_size = size_t{1};
   auto global_size = size_t{1};
-  for (auto i=size_t{0}; i<global.size(); ++i) { global_size *= global[i]; }
+  for (auto &item: global) { global_size *= item; }
+  for (auto &item: local) { local_size *= item; }
   for (auto i=size_t{0}; i<local.size(); ++i) {
-    local_size *= local[i];
     if (local[i] > max_local_sizes_[i]) { return false; }
   }
   if (local_size > max_local_threads_) { return false; }
@@ -108,7 +108,7 @@ bool OpenCL::ValidThreadSizes(const IntRange &global, const IntRange &local) con
 // Returns the total local size
 size_t OpenCL::GetLocalSize(const IntRange &global, const IntRange &local) const {
   auto local_size = size_t{1};
-  for (auto i=size_t{0}; i<local.size(); ++i) { local_size *= local[i]; }
+  for (auto &item: local) { local_size *= item; }
   return local_size;
 }
 

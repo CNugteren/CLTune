@@ -47,7 +47,7 @@ Memory<T>::Memory(const size_t size, cl::CommandQueue queue, const cl::Context &
                   const cl_mem_flags flags):
     size_(size),
     host_(size, T{0}),
-    device_(new cl::Buffer(context, flags, size*sizeof(T))),
+    device_(clCreateBuffer(context(), flags, size*sizeof(T), nullptr, nullptr)),
     queue_(queue) {
 }
 
@@ -57,7 +57,7 @@ Memory<T>::Memory(const size_t size, cl::CommandQueue queue, const cl::Context &
                   const cl_mem_flags flags, const std::vector<T> &source):
     size_(size),
     host_(source),
-    device_(new cl::Buffer(context, flags, size*sizeof(T))),
+    device_(clCreateBuffer(context(), flags, size*sizeof(T), nullptr, nullptr)),
     queue_(queue) {
 }
 
@@ -66,16 +66,16 @@ Memory<T>::Memory(const size_t size, cl::CommandQueue queue, const cl::Context &
 // Uses the OpenCL C++ function enqueueWriteBuffer to upload the data to the device
 template <typename T>
 void Memory<T>::UploadToDevice() {
-  auto status = queue_.enqueueWriteBuffer(*device_, CL_TRUE, 0,
-                                                    size_*sizeof(T), host_.data());
+  auto status = clEnqueueWriteBuffer(queue_(), device_, CL_TRUE, 0, size_*sizeof(T),
+                                    host_.data(), 0, nullptr, nullptr);
   if (status != CL_SUCCESS) { throw OpenCL::Exception("Write buffer error", status); }
 }
 
 // Uses the OpenCL C++ function enqueueReadBuffer to download the data from the device
 template <typename T>
 void Memory<T>::DownloadFromDevice() {
-  auto status = queue_.enqueueReadBuffer(*device_, CL_TRUE, 0,
-                                                    size_*sizeof(T), host_.data());
+  auto status = clEnqueueReadBuffer(queue_(), device_, CL_TRUE, 0, size_*sizeof(T),
+                                    host_.data(), 0, nullptr, nullptr);
   if (status != CL_SUCCESS) { throw OpenCL::Exception("Read buffer error", status); }
 }
 
