@@ -34,7 +34,7 @@
 #include <vector>
 #include <chrono>
 
-#include "cltune/kernel_info.h"
+#include "internal/kernel_info.h"
 
 namespace cltune {
 // =================================================================================================

@@ -25,7 +25,8 @@
 //
 // =================================================================================================
 
-#include "cltune/searchers/pso.h"
+// The corresponding header file
+#include "internal/searchers/pso.h"
 
 #include <algorithm>
 #include <limits>

@@ -39,8 +39,8 @@
 #include <functional>
 
 #include "cl.hpp"
-#include "cltune/opencl.h"
-#include "cltune/string_range.h"
+#include "cltune.h"
+#include "internal/opencl.h"
 
 namespace cltune {
 // =================================================================================================
@@ -105,15 +105,15 @@ class KernelInfo {
   std::string name() const { return name_; }
   std::string source() const { return source_; }
   std::vector<Parameter> parameters() const { return parameters_; }
-  cl::NDRange global_base() const { return global_base_; }
-  cl::NDRange local_base() const { return local_base_; }
-  cl::NDRange global() const { return global_; }
-  cl::NDRange local() const { return local_; }
+  IntRange global_base() const { return global_base_; }
+  IntRange local_base() const { return local_base_; }
+  IntRange global() const { return global_; }
+  IntRange local() const { return local_; }
   std::vector<Configuration> configurations() { return configurations_; }
 
   // Accessors (setters) - Note that these also pre-set the final global/local size
-  void set_global_base(cl::NDRange global) { global_base_ = global; global_ = global; }
-  void set_local_base(cl::NDRange local) { local_base_ = local; local_ = local; }
+  void set_global_base(IntRange global) { global_base_ = global; global_ = global; }
+  void set_local_base(IntRange local) { local_base_ = local; local_ = local; }
 
   // Adds a new parameter with a name and a vector of possible values
   void AddParameter(const std::string &name, const std::vector<size_t> &values);
@@ -164,10 +164,10 @@ class KernelInfo {
   std::shared_ptr<OpenCL> opencl_;
 
   // Global/local thread-sizes
-  cl::NDRange global_base_;
-  cl::NDRange local_base_;
-  cl::NDRange global_;
-  cl::NDRange local_;
+  IntRange global_base_;
+  IntRange local_base_;
+  IntRange global_;
+  IntRange local_;
 
   // Multipliers and dividers for global/local thread-sizes
   std::vector<ThreadSizeModifier> thread_size_modifiers_;

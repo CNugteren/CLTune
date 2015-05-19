@@ -25,7 +25,8 @@
 //
 // =================================================================================================
 
-#include "cltune/kernel_info.h"
+// The corresponding header file
+#include "internal/kernel_info.h"
 
 #include <cassert>
 
@@ -92,12 +93,12 @@ void KernelInfo::SetLocalMemoryUsage(LocalMemoryFunction amount,
 void KernelInfo::ComputeRanges(const Configuration &config) {
 
   // Initializes the result vectors
-  size_t num_dimensions = global_base_.dimensions();
-  if (num_dimensions != local_base_.dimensions()) {
+  size_t num_dimensions = global_base_.size();
+  if (num_dimensions != local_base_.size()) {
     throw Exception("Mismatching number of global/local dimensions");
   }
-  std::vector<size_t> global_values(num_dimensions);
-  std::vector<size_t> local_values(num_dimensions);
+  IntRange global_values(num_dimensions);
+  IntRange local_values(num_dimensions);
 
   // Iterates over the three dimensions (x,y,z)
   for (size_t dim=0; dim<num_dimensions; ++dim) {
@@ -106,7 +107,7 @@ void KernelInfo::ComputeRanges(const Configuration &config) {
 
     // Iterates over all the applied modifiers
     for (auto &modifier: thread_size_modifiers_) {
-      std::string modifier_string = modifier.value.sizes(dim);
+      std::string modifier_string = modifier.value[dim];
 
       // Replaces the parameter-string with the corresponding integer and processes it
       bool found_string = false;
@@ -131,25 +132,8 @@ void KernelInfo::ComputeRanges(const Configuration &config) {
   }
 
   // Stores the final integer results
-  switch (num_dimensions) {
-    case 0:
-      global_ = cl::NDRange();
-      local_ = cl::NDRange();
-      break;
-    case 1:
-      global_ = cl::NDRange(global_values[0]);
-      local_ = cl::NDRange(local_values[0]);
-      break;
-    case 2:
-      global_ = cl::NDRange(global_values[0], global_values[1]);
-      local_ = cl::NDRange(local_values[0], local_values[1]);
-      break;
-    case 3:
-      global_ = cl::NDRange(global_values[0], global_values[1], global_values[2]);
-      local_ = cl::NDRange(local_values[0], local_values[1], local_values[2]);
-      break;
-    default: assert(0 && "Invalid number of dimensions");
-  }
+  global_ = global_values;
+  local_ = local_values;
 }
 
 // =================================================================================================

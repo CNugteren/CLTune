@@ -25,6 +25,7 @@
 //
 // =================================================================================================
 
+// The corresponding header file
 #include "cltune.h"
 
 #include "gtest/gtest.h"
@@ -68,8 +69,8 @@ class TunerTest : public testing::Test {
     tuner_->SuppressOutput();
 
     // Creates example global/local thread-sizes
-    global_ = cl::NDRange{kSizeM, kSizeN};
-    local_ = cl::NDRange{8, 1};
+    global_ = cltune::IntRange{kSizeM, kSizeN};
+    local_ = cltune::IntRange{8, 1};
 
     // Adds example parameters
     for (auto k=size_t{0}; k<kNumParameters; ++k) {
@@ -87,8 +88,8 @@ class TunerTest : public testing::Test {
 
   // Member variables
   std::unique_ptr<cltune::Tuner> tuner_;
-  cl::NDRange global_;
-  cl::NDRange local_;
+  cltune::IntRange global_;
+  cltune::IntRange local_;
   std::vector<std::string> parameter_list_;
   std::vector<std::initializer_list<size_t>> values_list_;
   std::vector<cltune::StringRange> string_ranges_;
@@ -129,7 +130,7 @@ TEST_F(TunerTest, AddParameter) {
   // Adds parameters for invalid kernels, expecting a crash
   for (auto k=size_t{0}; k<kNumParameters; ++k) {
     ASSERT_THROW(tuner_->AddParameter(k, parameter_list_[k], values_list_[k]),
-                 cltune::Tuner::Exception);
+                 std::runtime_error);
   }
 
   // Adds a new kernel and then adds parameters
@@ -143,7 +144,7 @@ TEST_F(TunerTest, AddParameter) {
           }
           else {
             ASSERT_THROW(tuner_->AddParameter(id, parameter_list_[k], values_list_[k]),
-                         cltune::Tuner::Exception);
+                         std::runtime_error);
           }
         }
       }
@@ -157,10 +158,10 @@ TEST_F(TunerTest, ModifyThreadSize) {
 
   // Modifies parameters for invalid kernels, expecting a crash
   for (auto k=size_t{0}; k<kNumParameters; ++k) {
-    ASSERT_THROW(tuner_->MulGlobalSize(k, string_ranges_[k]), cltune::Tuner::Exception);
-    ASSERT_THROW(tuner_->DivGlobalSize(k, string_ranges_[k]), cltune::Tuner::Exception);
-    ASSERT_THROW(tuner_->MulLocalSize(k, string_ranges_[k]), cltune::Tuner::Exception);
-    ASSERT_THROW(tuner_->DivLocalSize(k, string_ranges_[k]), cltune::Tuner::Exception);
+    ASSERT_THROW(tuner_->MulGlobalSize(k, string_ranges_[k]), std::runtime_error);
+    ASSERT_THROW(tuner_->DivGlobalSize(k, string_ranges_[k]), std::runtime_error);
+    ASSERT_THROW(tuner_->MulLocalSize(k, string_ranges_[k]), std::runtime_error);
+    ASSERT_THROW(tuner_->DivLocalSize(k, string_ranges_[k]), std::runtime_error);
   }
 
   // Adds a new kernel and then modifies the thread-sizes

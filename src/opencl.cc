@@ -25,7 +25,8 @@
 //
 // =================================================================================================
 
-#include "cltune/opencl.h"
+// The corresponding header file
+#include "internal/opencl.h"
 
 namespace cltune {
 // =================================================================================================
@@ -91,23 +92,23 @@ OpenCL::OpenCL(const size_t platform_id, const size_t device_id):
 
 // Verifies: 1) the local worksize in each dimension, 2) the local worksize in all dimensions
 // combined, and 3) the number of dimensions. For now, the global size is not verified.
-bool OpenCL::ValidThreadSizes(const cl::NDRange &global, const cl::NDRange &local) const {
-  auto local_size = 1UL;
-  auto global_size = 1UL;
-  for (auto i=0UL; i<global.dimensions(); ++i) { global_size *= global[i]; }
-  for (auto i=0UL; i<local.dimensions(); ++i) {
+bool OpenCL::ValidThreadSizes(const IntRange &global, const IntRange &local) const {
+  auto local_size = size_t{1};
+  auto global_size = size_t{1};
+  for (auto i=size_t{0}; i<global.size(); ++i) { global_size *= global[i]; }
+  for (auto i=size_t{0}; i<local.size(); ++i) {
     local_size *= local[i];
     if (local[i] > max_local_sizes_[i]) { return false; }
   }
   if (local_size > max_local_threads_) { return false; }
-  if (local.dimensions() > max_local_dims_) { return false; }
+  if (local.size() > max_local_dims_) { return false; }
   return true;
 }
 
 // Returns the total local size
-size_t OpenCL::GetLocalSize(const cl::NDRange &global, const cl::NDRange &local) const {
-  auto local_size = 1UL;
-  for (auto i=0UL; i<local.dimensions(); ++i) { local_size *= local[i]; }
+size_t OpenCL::GetLocalSize(const IntRange &global, const IntRange &local) const {
+  auto local_size = size_t{1};
+  for (auto i=size_t{0}; i<local.size(); ++i) { local_size *= local[i]; }
   return local_size;
 }
 

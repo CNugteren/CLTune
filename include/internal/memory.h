@@ -36,7 +36,7 @@
 #include <memory>
 #include <complex>
 
-#include "cltune/opencl.h"
+#include "internal/opencl.h"
 
 namespace cltune {
 // =================================================================================================
@@ -48,7 +48,7 @@ using double2 = std::complex<double>; // cl_double2;
 // =================================================================================================
 
 // Enumeration of currently supported data-types by this class
-enum class MemType { kInt, kFloat, kDouble, kFloat2, kDouble2 };
+enum class MemType { kInt, kSizeT, kFloat, kDouble, kFloat2, kDouble2 };
 
 // See comment at top of file for a description of the class
 template <typename T>

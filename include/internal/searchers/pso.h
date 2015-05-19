@@ -36,8 +36,8 @@
 #include <vector>
 #include <random>
 
-#include "cltune/searcher.h"
-#include "cltune/kernel_info.h"
+#include "internal/searcher.h"
+#include "internal/kernel_info.h"
 
 namespace cltune {
 // =================================================================================================

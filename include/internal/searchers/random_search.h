@@ -5,8 +5,8 @@
 //
 // Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
 //
-// This file contains the StringRange class, which is the same as the OpenCL cl::NDRange class, but
-// with string-based representations of the dimensions instead.
+// This file implements a random-search algorithm, testing the configurations randomly. However,
+// it does not consider the same configuration twice. It is derived from the basic search class.
 //
 // -------------------------------------------------------------------------------------------------
 //
@@ -26,38 +26,38 @@
 //
 // =================================================================================================
 
-#ifndef CLTUNE_STRING_RANGE_H_
-#define CLTUNE_STRING_RANGE_H_
+#ifndef CLTUNE_SEARCHERS_RANDOM_SEARCH_H_
+#define CLTUNE_SEARCHERS_RANDOM_SEARCH_H_
 
-#include <string>
 #include <vector>
+
+#include "internal/searcher.h"
 
 namespace cltune {
 // =================================================================================================
 
 // See comment at top of file for a description of the class
-class StringRange {
+class RandomSearch: public Searcher {
  public:
-  
-  // Initializes the class with 0, 1, 2, or 3 dimensions. These constructors are not explicit
-  // because they are used by clients in the form of initializer lists when for example calling
-  // cltuner::MulGlobalSize.
-  StringRange();
-  StringRange(std::string x);
-  StringRange(std::string x, std::string y);
-  StringRange(std::string x, std::string y, std::string z);
 
-  // Accessor of sizes per dimension (getter)
-  std::string sizes(int id) const { return sizes_[id]; }
+  // Takes additionally a fraction of configurations to try (1.0 == full search)
+  RandomSearch(const Configurations &configurations, const double fraction);
+
+  // Retrieves the next configuration to test
+  virtual KernelInfo::Configuration GetConfiguration() override;
+
+  // Calculates the next index
+  virtual void CalculateNextIndex() override;
+
+  // Retrieves the total number of configurations to try
+  virtual size_t NumConfigurations() override;
 
  private:
-
-  // Member variables
-  std::vector<std::string> sizes_;
+    double fraction_;
 };
 
 // =================================================================================================
 } // namespace cltune
 
-// CLTUNE_STRING_RANGE_H_
+// CLTUNE_SEARCHERS_RANDOM_SEARCH_H_
 #endif
