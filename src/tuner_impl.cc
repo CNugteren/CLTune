@@ -193,6 +193,9 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
                                             const size_t configuration_id,
                                             const size_t num_configurations) {
 
+  // Retrieves the OpenCL device
+  auto device = opencl_->device()();
+
   // Removes the use of C++11 string literals (if any) from the kernel source code
   auto string_literal_start = std::regex{"R\"\\("};
   auto string_literal_end = std::regex{"\\)\";"};
@@ -200,16 +203,22 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
   processed_source = std::regex_replace(processed_source, string_literal_end, "");
 
   // Collects the source
-  cl::Program::Sources sources;
-  sources.push_back({processed_source.c_str(), processed_source.length()});
+  auto source_ptr = processed_source.c_str();
+  auto length = processed_source.length();
 
   // Compiles the kernel and prints the compiler errors/warnings
-  cl::Program program(opencl_->context(), sources);
+  auto status = CL_SUCCESS;
+  auto program = clCreateProgramWithSource(opencl_->context()(), 1, &source_ptr, &length, &status);
+  if (status != CL_SUCCESS) { throw OpenCL::Exception("Program creation error", status); }
   auto options = std::string{};
-  auto status = program.build({opencl_->device()}, options.c_str());
-  if (status == CL_BUILD_PROGRAM_FAILURE || status == CL_INVALID_BINARY) {
-    auto message = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(opencl_->device());
-    throw std::runtime_error("OpenCL compiler error/warning:\n" + message);
+  status = clBuildProgram(program, 1, &device, options.c_str(), nullptr, nullptr);
+  if (status == CL_BUILD_PROGRAM_FAILURE) {
+    auto msg_length = size_t{0};
+    clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0, nullptr, &msg_length);
+    auto msg = std::vector<char>(msg_length);
+    clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, msg_length, msg.data(), nullptr);
+    fprintf(stdout, "OpenCL compiler error/warning: %s\n", msg.data());
+    throw std::runtime_error("OpenCL compiler error/warning occurred ^^\n");
   }
   if (status != CL_SUCCESS) { throw OpenCL::Exception("Program build error", status); }
 
@@ -226,7 +235,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
   }
 
   // Sets the kernel and its arguments
-  auto tune_kernel = clCreateKernel(program(), kernel.name().c_str(), &status);
+  auto tune_kernel = clCreateKernel(program, kernel.name().c_str(), &status);
   if (status != CL_SUCCESS) { throw OpenCL::Exception("Kernel creation error", status); }
   for (auto &i: arguments_input_) {
     clSetKernelArg(tune_kernel, static_cast<cl_uint>(i.index), sizeof(i.buffer), &(i.buffer));
@@ -262,7 +271,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
     // Obtains and verifies the local memory usage of the kernel
     auto local_memory = size_t{0};
-    status = clGetKernelWorkGroupInfo(tune_kernel, opencl_->device()(), CL_KERNEL_LOCAL_MEM_SIZE,
+    status = clGetKernelWorkGroupInfo(tune_kernel, device, CL_KERNEL_LOCAL_MEM_SIZE,
                                       8, &local_memory, nullptr);
     if (status != CL_SUCCESS) { throw OpenCL::Exception("Get kernel information error", status); }
     if (!opencl_->ValidLocalMemory(local_memory)) {
