@@ -5,10 +5,11 @@
 //
 // Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
 //
-// This file contains the externally visible Tuner class. This class contains a vector of KernelInfo
-// objects, holding the actual kernels and parameters. This class interfaces between them. This
-// class is also responsible for the actual tuning and the collection and dissemination of the
-// results.
+// This file contains the non-publicly visible part of the tuner. It contains the header file for
+// the TunerImpl class, the implemenation in the Pimpl idiom. This class contains a vector of
+// KernelInfo objects, holding the actual kernels and parameters. This class interfaces between
+// them. This class is also responsible for the actual tuning and the collection and dissemination
+// of the results.
 //
 // -------------------------------------------------------------------------------------------------
 //
@@ -28,14 +29,12 @@
 //
 // =================================================================================================
 
-#ifndef CLTUNE_TUNER_H_
-#define CLTUNE_TUNER_H_
+#ifndef CLTUNE_TUNER_IMPL_H_
+#define CLTUNE_TUNER_IMPL_H_
 
-#include <string>
-#include <vector>
-#include <stdexcept>
-#include <memory>
-#include <functional>
+#include <string> // std::string
+#include <vector> // std::vector
+#include <memory> // std::shared_ptr
 
 #include "cltune/memory.h"
 #include "cltune/kernel_info.h"
@@ -45,6 +44,7 @@ namespace cltune {
 
 // See comment at top of file for a description of the class
 class TunerImpl {
+ // Note that everything here is public because of the Pimpl-idiom
  public:
 
   // Parameters
@@ -140,11 +140,10 @@ class TunerImpl {
 
   // List of tuning results
   std::vector<TunerResult> tuning_results_;
-
 };
 
 // =================================================================================================
 } // namespace cltune
 
-// CLTUNE_TUNER_H_
+// CLTUNE_TUNER_IMPL_H_
 #endif

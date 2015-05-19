@@ -92,7 +92,8 @@ include_directories(
 
 # Gathers all source-files
 set(TUNER
-    src/tuner.cc
+    src/cltune.cc
+    src/tuner_impl.cc
     src/kernel_info.cc
     src/memory.cc
     src/opencl.cc
