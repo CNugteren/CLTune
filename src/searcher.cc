@@ -25,7 +25,8 @@
 //
 // =================================================================================================
 
-#include "cltune/searcher.h"
+// The corresponding header file
+#include "internal/searcher.h"
 
 #include <limits>
 

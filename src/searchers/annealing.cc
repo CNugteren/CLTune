@@ -25,7 +25,8 @@
 //
 // =================================================================================================
 
-#include "cltune/searchers/annealing.h"
+// The corresponding header file
+#include "internal/searchers/annealing.h"
 
 #include <limits>
 #include <cmath>

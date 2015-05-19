@@ -26,7 +26,9 @@
 // =================================================================================================
 
 #include "cltune.h"
-#include "cltune/tuner_impl.h"
+
+// The corresponding header file
+#include "internal/tuner_impl.h"
 
 #include <algorithm>
 #include <iostream>
@@ -35,11 +37,6 @@
 #include <cmath>
 #include <limits>
 #include <regex>
-
-#include "cltune/searchers/full_search.h"
-#include "cltune/searchers/random_search.h"
-#include "cltune/searchers/annealing.h"
-#include "cltune/searchers/pso.h"
 
 namespace cltune {
 // =================================================================================================

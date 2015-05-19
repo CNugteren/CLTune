@@ -36,8 +36,8 @@
 #include <vector> // std::vector
 #include <memory> // std::shared_ptr
 
-#include "cltune/memory.h"
-#include "cltune/kernel_info.h"
+#include "internal/memory.h"
+#include "internal/kernel_info.h"
 
 namespace cltune {
 // =================================================================================================

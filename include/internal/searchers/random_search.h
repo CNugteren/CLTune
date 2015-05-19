@@ -31,7 +31,7 @@
 
 #include <vector>
 
-#include "cltune/searcher.h"
+#include "internal/searcher.h"
 
 namespace cltune {
 // =================================================================================================

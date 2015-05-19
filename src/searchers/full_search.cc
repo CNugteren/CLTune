@@ -25,7 +25,8 @@
 //
 // =================================================================================================
 
-#include "cltune/searchers/full_search.h"
+// The corresponding header file
+#include "internal/searchers/full_search.h"
 
 namespace cltune {
 // =================================================================================================

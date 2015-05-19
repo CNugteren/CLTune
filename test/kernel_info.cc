@@ -25,7 +25,8 @@
 //
 // =================================================================================================
 
-#include "cltune/kernel_info.h"
+// The corresponding header file
+#include "internal/kernel_info.h"
 
 #include <memory>
 

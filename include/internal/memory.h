@@ -36,7 +36,7 @@
 #include <memory>
 #include <complex>
 
-#include "cltune/opencl.h"
+#include "internal/opencl.h"
 
 namespace cltune {
 // =================================================================================================

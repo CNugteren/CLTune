@@ -25,8 +25,11 @@
 //
 // =================================================================================================
 
+// The corresponding header file
 #include "cltune.h"
-#include "cltune/tuner_impl.h"
+
+// And the implemenation (Pimpl idiom)
+#include "internal/tuner_impl.h"
 
 #include <algorithm>
 #include <iostream>
@@ -36,10 +39,11 @@
 #include <limits>
 #include <regex>
 
-#include "cltune/searchers/full_search.h"
-#include "cltune/searchers/random_search.h"
-#include "cltune/searchers/annealing.h"
-#include "cltune/searchers/pso.h"
+// The search strategies
+#include "internal/searchers/full_search.h"
+#include "internal/searchers/random_search.h"
+#include "internal/searchers/annealing.h"
+#include "internal/searchers/pso.h"
 
 namespace cltune {
 // =================================================================================================

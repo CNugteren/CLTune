@@ -40,7 +40,7 @@
 
 #include "cl.hpp"
 #include "cltune.h"
-#include "cltune/opencl.h"
+#include "internal/opencl.h"
 
 namespace cltune {
 // =================================================================================================
