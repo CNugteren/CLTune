@@ -66,11 +66,12 @@ class OpenCL {
 
   // Initializes the OpenCL platform, device, and creates a context and a queue
   explicit OpenCL(const size_t platform_id, const size_t device_id);
+  ~OpenCL();
 
   // Accessors
   const cl::Device device() const { return device_; }
-  const cl::Context context() const { return context_; }
-  cl::CommandQueue queue() const { return queue_; }
+  const cl_context context() const { return context_; }
+  cl_command_queue queue() const { return queue_; }
   const std::string device_name() const { return device_name_; }
 
   // Checks whether the global and local thread-sizes, and local memory size are compatible with the
@@ -87,8 +88,8 @@ class OpenCL {
   // OpenCL variables
   cl::Platform platform_;
   cl::Device device_;
-  cl::Context context_;
-  cl::CommandQueue queue_;
+  cl_context context_;
+  cl_command_queue queue_;
 
   // OpenCL device properties and limitations
   std::string device_name_;

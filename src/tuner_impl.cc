@@ -208,7 +208,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
   // Compiles the kernel and prints the compiler errors/warnings
   auto status = CL_SUCCESS;
-  auto program = clCreateProgramWithSource(opencl_->context()(), 1, &source_ptr, &length, &status);
+  auto program = clCreateProgramWithSource(opencl_->context(), 1, &source_ptr, &length, &status);
   if (status != CL_SUCCESS) { throw OpenCL::Exception("Program creation error", status); }
   auto options = std::string{};
   status = clBuildProgram(program, 1, &device, options.c_str(), nullptr, nullptr);
@@ -279,14 +279,14 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     }
 
     // Prepares the kernel
-    status = opencl_->queue().finish();
+    status = clFinish(opencl_->queue());
     if (status != CL_SUCCESS) { throw OpenCL::Exception("Command queue error", status); }
 
     // Runs the kernel (this is the timed part)
     fprintf(stdout, "%s Running %s\n", kMessageRun.c_str(), kernel.name().c_str());
     auto events = std::vector<cl_event>(kNumRuns);
     for (auto t=0; t<kNumRuns; ++t) {
-      status = clEnqueueNDRangeKernel(opencl_->queue()(), tune_kernel,
+      status = clEnqueueNDRangeKernel(opencl_->queue(), tune_kernel,
                                       static_cast<cl_uint>(global.size()), nullptr,
                                       global.data(), local.data(), 0, nullptr, &events[t]);
 
@@ -297,7 +297,8 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
         throw OpenCL::Exception("Kernel error", status);
       }
     }
-    opencl_->queue().finish();
+    status = clFinish(opencl_->queue());
+    if (status != CL_SUCCESS) { throw OpenCL::Exception("Command queue error", status); }
 
     // Collects the timing information
     auto elapsed_time = std::numeric_limits<double>::max();
@@ -342,7 +343,7 @@ void TunerImpl::ResetMemArgument(MemArgument &argument) {
 
   // Copy the new array to the OpenCL buffer on the device
   auto bytes = sizeof(T)*argument.size;
-  auto status = clEnqueueWriteBuffer(opencl_->queue()(), argument.buffer, CL_TRUE, 0, bytes,
+  auto status = clEnqueueWriteBuffer(opencl_->queue(), argument.buffer, CL_TRUE, 0, bytes,
                                     buffer.data(), 0, nullptr, nullptr);
   if (status != CL_SUCCESS) { throw OpenCL::Exception("Write buffer error", status); }
 }
@@ -367,7 +368,7 @@ void TunerImpl::StoreReferenceOutput() {
 template <typename T> void TunerImpl::DownloadReference(const MemArgument &device_buffer) {
   T* host_buffer = new T[device_buffer.size];
   auto bytes = sizeof(T)*device_buffer.size;
-  auto status = clEnqueueReadBuffer(opencl_->queue()(), device_buffer.buffer, CL_TRUE, 0, bytes,
+  auto status = clEnqueueReadBuffer(opencl_->queue(), device_buffer.buffer, CL_TRUE, 0, bytes,
                                     host_buffer, 0, nullptr, nullptr);
   if (status != CL_SUCCESS) { throw OpenCL::Exception("Read buffer error", status); }
   reference_outputs_.push_back(host_buffer);
@@ -406,7 +407,7 @@ bool TunerImpl::DownloadAndCompare(const MemArgument &device_buffer, const size_
   // Downloads the results to the host
   std::vector<T> host_buffer(device_buffer.size);
   auto bytes = sizeof(T)*device_buffer.size;
-  auto status = clEnqueueReadBuffer(opencl_->queue()(), device_buffer.buffer, CL_TRUE, 0, bytes,
+  auto status = clEnqueueReadBuffer(opencl_->queue(), device_buffer.buffer, CL_TRUE, 0, bytes,
                                     host_buffer.data(), 0, nullptr, nullptr);
   if (status != CL_SUCCESS) { throw OpenCL::Exception("Read buffer error", status); }
 

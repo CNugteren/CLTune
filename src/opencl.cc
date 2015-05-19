@@ -70,8 +70,12 @@ OpenCL::OpenCL(const size_t platform_id, const size_t device_id):
   device_ = devices[device_id];
 
   // Creates the context and the queue
-  context_ = cl::Context({device_});
-  queue_ = cl::CommandQueue(context_, device_, CL_QUEUE_PROFILING_ENABLE);
+  //context_ = cl::Context({device_});
+  auto status = CL_SUCCESS;
+  context_ = clCreateContext(nullptr, 1, &(device_()), nullptr, nullptr, &status);
+  if (status != CL_SUCCESS) { throw OpenCL::Exception("Context creation error", status); }
+  queue_ = clCreateCommandQueue(context_, device_(), CL_QUEUE_PROFILING_ENABLE, &status);
+  if (status != CL_SUCCESS) { throw OpenCL::Exception("Command queue creation error", status); }
 
   // Gets platform and device properties
   auto opencl_version = device_.getInfo<CL_DEVICE_VERSION>();
@@ -86,6 +90,12 @@ OpenCL::OpenCL(const size_t platform_id, const size_t device_id):
     fprintf(stdout, "%s Device name: '%s' (%s)\n", kMessageFull.c_str(),
             device_name_.c_str(), opencl_version.c_str());
   }
+}
+
+// Releases the OpenCL objects
+OpenCL::~OpenCL() {
+  clReleaseCommandQueue(queue_);
+  clReleaseContext(context_);
 }
 
 // =================================================================================================
