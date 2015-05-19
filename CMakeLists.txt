@@ -94,7 +94,6 @@ include_directories(
 set(TUNER
     src/tuner.cc
     src/kernel_info.cc
-    src/string_range.cc
     src/memory.cc
     src/opencl.cc
     src/searcher.cc
@@ -113,12 +112,6 @@ install(FILES
     include/cltune.h
     include/cl.hpp
     DESTINATION include)
-install(FILES
-    include/cltune/opencl.h
-    include/cltune/memory.h
-    include/cltune/string_range.h
-    include/cltune/kernel_info.h
-    DESTINATION include/cltune)
 
 # ==================================================================================================
 # Optional: Enables compilation of sample programs

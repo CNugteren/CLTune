@@ -31,63 +31,29 @@
 #ifndef CLTUNE_CLTUNE_H_
 #define CLTUNE_CLTUNE_H_
 
-#include <string>
-#include <vector>
-#include <stdexcept>
-#include <memory>
-#include <functional>
-
-#include "cltune/memory.h"
-#include "cltune/kernel_info.h"
+#include <string> // std::string
+#include <vector> // std::vector
+#include <memory> // std::unique_ptr
+#include <functional> // std::function
 
 namespace cltune {
 // =================================================================================================
+
+// Forward declaration of the other CLTune classes
+class TunerImpl;
+
+// Data-types
+using IntRange = std::vector<size_t>;
+using StringRange = std::vector<std::string>;
+using ConstraintFunction = std::function<bool(std::vector<size_t>)>;
+using LocalMemoryFunction = std::function<size_t(std::vector<size_t>)>;
 
 // See comment at top of file for a description of the class
 class Tuner {
  public:
 
-  // Parameters
-  static constexpr auto kMaxL2Norm = 1e-4; // This is the threshold for 'correctness'
-  static constexpr auto kNumRuns = 1; // This is used for more-accurate execution time measurement
-
-  // Messages printed to stdout (in colours)
-  static const std::string kMessageFull;
-  static const std::string kMessageHead;
-  static const std::string kMessageRun;
-  static const std::string kMessageInfo;
-  static const std::string kMessageOK;
-  static const std::string kMessageWarning;
-  static const std::string kMessageFailure;
-  static const std::string kMessageResult;
-  static const std::string kMessageBest;
-
   // Search methods
   enum class SearchMethod{FullSearch, RandomSearch, Annealing, PSO};
-
-  // Helper structure to store an OpenCL memory argument for a kernel
-  struct MemArgument {
-    size_t index;       // The OpenCL kernel-argument index
-    size_t size;        // The number of elements (not bytes)
-    MemType type;       // The data-type (e.g. float)
-    cl::Buffer buffer;  // The host memory and OpenCL buffer on the device
-  };
-
-  // Helper structure to hold the results of a tuning run
-  struct TunerResult {
-    std::string kernel_name;
-    double time;
-    size_t threads;
-    bool status;
-    KernelInfo::Configuration configuration;
-  };
-
-  // Exception of the tuner itself
-  class Exception : public std::runtime_error {
-   public:
-    Exception(const std::string &message)
-                   : std::runtime_error(message) { };
-  };
 
   // Initialize either with platform 0 and device 0 or with a custom platform/device
   explicit Tuner();
@@ -97,12 +63,12 @@ class Tuner {
   // Adds a new kernel to the list of tuning-kernels and returns a unique ID (to be used when
   // adding tuning parameters)
   size_t AddKernel(const std::vector<std::string> &filenames, const std::string &kernel_name,
-                   const cl::NDRange &global, const cl::NDRange &local);
+                   const IntRange &global, const IntRange &local);
 
   // Sets the reference kernel. Same as the AddKernel function, but in this case there is only one
   // reference kernel. Calling this function again will overwrite the previous reference kernel.
   void SetReference(const std::vector<std::string> &filenames, const std::string &kernel_name,
-                    const cl::NDRange &global, const cl::NDRange &local);
+                    const IntRange &global, const IntRange &local);
 
   // Adds a new tuning parameter for a kernel with a specific ID. The parameter has a name, the
   // number of values, and a list of values.
@@ -122,11 +88,11 @@ class Tuner {
   // constraints come in the form of a function object which takes a number of tuning parameters,
   // given as a vector of strings (parameter names). Their names are later substituted by actual
   // values.
-  void AddConstraint(const size_t id, KernelInfo::ConstraintFunction valid_if,
+  void AddConstraint(const size_t id, ConstraintFunction valid_if,
                      const std::vector<std::string> &parameters);
 
   // As above, but for local memory usage
-  void SetLocalMemoryUsage(const size_t id, KernelInfo::LocalMemoryFunction amount,
+  void SetLocalMemoryUsage(const size_t id, LocalMemoryFunction amount,
                            const std::vector<std::string> &parameters);
 
   // Functions to add kernel-arguments for input buffers, output buffers, and scalars. Make sure to
@@ -159,62 +125,9 @@ class Tuner {
   void SuppressOutput();
 
  private:
-  // Compiles and runs a kernel and returns the elapsed time
-  TunerResult RunKernel(const std::string &source, const KernelInfo &kernel,
-                        const size_t configuration_id, const size_t num_configurations);
 
-  // Sets an OpenCL buffer to zero
-  template <typename T> void ResetMemArgument(MemArgument &argument);
-
-  // Stores the output of the reference run into the host memory
-  void StoreReferenceOutput();
-  template <typename T> void DownloadReference(const MemArgument &device_buffer);
-
-  // Downloads the output of a tuning run and compares it against the reference run
-  bool VerifyOutput();
-  template <typename T> bool DownloadAndCompare(const MemArgument &device_buffer, const size_t i);
-  template <typename T> double AbsoluteDifference(const T reference, const T result);
-
-  // Prints results of a particular kernel run
-  void PrintResult(FILE* fp, const TunerResult &result, const std::string &message) const;
-
-  // Loads a file from disk into a string
-  std::string LoadFile(const std::string &filename);
-
-  // Prints a header of a new section in the tuning process
-  void PrintHeader(const std::string &header_name) const;
-
-  // OpenCL platform
-  std::shared_ptr<OpenCL> opencl_;
-
-  // Settings
-  bool has_reference_;
-  bool suppress_output_;
-  bool output_search_process_;
-  std::string search_log_filename_;
-
-  // The search method and its arguments
-  SearchMethod search_method_;
-  std::vector<double> search_args_;
-
-  // Storage of kernel sources, arguments, and parameters
-  size_t argument_counter_;
-  std::vector<KernelInfo> kernels_;
-  std::vector<MemArgument> arguments_input_;
-  std::vector<MemArgument> arguments_output_;
-  std::vector<std::pair<size_t,int>> arguments_int_;
-  std::vector<std::pair<size_t,size_t>> arguments_size_t_;
-  std::vector<std::pair<size_t,float>> arguments_float_;
-  std::vector<std::pair<size_t,double>> arguments_double_;
-  std::vector<std::pair<size_t,float2>> arguments_float2_;
-  std::vector<std::pair<size_t,double2>> arguments_double2_;
-
-  // Storage for the reference kernel and output
-  std::unique_ptr<KernelInfo> reference_kernel_;
-  std::vector<void*> reference_outputs_;
-
-  // List of tuning results
-  std::vector<TunerResult> tuning_results_;
+  // This implements the pointer to implementation idiom (pimpl)
+  std::unique_ptr<TunerImpl> pimpl_;
 
 };
 
