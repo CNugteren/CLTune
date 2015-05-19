@@ -5,7 +5,7 @@
 //
 // Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
 //
-// This file implements the Tuner class (see the header for information about the class).
+// This file implements the TunerImpl class (see the header for information about the class).
 //
 // -------------------------------------------------------------------------------------------------
 //
@@ -25,18 +25,19 @@
 //
 // =================================================================================================
 
-#include "cltune.h"
-
 // The corresponding header file
 #include "internal/tuner_impl.h"
 
-#include <algorithm>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <cmath>
-#include <limits>
-#include <regex>
+// The search strategies
+#include "internal/searchers/full_search.h"
+#include "internal/searchers/random_search.h"
+#include "internal/searchers/annealing.h"
+#include "internal/searchers/pso.h"
+
+#include <fstream> // std::ifstream, std::stringstream
+#include <iostream> // FILE
+#include <limits> // std::numeric_limits
+#include <regex> // std::regex, std::regex_replace
 
 namespace cltune {
 // =================================================================================================
@@ -85,6 +86,101 @@ TunerImpl::~TunerImpl() {
   }
   if (!suppress_output_) {
     fprintf(stdout, "\n%s End of the tuning process\n\n", kMessageFull.c_str());
+  }
+}
+
+// =================================================================================================
+
+// Starts the tuning process. First, the reference kernel is run if it exists (output results are
+// automatically verified with respect to this reference run). Next, all permutations of all tuning-
+// parameters are computed for each kernel and those kernels are run. Their timing-results are
+// collected and stored into the tuning_results_ vector.
+void TunerImpl::Tune() {
+
+  // Runs the reference kernel if it is defined
+  if (has_reference_) {
+    PrintHeader("Testing reference "+reference_kernel_->name());
+    RunKernel(reference_kernel_->source(), *reference_kernel_, 0, 1);
+    StoreReferenceOutput();
+  }
+  
+  // Iterates over all tunable kernels
+  for (auto &kernel: kernels_) {
+    PrintHeader("Testing kernel "+kernel.name());
+
+    // If there are no tuning parameters, simply run the kernel and store the results
+    if (kernel.parameters().size() == 0) {
+
+        // Compiles and runs the kernel
+      auto tuning_result = RunKernel(kernel.source(), kernel, 0, 1);
+      tuning_result.status = VerifyOutput();
+
+      // Stores the result of the tuning
+      tuning_results_.push_back(tuning_result);
+
+    // Else: there are tuning parameters to iterate over
+    } else {
+
+      // Computes the permutations of all parameters and pass them to a (smart) search algorithm
+      kernel.SetConfigurations();
+
+      // Creates the selected search algorithm
+      std::unique_ptr<Searcher> search;
+      switch (search_method_) {
+        case SearchMethod::FullSearch:
+          search.reset(new FullSearch{kernel.configurations()});
+          break;
+        case SearchMethod::RandomSearch:
+          search.reset(new RandomSearch{kernel.configurations(), search_args_[0]});
+          break;
+        case SearchMethod::Annealing:
+          search.reset(new Annealing{kernel.configurations(), search_args_[0], search_args_[1]});
+          break;
+        case SearchMethod::PSO:
+          search.reset(new PSO{kernel.configurations(), kernel.parameters(), search_args_[0],
+                               static_cast<size_t>(search_args_[1]), search_args_[2],
+                               search_args_[3], search_args_[4]});
+          break;
+      }
+
+      // Iterates over all possible configurations (the permutations of the tuning parameters)
+      for (auto p=0UL; p<search->NumConfigurations(); ++p) {
+        auto permutation = search->GetConfiguration();
+
+        // Adds the parameters to the source-code string as defines
+        auto source = std::string{};
+        for (auto &config: permutation) {
+          source += config.GetDefine();
+        }
+        source += kernel.source();
+
+        // Updates the local range with the parameter values
+        kernel.ComputeRanges(permutation);
+
+        // Compiles and runs the kernel
+        auto tuning_result = RunKernel(source, kernel, p, search->NumConfigurations());
+        tuning_result.status = VerifyOutput();
+
+        // Gives timing feedback to the search algorithm and calculate the next index
+        search->PushExecutionTime(tuning_result.time);
+        search->CalculateNextIndex();
+
+        // Stores the parameters and the timing-result
+        tuning_result.configuration = permutation;
+        tuning_results_.push_back(tuning_result);
+        if (!tuning_result.status) {
+          PrintResult(stdout, tuning_result, kMessageWarning);
+        }
+      }
+
+      // Prints a log of the searching process. This is disabled per default, but can be enabled
+      // using the "OutputSearchLog" function.
+      if (output_search_process_) {
+        auto file = fopen(search_log_filename_.c_str(), "w");
+        search->PrintLog(file);
+        fclose(file);
+      }
+    }
   }
 }
 
@@ -166,9 +262,12 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
     // Obtains and verifies the local memory usage of the kernel
     auto local_memory = static_cast<size_t>(0);
-    status = tune_kernel.getWorkGroupInfo(opencl_->device(), CL_KERNEL_LOCAL_MEM_SIZE, &local_memory);
+    status = tune_kernel.getWorkGroupInfo(opencl_->device(), CL_KERNEL_LOCAL_MEM_SIZE,
+                                          &local_memory);
     if (status != CL_SUCCESS) { throw OpenCL::Exception("Get kernel information error", status); }
-    if (!opencl_->ValidLocalMemory(local_memory)) { throw std::runtime_error("Using too much local memory"); }
+    if (!opencl_->ValidLocalMemory(local_memory)) {
+      throw std::runtime_error("Using too much local memory");
+    }
 
     // Prepares the kernel
     status = opencl_->queue().finish();
@@ -178,7 +277,8 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     fprintf(stdout, "%s Running %s\n", kMessageRun.c_str(), kernel.name().c_str());
     std::vector<cl::Event> events(kNumRuns);
     for (auto t=0; t<kNumRuns; ++t) {
-      status = opencl_->queue().enqueueNDRangeKernel(tune_kernel, cl::NullRange, global_temp, local_temp, NULL, &events[t]);
+      status = opencl_->queue().enqueueNDRangeKernel(tune_kernel, cl::NullRange, global_temp,
+                                                     local_temp, nullptr, &events[t]);
       if (status != CL_SUCCESS) { throw OpenCL::Exception("Kernel launch error", status); }
       status = events[t].wait();
       if (status != CL_SUCCESS) {
@@ -354,4 +454,3 @@ void TunerImpl::PrintHeader(const std::string &header_name) const {
 
 // =================================================================================================
 } // namespace cltune
-

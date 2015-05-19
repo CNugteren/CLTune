@@ -32,12 +32,12 @@
 #ifndef CLTUNE_TUNER_IMPL_H_
 #define CLTUNE_TUNER_IMPL_H_
 
+#include "internal/memory.h"
+#include "internal/kernel_info.h"
+
 #include <string> // std::string
 #include <vector> // std::vector
 #include <memory> // std::shared_ptr
-
-#include "internal/memory.h"
-#include "internal/kernel_info.h"
 
 namespace cltune {
 // =================================================================================================
@@ -83,6 +83,9 @@ class TunerImpl {
   explicit TunerImpl();
   explicit TunerImpl(size_t platform_id, size_t device_id);
   ~TunerImpl();
+
+  // Starts the tuning process. This function is called directly from the Tuner API.
+  void Tune();
 
   // Compiles and runs a kernel and returns the elapsed time
   TunerResult RunKernel(const std::string &source, const KernelInfo &kernel,

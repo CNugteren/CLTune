@@ -126,7 +126,7 @@ class Tuner {
 
   // This implements the pointer to implementation idiom (pimpl) and hides all private functions and
   // member variables.
-  std::unique_ptr<TunerImpl> pimpl_;
+  std::unique_ptr<TunerImpl> pimpl;
 };
 
 // =================================================================================================

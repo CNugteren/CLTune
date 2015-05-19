@@ -34,6 +34,7 @@ namespace cltune {
 // Specific implementations of the helper structure to get the memory-type based on a template
 // argument. Supports all enumerations of MemType.
 template <> const MemType Memory<int>::type = MemType::kInt;
+template <> const MemType Memory<size_t>::type = MemType::kSizeT;
 template <> const MemType Memory<float>::type = MemType::kFloat;
 template <> const MemType Memory<double>::type = MemType::kDouble;
 template <> const MemType Memory<float2>::type = MemType::kFloat2;
@@ -82,6 +83,7 @@ void Memory<T>::DownloadFromDevice() {
 
 // Compiles the templated class for all datatypes supported by MemType
 template class Memory<int>;
+template class Memory<size_t>;
 template class Memory<float>;
 template class Memory<double>;
 template class Memory<float2>;
