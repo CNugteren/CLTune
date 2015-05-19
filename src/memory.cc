@@ -43,22 +43,29 @@ template <> const MemType Memory<double2>::type = MemType::kDouble2;
 // Initializes the memory class, creating a host array with zeroes and an uninitialized device
 // buffer.
 template <typename T>
-Memory<T>::Memory(const size_t size, cl::CommandQueue queue, const cl::Context &context,
+Memory<T>::Memory(const size_t size, cl_command_queue queue, const cl_context &context,
                   const cl_mem_flags flags):
     size_(size),
     host_(size, T{0}),
-    device_(clCreateBuffer(context(), flags, size*sizeof(T), nullptr, nullptr)),
+    device_(clCreateBuffer(context, flags, size*sizeof(T), nullptr, nullptr)),
     queue_(queue) {
 }
 
 // As above, but now initializes to a specific value based on a source vector.
 template <typename T>
-Memory<T>::Memory(const size_t size, cl::CommandQueue queue, const cl::Context &context,
+Memory<T>::Memory(const size_t size, cl_command_queue queue, const cl_context &context,
                   const cl_mem_flags flags, const std::vector<T> &source):
     size_(size),
     host_(source),
-    device_(clCreateBuffer(context(), flags, size*sizeof(T), nullptr, nullptr)),
+    device_(clCreateBuffer(context, flags, size*sizeof(T), nullptr, nullptr)),
     queue_(queue) {
+}
+
+// Release the OpenCL buffer
+// TODO: how to release the object when a copy is made?
+template <typename T>
+Memory<T>::~Memory() {
+  //clReleaseMemObject(device_);
 }
 
 // =================================================================================================
@@ -66,15 +73,15 @@ Memory<T>::Memory(const size_t size, cl::CommandQueue queue, const cl::Context &
 // Uses the OpenCL C++ function enqueueWriteBuffer to upload the data to the device
 template <typename T>
 void Memory<T>::UploadToDevice() {
-  auto status = clEnqueueWriteBuffer(queue_(), device_, CL_TRUE, 0, size_*sizeof(T),
-                                    host_.data(), 0, nullptr, nullptr);
+  auto status = clEnqueueWriteBuffer(queue_, device_, CL_TRUE, 0, size_*sizeof(T),
+                                     host_.data(), 0, nullptr, nullptr);
   if (status != CL_SUCCESS) { throw OpenCL::Exception("Write buffer error", status); }
 }
 
 // Uses the OpenCL C++ function enqueueReadBuffer to download the data from the device
 template <typename T>
 void Memory<T>::DownloadFromDevice() {
-  auto status = clEnqueueReadBuffer(queue_(), device_, CL_TRUE, 0, size_*sizeof(T),
+  auto status = clEnqueueReadBuffer(queue_, device_, CL_TRUE, 0, size_*sizeof(T),
                                     host_.data(), 0, nullptr, nullptr);
   if (status != CL_SUCCESS) { throw OpenCL::Exception("Read buffer error", status); }
 }

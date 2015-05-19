@@ -58,10 +58,11 @@ class Memory {
   const static MemType type;
 
   // Initializes the host and device data (with zeroes or based on a source-vector)
-  explicit Memory(const size_t size, cl::CommandQueue queue, const cl::Context &context,
+  explicit Memory(const size_t size, cl_command_queue queue, const cl_context &context,
                   const cl_mem_flags flags);
-  explicit Memory(const size_t size, cl::CommandQueue queue, const cl::Context &context,
+  explicit Memory(const size_t size, cl_command_queue queue, const cl_context &context,
                   const cl_mem_flags flags, const std::vector<T> &source);
+  ~Memory();
 
   // Accessors to the host/device data
   std::vector<T> host() const { return host_; }
@@ -79,7 +80,7 @@ class Memory {
   cl_mem device_;
 
   // Pointer to the OpenCL command queue
-  cl::CommandQueue queue_;
+  cl_command_queue queue_;
 };
 
 
