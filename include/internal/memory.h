@@ -58,15 +58,14 @@ class Memory {
   const static MemType type;
 
   // Initializes the host and device data (with zeroes or based on a source-vector)
-  explicit Memory(const size_t size, cl_command_queue queue, const cl_context &context,
+  explicit Memory(const size_t size, CommandQueue queue, const Context &context,
                   const cl_mem_flags flags);
-  explicit Memory(const size_t size, cl_command_queue queue, const cl_context &context,
+  explicit Memory(const size_t size, CommandQueue queue, const Context &context,
                   const cl_mem_flags flags, const std::vector<T> &source);
-  ~Memory();
 
   // Accessors to the host/device data
   std::vector<T> host() const { return host_; }
-  cl_mem device() const { return device_; }
+  Buffer device() const { return device_; }
 
   // Downloads the device data onto the host
   void UploadToDevice();
@@ -77,10 +76,10 @@ class Memory {
   // The data (both host and device)
   const size_t size_;
   std::vector<T> host_;
-  cl_mem device_;
+  Buffer device_;
 
   // Pointer to the OpenCL command queue
-  cl_command_queue queue_;
+  CommandQueue queue_;
 };
 
 

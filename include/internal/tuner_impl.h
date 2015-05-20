@@ -32,7 +32,8 @@
 #ifndef CLTUNE_TUNER_IMPL_H_
 #define CLTUNE_TUNER_IMPL_H_
 
-#include "clpp11.h" // For OpenCL C++11 wrappers
+#include "internal/clpp11.h" // For OpenCL C++11 wrappers
+
 #include "internal/memory.h"
 #include "internal/kernel_info.h"
 
@@ -68,7 +69,7 @@ class TunerImpl {
     size_t index;       // The OpenCL kernel-argument index
     size_t size;        // The number of elements (not bytes)
     MemType type;       // The data-type (e.g. float)
-    cl_mem buffer;      // The OpenCL buffer on the device
+    Buffer buffer;      // The OpenCL buffer on the device
   };
 
   // Helper structure to hold the results of a tuning run
@@ -97,7 +98,7 @@ class TunerImpl {
 
   // Stores the output of the reference run into the host memory
   void StoreReferenceOutput();
-  template <typename T> void DownloadReference(const MemArgument &device_buffer);
+  template <typename T> void DownloadReference(MemArgument &device_buffer);
 
   // Downloads the output of a tuning run and compares it against the reference run
   bool VerifyOutput();

@@ -46,16 +46,137 @@
 namespace cltune {
 // =================================================================================================
 
+// C++11 version of cl_context
+class Context {
+ public:
+
+  // TODO: remove later
+  Context() {}
+
+  // Memory management
+  Context(const cl_device_id device):
+    context_(clCreateContext(nullptr, 1, &device, nullptr, nullptr, nullptr)) { }
+  ~Context() {
+    clReleaseContext(context_);
+  }
+  Context(const Context& other):
+    context_(other.context_) {
+    clRetainContext(context_);
+  }
+  Context& operator=(Context other) {
+    swap(*this, other);
+    return *this;
+  }
+  friend void swap(Context& first, Context& second) {
+    std::swap(first.context_, second.context_);
+  }
+
+  // Public functions
+
+  // Accessors to the private data-member
+  cl_context operator()() const { return context_; }
+  cl_context& operator()() { return context_; }
+ private:
+  cl_context context_;
+};
+
+// =================================================================================================
+
+// C++11 version of cl_command_queue
+class CommandQueue {
+ public:
+
+  // TODO: remove later
+  CommandQueue() {}
+
+  // Memory management
+  CommandQueue(const Context context, const cl_device_id device):
+    queue_(clCreateCommandQueue(context(), device, CL_QUEUE_PROFILING_ENABLE, nullptr)) { }
+  ~CommandQueue() {
+    clReleaseCommandQueue(queue_);
+  }
+  CommandQueue(const CommandQueue& other):
+    queue_(other.queue_) {
+    clRetainCommandQueue(queue_);
+  }
+  CommandQueue& operator=(CommandQueue other) {
+    swap(*this, other);
+    return *this;
+  }
+  friend void swap(CommandQueue& first, CommandQueue& second) {
+    std::swap(first.queue_, second.queue_);
+  }
+
+  // Public functions
+
+  // Accessors to the private data-member
+  cl_command_queue operator()() const { return queue_; }
+  cl_command_queue& operator()() { return queue_; }
+ private:
+  cl_command_queue queue_;
+};
+
+// =================================================================================================
+
+// C++11 version of cl_mem
+class Buffer {
+ public:
+
+  // Memory management
+  Buffer(const Context context, const cl_mem_flags flags, const size_t bytes):
+    buffer_(clCreateBuffer(context(), flags, bytes, nullptr, nullptr)) { }
+  ~Buffer() {
+    clReleaseMemObject(buffer_);
+  }
+  Buffer(const Buffer& other):
+    buffer_(other.buffer_) {
+    clRetainMemObject(buffer_);
+  }
+  Buffer& operator=(Buffer other) {
+    swap(*this, other);
+    return *this;
+  }
+  friend void swap(Buffer& first, Buffer& second) {
+    std::swap(first.buffer_, second.buffer_);
+  }
+
+  // Public functions
+  template <typename T>
+  cl_int ReadBuffer(const CommandQueue queue, const size_t bytes, T* host) {
+    return clEnqueueReadBuffer(queue(), buffer_, CL_TRUE, 0, bytes, host, 0, nullptr, nullptr);
+  }
+  template <typename T>
+  cl_int ReadBuffer(const CommandQueue queue, const size_t bytes, std::vector<T> &host) {
+    return ReadBuffer(queue, bytes, host.data());
+  }
+  template <typename T>
+  cl_int WriteBuffer(const CommandQueue queue, const size_t bytes, T* host) {
+    return clEnqueueWriteBuffer(queue(), buffer_, CL_TRUE, 0, bytes, host, 0, nullptr, nullptr);
+  }
+  template <typename T>
+  cl_int WriteBuffer(const CommandQueue queue, const size_t bytes, std::vector<T> &host) {
+    return WriteBuffer(queue, bytes, host.data());
+  }
+
+  // Accessors to the private data-member
+  cl_mem operator()() const { return buffer_; }
+  cl_mem& operator()() { return buffer_; }
+ private:
+  cl_mem buffer_;
+};
+
+// =================================================================================================
+
 // C++11 version of cl_program
 class Program {
  public:
 
   // Memory management
-  Program(const cl_context context, const std::string &source):
+  Program(const Context context, const std::string &source):
     length_(source.length()) {
       std::copy(source.begin(), source.end(), back_inserter(source_));
       source_ptr_ = source_.data();
-      program_ = clCreateProgramWithSource(context, 1, &source_ptr_, &length_, nullptr);
+      program_ = clCreateProgramWithSource(context(), 1, &source_ptr_, &length_, nullptr);
     }
   ~Program() {
     clReleaseProgram(program_);
@@ -71,7 +192,7 @@ class Program {
     swap(*this, other);
     return *this;
   }
-  void swap(Program& first, Program& second) {
+  friend void swap(Program& first, Program& second) {
     std::swap(first.length_, second.length_);
     std::swap(first.source_, second.source_);
     std::swap(first.source_ptr_, second.source_ptr_);
@@ -120,7 +241,7 @@ class Kernel {
     swap(*this, other);
     return *this;
   }
-  void swap(Kernel& first, Kernel& second) {
+  friend void swap(Kernel& first, Kernel& second) {
     std::swap(first.kernel_, second.kernel_);
   }
 

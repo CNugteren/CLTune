@@ -34,6 +34,8 @@
 #include <vector>
 #include <stdexcept>
 
+#include "internal/clpp11.h"
+
 #include "cltune.h"
 #include "cl.hpp"
 
@@ -70,8 +72,8 @@ class OpenCL {
 
   // Accessors
   const cl::Device device() const { return device_; }
-  const cl_context context() const { return context_; }
-  cl_command_queue queue() const { return queue_; }
+  const Context context() const { return context_; }
+  CommandQueue queue() const { return queue_; }
   const std::string device_name() const { return device_name_; }
 
   // Checks whether the global and local thread-sizes, and local memory size are compatible with the
@@ -88,8 +90,8 @@ class OpenCL {
   // OpenCL variables
   cl::Platform platform_;
   cl::Device device_;
-  cl_context context_;
-  cl_command_queue queue_;
+  Context context_;
+  CommandQueue queue_;
 
   // OpenCL device properties and limitations
   std::string device_name_;
