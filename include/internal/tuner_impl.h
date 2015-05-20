@@ -32,6 +32,7 @@
 #ifndef CLTUNE_TUNER_IMPL_H_
 #define CLTUNE_TUNER_IMPL_H_
 
+#include "clpp11.h" // For OpenCL C++11 wrappers
 #include "internal/memory.h"
 #include "internal/kernel_info.h"
 

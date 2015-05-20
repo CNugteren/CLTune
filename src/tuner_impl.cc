@@ -202,22 +202,13 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
   auto processed_source = std::regex_replace(source, string_literal_start, "");
   processed_source = std::regex_replace(processed_source, string_literal_end, "");
 
-  // Collects the source
-  auto source_ptr = processed_source.c_str();
-  auto length = processed_source.length();
-
   // Compiles the kernel and prints the compiler errors/warnings
   auto status = CL_SUCCESS;
-  auto program = clCreateProgramWithSource(opencl_->context(), 1, &source_ptr, &length, &status);
-  if (status != CL_SUCCESS) { throw OpenCL::Exception("Program creation error", status); }
-  auto options = std::string{};
-  status = clBuildProgram(program, 1, &device, options.c_str(), nullptr, nullptr);
+  auto program = Program(opencl_->context(), processed_source);
+  status = program.Build(device, "");
   if (status == CL_BUILD_PROGRAM_FAILURE) {
-    auto msg_length = size_t{0};
-    clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0, nullptr, &msg_length);
-    auto msg = std::vector<char>(msg_length);
-    clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, msg_length, msg.data(), nullptr);
-    fprintf(stdout, "OpenCL compiler error/warning: %s\n", msg.data());
+    auto message = program.GetBuildInfo(device);
+    fprintf(stdout, "OpenCL compiler error/warning: %s\n", message.c_str());
     throw std::runtime_error("OpenCL compiler error/warning occurred ^^\n");
   }
   if (status != CL_SUCCESS) { throw OpenCL::Exception("Program build error", status); }
@@ -235,32 +226,15 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
   }
 
   // Sets the kernel and its arguments
-  auto tune_kernel = clCreateKernel(program, kernel.name().c_str(), &status);
-  if (status != CL_SUCCESS) { throw OpenCL::Exception("Kernel creation error", status); }
-  for (auto &i: arguments_input_) {
-    clSetKernelArg(tune_kernel, static_cast<cl_uint>(i.index), sizeof(i.buffer), &(i.buffer));
-  }
-  for (auto &i: arguments_output_) {
-    clSetKernelArg(tune_kernel, static_cast<cl_uint>(i.index), sizeof(i.buffer), &(i.buffer));
-  }
-  for (auto &i: arguments_int_) {
-    clSetKernelArg(tune_kernel, static_cast<cl_uint>(i.first), sizeof(i.second), &(i.second));
-  }
-  for (auto &i: arguments_size_t_) {
-    clSetKernelArg(tune_kernel, static_cast<cl_uint>(i.first), sizeof(i.second), &(i.second));
-  }
-  for (auto &i: arguments_float_) {
-    clSetKernelArg(tune_kernel, static_cast<cl_uint>(i.first), sizeof(i.second), &(i.second));
-  }
-  for (auto &i: arguments_double_) {
-    clSetKernelArg(tune_kernel, static_cast<cl_uint>(i.first), sizeof(i.second), &(i.second));
-  }
-  for (auto &i: arguments_float2_) {
-    clSetKernelArg(tune_kernel, static_cast<cl_uint>(i.first), sizeof(i.second), &(i.second));
-  }
-  for (auto &i: arguments_double2_) {
-    clSetKernelArg(tune_kernel, static_cast<cl_uint>(i.first), sizeof(i.second), &(i.second));
-  }
+  auto tune_kernel = Kernel(program, kernel.name());
+  for (auto &i: arguments_input_) { tune_kernel.SetArgument(static_cast<cl_uint>(i.index), i.buffer); }
+  for (auto &i: arguments_output_) { tune_kernel.SetArgument(static_cast<cl_uint>(i.index), i.buffer); }
+  for (auto &i: arguments_int_) { tune_kernel.SetArgument(static_cast<cl_uint>(i.first), i.second); }
+  for (auto &i: arguments_size_t_) { tune_kernel.SetArgument(static_cast<cl_uint>(i.first), i.second); }
+  for (auto &i: arguments_float_) { tune_kernel.SetArgument(static_cast<cl_uint>(i.first), i.second); }
+  for (auto &i: arguments_double_) { tune_kernel.SetArgument(static_cast<cl_uint>(i.first), i.second); }
+  for (auto &i: arguments_float2_) { tune_kernel.SetArgument(static_cast<cl_uint>(i.first), i.second); }
+  for (auto &i: arguments_double2_) { tune_kernel.SetArgument(static_cast<cl_uint>(i.first), i.second); }
 
   // Sets the global and local thread-sizes
   auto global = kernel.global();
@@ -270,9 +244,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
   try {
 
     // Obtains and verifies the local memory usage of the kernel
-    auto local_memory = size_t{0};
-    status = clGetKernelWorkGroupInfo(tune_kernel, device, CL_KERNEL_LOCAL_MEM_SIZE,
-                                      8, &local_memory, nullptr);
+    auto local_memory = tune_kernel.GetLocalMemSize(device);
     if (status != CL_SUCCESS) { throw OpenCL::Exception("Get kernel information error", status); }
     if (!opencl_->ValidLocalMemory(local_memory)) {
       throw std::runtime_error("Using too much local memory");
@@ -284,14 +256,14 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
     // Runs the kernel (this is the timed part)
     fprintf(stdout, "%s Running %s\n", kMessageRun.c_str(), kernel.name().c_str());
-    auto events = std::vector<cl_event>(kNumRuns);
+    auto events = std::vector<Event>(kNumRuns);
     for (auto t=0; t<kNumRuns; ++t) {
-      status = clEnqueueNDRangeKernel(opencl_->queue(), tune_kernel,
+      status = clEnqueueNDRangeKernel(opencl_->queue(), tune_kernel(),
                                       static_cast<cl_uint>(global.size()), nullptr,
-                                      global.data(), local.data(), 0, nullptr, &events[t]);
+                                      global.data(), local.data(), 0, nullptr, &(events[t]()));
 
       if (status != CL_SUCCESS) { throw OpenCL::Exception("Kernel launch error", status); }
-      status = clWaitForEvents(1, &events[t]);;
+      status = events[t].Wait();
       if (status != CL_SUCCESS) {
         fprintf(stdout, "%s Kernel %s failed\n", kMessageFailure.c_str(), kernel.name().c_str());
         throw OpenCL::Exception("Kernel error", status);
@@ -303,10 +275,8 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     // Collects the timing information
     auto elapsed_time = std::numeric_limits<double>::max();
     for (auto t=0; t<kNumRuns; ++t) {
-      auto start_time = static_cast<unsigned long>(0);
-      auto end_time = static_cast<unsigned long>(0);
-      clGetEventProfilingInfo(events[t], CL_PROFILING_COMMAND_START, 8, &start_time, nullptr);
-      clGetEventProfilingInfo(events[t], CL_PROFILING_COMMAND_END, 8, &end_time, nullptr);
+      auto start_time = events[t].GetProfilingStart();
+      auto end_time = events[t].GetProfilingEnd();
       elapsed_time = std::min(elapsed_time, (end_time - start_time) * 1.0e-6);
     }
 
@@ -318,16 +288,12 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     // Computes the result of the tuning
     auto local_threads = opencl_->GetLocalSize(global, local);
     TunerResult result = {kernel.name(), elapsed_time, local_threads, false, {}};
-    clReleaseProgram(program);
-    clReleaseKernel(tune_kernel);
     return result;
   }
 
   // There was an exception, now return an invalid tuner results
   catch(std::exception& e) {
     TunerResult result = {kernel.name(), std::numeric_limits<double>::max(), 0, false, {}};
-    clReleaseProgram(program);
-    clReleaseKernel(tune_kernel);
     return result;
   }
 }
