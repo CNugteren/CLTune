@@ -439,4 +439,14 @@ void TunerImpl::PrintHeader(const std::string &header_name) const {
 }
 
 // =================================================================================================
+
+// Get the MemType based on a template argument
+template <> MemType TunerImpl::GetType<int>() { return MemType::kInt; }
+template <> MemType TunerImpl::GetType<size_t>() { return MemType::kSizeT; }
+template <> MemType TunerImpl::GetType<float>() { return MemType::kFloat; }
+template <> MemType TunerImpl::GetType<double>() { return MemType::kDouble; }
+template <> MemType TunerImpl::GetType<float2>() { return MemType::kFloat2; }
+template <> MemType TunerImpl::GetType<double2>() { return MemType::kDouble2; }
+
+// =================================================================================================
 } // namespace cltune

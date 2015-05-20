@@ -95,7 +95,6 @@ set(TUNER
     src/cltune.cc
     src/tuner_impl.cc
     src/kernel_info.cc
-    src/memory.cc
     src/opencl.cc
     src/searcher.cc
     src/searchers/full_search.cc

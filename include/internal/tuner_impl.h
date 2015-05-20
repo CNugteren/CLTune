@@ -34,15 +34,22 @@
 
 #include "internal/clpp11.h" // For OpenCL C++11 wrappers
 
-#include "internal/memory.h"
 #include "internal/kernel_info.h"
 
 #include <string> // std::string
 #include <vector> // std::vector
 #include <memory> // std::shared_ptr
+#include <complex> // std::complex
 
 namespace cltune {
 // =================================================================================================
+
+// Shorthands for complex data-types
+using float2 = std::complex<float>; // cl_float2;
+using double2 = std::complex<double>; // cl_double2;
+
+// Enumeration of currently supported data-types by this class
+enum class MemType { kInt, kSizeT, kFloat, kDouble, kFloat2, kDouble2 };
 
 // See comment at top of file for a description of the class
 class TunerImpl {
@@ -113,6 +120,10 @@ class TunerImpl {
 
   // Prints a header of a new section in the tuning process
   void PrintHeader(const std::string &header_name) const;
+
+  // Specific implementations of the helper structure to get the memory-type based on a template
+  // argument. Supports all enumerations of MemType.
+  template <typename T> MemType GetType();
 
   // OpenCL platform
   std::shared_ptr<OpenCL> opencl_;
