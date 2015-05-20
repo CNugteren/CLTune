@@ -113,7 +113,7 @@ class Device {
   std::vector<size_t> MaxWorkItemSizes() const {
     return GetInfo<std::vector<size_t>>(CL_DEVICE_MAX_WORK_ITEM_SIZES);
   }
-  cl_ulong LocalMemUsage() const {
+  cl_ulong LocalMemSize() const {
     return GetInfo<cl_ulong>(CL_DEVICE_LOCAL_MEM_SIZE);
   }
 
@@ -268,6 +268,11 @@ class Kernel {
     auto result = size_t{0};
     clGetKernelWorkGroupInfo(kernel_, device, CL_KERNEL_LOCAL_MEM_SIZE, bytes, &result, nullptr);
     return result;
+  }
+
+  // Kernel-validity checks
+  bool ValidLocalMemory(const Device device) {
+    return (LocalMemUsage(device()) <= device.LocalMemSize());
   }
 
   // Accessors to the private data-member

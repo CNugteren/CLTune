@@ -241,7 +241,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
   auto local = kernel.local();
 
   // In case of an exception, skip this run
-  //try {
+  try {
 
     // Obtains and verifies the local memory usage of the kernel
     auto local_memory = tune_kernel.LocalMemUsage(device);
@@ -283,16 +283,17 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
             configuration_id+1, num_configurations);
 
     // Computes the result of the tuning
-    auto local_threads = opencl_->GetLocalSize(global, local);
+    auto local_threads = size_t{1};
+    for (auto &item: local) { local_threads *= item; }
     TunerResult result = {kernel.name(), elapsed_time, local_threads, false, {}};
     return result;
-  //}
+  }
 
   // There was an exception, now return an invalid tuner results
-  //catch(std::exception& e) {
-  //  TunerResult result = {kernel.name(), std::numeric_limits<double>::max(), 0, false, {}};
-  //  return result;
-  //}
+  catch(std::exception& e) {
+    TunerResult result = {kernel.name(), std::numeric_limits<double>::max(), 0, false, {}};
+    return result;
+  }
 }
 
 // =================================================================================================

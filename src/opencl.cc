@@ -97,6 +97,10 @@ OpenCL::~OpenCL() {
 
 // =================================================================================================
 
+// !!!!!
+// TODO: Integrate these functions into clpp11.h
+// !!!!!
+
 // Verifies: 1) the local worksize in each dimension, 2) the local worksize in all dimensions
 // combined, and 3) the number of dimensions. For now, the global size is not verified.
 bool OpenCL::ValidThreadSizes(const IntRange &global, const IntRange &local) const {
@@ -110,13 +114,6 @@ bool OpenCL::ValidThreadSizes(const IntRange &global, const IntRange &local) con
   if (local_size > max_local_threads_) { return false; }
   if (local.size() > max_local_dims_) { return false; }
   return true;
-}
-
-// Returns the total local size
-size_t OpenCL::GetLocalSize(const IntRange &global, const IntRange &local) const {
-  auto local_size = size_t{1};
-  for (auto &item: local) { local_size *= item; }
-  return local_size;
 }
 
 // Verifies the local memory usage of the kernel (provided as argument) against the device

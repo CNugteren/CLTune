@@ -79,7 +79,6 @@ class OpenCL {
   // Checks whether the global and local thread-sizes, and local memory size are compatible with the
   // current device
   bool ValidThreadSizes(const IntRange &global, const IntRange &local) const;
-  size_t GetLocalSize(const IntRange &global, const IntRange &local) const;
   bool ValidLocalMemory(const size_t local_memory) const;
   
  private:
