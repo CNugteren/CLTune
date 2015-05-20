@@ -98,12 +98,47 @@ class Device {
  public:
 
   // Public functions
+  std::string DeviceVersion() const {
+    return GetInfoString(CL_DEVICE_VERSION);
+  }
+  std::string DeviceName() const {
+    return GetInfoString(CL_DEVICE_NAME);
+  }
+  cl_uint MaxWorkItemDimensions() const {
+    return GetInfo<uint>(CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS);
+  }
+  cl_uint MaxWorkGroupSize() const {
+    return GetInfo<uint>(CL_DEVICE_MAX_WORK_GROUP_SIZE);
+  }
+  std::vector<size_t> MaxWorkItemSizes() const {
+    return GetInfo<std::vector<size_t>>(CL_DEVICE_MAX_WORK_ITEM_SIZES);
+  }
+  cl_ulong LocalMemUsage() const {
+    return GetInfo<cl_ulong>(CL_DEVICE_LOCAL_MEM_SIZE);
+  }
 
   // Accessors to the private data-member
   cl_device_id operator()() const { return device_; }
   cl_device_id& operator()() { return device_; }
  private:
   cl_device_id device_;
+
+  // Helper functions
+  template <typename T>
+  T GetInfo(const cl_device_info info) const {
+    auto bytes = size_t{0};
+    clGetDeviceInfo(device_, info, 0, nullptr, &bytes);
+    auto result = T(0);
+    clGetDeviceInfo(device_, info, bytes, &result, nullptr);
+    return result;
+  }
+  std::string GetInfoString(const cl_device_info info) const {
+    auto bytes = size_t{0};
+    clGetDeviceInfo(device_, info, 0, nullptr, &bytes);
+    auto result = std::vector<char>(bytes);
+    clGetDeviceInfo(device_, info, bytes, result.data(), nullptr);
+    return std::string(result.data());
+  }
 };
 
 // =================================================================================================
@@ -227,7 +262,7 @@ class Kernel {
   cl_int SetArgument(const cl_uint index, const T value) {
     return clSetKernelArg(kernel_, index, sizeof(T), &value);
   }
-  size_t GetLocalMemSize(const cl_device_id device) {
+  size_t LocalMemUsage(const cl_device_id device) {
     auto bytes = size_t{0};
     clGetKernelWorkGroupInfo(kernel_, device, CL_KERNEL_LOCAL_MEM_SIZE, 0, nullptr, &bytes);
     auto result = size_t{0};

@@ -244,7 +244,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
   //try {
 
     // Obtains and verifies the local memory usage of the kernel
-    auto local_memory = tune_kernel.GetLocalMemSize(device);
+    auto local_memory = tune_kernel.LocalMemUsage(device);
     if (status != CL_SUCCESS) { throw OpenCL::Exception("Get kernel information error", status); }
     if (!opencl_->ValidLocalMemory(local_memory)) {
       throw std::runtime_error("Using too much local memory");
