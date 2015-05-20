@@ -46,6 +46,68 @@
 namespace cltune {
 // =================================================================================================
 
+// C++11 version of cl_event
+class Event {
+ public:
+
+  // Public functions
+  size_t GetProfilingStart() const {
+    auto bytes = size_t{0};
+    clGetEventProfilingInfo(event_, CL_PROFILING_COMMAND_START, 0, nullptr, &bytes);
+    auto result = size_t{0};
+    clGetEventProfilingInfo(event_, CL_PROFILING_COMMAND_START, bytes, &result, nullptr);
+    return result;
+  }
+  size_t GetProfilingEnd() const {
+    auto bytes = size_t{0};
+    clGetEventProfilingInfo(event_, CL_PROFILING_COMMAND_END, 0, nullptr, &bytes);
+    auto result = size_t{0};
+    clGetEventProfilingInfo(event_, CL_PROFILING_COMMAND_END, bytes, &result, nullptr);
+    return result;
+  }
+  cl_int Wait() const {
+    return clWaitForEvents(1, &event_);
+  }
+
+  // Accessors to the private data-member
+  cl_event operator()() const { return event_; }
+  cl_event& operator()() { return event_; }
+ private:
+  cl_event event_;
+};
+
+// =================================================================================================
+
+// C++11 version of cl_platform_id
+class Platform {
+ public:
+
+  // Public functions
+
+  // Accessors to the private data-member
+  cl_platform_id operator()() const { return device_; }
+  cl_platform_id& operator()() { return device_; }
+ private:
+  cl_platform_id device_;
+};
+
+// =================================================================================================
+
+// C++11 version of cl_device_id
+class Device {
+ public:
+
+  // Public functions
+
+  // Accessors to the private data-member
+  cl_device_id operator()() const { return device_; }
+  cl_device_id& operator()() { return device_; }
+ private:
+  cl_device_id device_;
+};
+
+// =================================================================================================
+
 // C++11 version of cl_context
 class Context {
  public:
@@ -78,91 +140,6 @@ class Context {
   cl_context& operator()() { return context_; }
  private:
   cl_context context_;
-};
-
-// =================================================================================================
-
-// C++11 version of cl_command_queue
-class CommandQueue {
- public:
-
-  // TODO: remove later
-  CommandQueue() {}
-
-  // Memory management
-  CommandQueue(const Context context, const cl_device_id device):
-    queue_(clCreateCommandQueue(context(), device, CL_QUEUE_PROFILING_ENABLE, nullptr)) { }
-  ~CommandQueue() {
-    clReleaseCommandQueue(queue_);
-  }
-  CommandQueue(const CommandQueue& other):
-    queue_(other.queue_) {
-    clRetainCommandQueue(queue_);
-  }
-  CommandQueue& operator=(CommandQueue other) {
-    swap(*this, other);
-    return *this;
-  }
-  friend void swap(CommandQueue& first, CommandQueue& second) {
-    std::swap(first.queue_, second.queue_);
-  }
-
-  // Public functions
-
-  // Accessors to the private data-member
-  cl_command_queue operator()() const { return queue_; }
-  cl_command_queue& operator()() { return queue_; }
- private:
-  cl_command_queue queue_;
-};
-
-// =================================================================================================
-
-// C++11 version of cl_mem
-class Buffer {
- public:
-
-  // Memory management
-  Buffer(const Context context, const cl_mem_flags flags, const size_t bytes):
-    buffer_(clCreateBuffer(context(), flags, bytes, nullptr, nullptr)) { }
-  ~Buffer() {
-    clReleaseMemObject(buffer_);
-  }
-  Buffer(const Buffer& other):
-    buffer_(other.buffer_) {
-    clRetainMemObject(buffer_);
-  }
-  Buffer& operator=(Buffer other) {
-    swap(*this, other);
-    return *this;
-  }
-  friend void swap(Buffer& first, Buffer& second) {
-    std::swap(first.buffer_, second.buffer_);
-  }
-
-  // Public functions
-  template <typename T>
-  cl_int ReadBuffer(const CommandQueue queue, const size_t bytes, T* host) {
-    return clEnqueueReadBuffer(queue(), buffer_, CL_TRUE, 0, bytes, host, 0, nullptr, nullptr);
-  }
-  template <typename T>
-  cl_int ReadBuffer(const CommandQueue queue, const size_t bytes, std::vector<T> &host) {
-    return ReadBuffer(queue, bytes, host.data());
-  }
-  template <typename T>
-  cl_int WriteBuffer(const CommandQueue queue, const size_t bytes, T* host) {
-    return clEnqueueWriteBuffer(queue(), buffer_, CL_TRUE, 0, bytes, host, 0, nullptr, nullptr);
-  }
-  template <typename T>
-  cl_int WriteBuffer(const CommandQueue queue, const size_t bytes, std::vector<T> &host) {
-    return WriteBuffer(queue, bytes, host.data());
-  }
-
-  // Accessors to the private data-member
-  cl_mem operator()() const { return buffer_; }
-  cl_mem& operator()() { return buffer_; }
- private:
-  cl_mem buffer_;
 };
 
 // =================================================================================================
@@ -267,34 +244,95 @@ class Kernel {
 
 // =================================================================================================
 
-// C++11 version of cl_event
-class Event {
+// C++11 version of cl_command_queue
+class CommandQueue {
  public:
 
+  // TODO: remove later
+  CommandQueue() {}
+
+  // Memory management
+  CommandQueue(const Context context, const cl_device_id device):
+    queue_(clCreateCommandQueue(context(), device, CL_QUEUE_PROFILING_ENABLE, nullptr)) { }
+  ~CommandQueue() {
+    clReleaseCommandQueue(queue_);
+  }
+  CommandQueue(const CommandQueue& other):
+    queue_(other.queue_) {
+    clRetainCommandQueue(queue_);
+  }
+  CommandQueue& operator=(CommandQueue other) {
+    swap(*this, other);
+    return *this;
+  }
+  friend void swap(CommandQueue& first, CommandQueue& second) {
+    std::swap(first.queue_, second.queue_);
+  }
+
   // Public functions
-  size_t GetProfilingStart() const {
-    auto bytes = size_t{0};
-    clGetEventProfilingInfo(event_, CL_PROFILING_COMMAND_START, 0, nullptr, &bytes);
-    auto result = size_t{0};
-    clGetEventProfilingInfo(event_, CL_PROFILING_COMMAND_START, bytes, &result, nullptr);
-    return result;
+  cl_int EnqueueKernel(const Kernel kernel, const std::vector<size_t> &global,
+                       const std::vector<size_t> &local, Event &event) {
+    return clEnqueueNDRangeKernel(queue_, kernel(), static_cast<cl_uint>(global.size()), nullptr,
+                                  global.data(), local.data(), 0, nullptr, &(event()));
   }
-  size_t GetProfilingEnd() const {
-    auto bytes = size_t{0};
-    clGetEventProfilingInfo(event_, CL_PROFILING_COMMAND_END, 0, nullptr, &bytes);
-    auto result = size_t{0};
-    clGetEventProfilingInfo(event_, CL_PROFILING_COMMAND_END, bytes, &result, nullptr);
-    return result;
-  }
-  cl_int Wait() const {
-    return clWaitForEvents(1, &event_);
+  cl_int Finish() {
+    return clFinish(queue_);
   }
 
   // Accessors to the private data-member
-  cl_event operator()() const { return event_; }
-  cl_event& operator()() { return event_; }
+  cl_command_queue operator()() const { return queue_; }
+  cl_command_queue& operator()() { return queue_; }
  private:
-  cl_event event_;
+  cl_command_queue queue_;
+};
+
+// =================================================================================================
+
+// C++11 version of cl_mem
+class Buffer {
+ public:
+
+  // Memory management
+  Buffer(const Context context, const cl_mem_flags flags, const size_t bytes):
+    buffer_(clCreateBuffer(context(), flags, bytes, nullptr, nullptr)) { }
+  ~Buffer() {
+    clReleaseMemObject(buffer_);
+  }
+  Buffer(const Buffer& other):
+    buffer_(other.buffer_) {
+    clRetainMemObject(buffer_);
+  }
+  Buffer& operator=(Buffer other) {
+    swap(*this, other);
+    return *this;
+  }
+  friend void swap(Buffer& first, Buffer& second) {
+    std::swap(first.buffer_, second.buffer_);
+  }
+
+  // Public functions
+  template <typename T>
+  cl_int ReadBuffer(const CommandQueue queue, const size_t bytes, T* host) {
+    return clEnqueueReadBuffer(queue(), buffer_, CL_TRUE, 0, bytes, host, 0, nullptr, nullptr);
+  }
+  template <typename T>
+  cl_int ReadBuffer(const CommandQueue queue, const size_t bytes, std::vector<T> &host) {
+    return ReadBuffer(queue, bytes, host.data());
+  }
+  template <typename T>
+  cl_int WriteBuffer(const CommandQueue queue, const size_t bytes, T* host) {
+    return clEnqueueWriteBuffer(queue(), buffer_, CL_TRUE, 0, bytes, host, 0, nullptr, nullptr);
+  }
+  template <typename T>
+  cl_int WriteBuffer(const CommandQueue queue, const size_t bytes, std::vector<T> &host) {
+    return WriteBuffer(queue, bytes, host.data());
+  }
+
+  // Accessors to the private data-member
+  cl_mem operator()() const { return buffer_; }
+  cl_mem& operator()() { return buffer_; }
+ private:
+  cl_mem buffer_;
 };
 
 // =================================================================================================

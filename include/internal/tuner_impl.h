@@ -109,7 +109,7 @@ class TunerImpl {
 
   // Downloads the output of a tuning run and compares it against the reference run
   bool VerifyOutput();
-  template <typename T> bool DownloadAndCompare(const MemArgument &device_buffer, const size_t i);
+  template <typename T> bool DownloadAndCompare(MemArgument &device_buffer, const size_t i);
   template <typename T> double AbsoluteDifference(const T reference, const T result);
 
   // Prints results of a particular kernel run
