@@ -48,7 +48,8 @@
 namespace cltune {
 
 // =================================================================================================
-class CLState {
+// Base class for any object
+class Object {
  protected:
 
   // Error handling
@@ -58,9 +59,21 @@ class CLState {
 };
 
 // =================================================================================================
+// Base class for objects which require memory management
+class ObjectWithState: public Object {
+
+};
+
+// =================================================================================================
 // C++11 version of cl_event
-class Event {
+class Event: public Object {
  public:
+
+  // Constructor based on the plain C data-type
+  Event(const cl_event event): event_(event) { }
+
+  // New event
+  Event() {}
 
   // Public functions
   size_t GetProfilingStart() const {
@@ -91,7 +104,7 @@ class Event {
 // =================================================================================================
 
 // C++11 version of cl_platform_id
-class Platform: public CLState {
+class Platform: public Object {
  public:
 
   // Constructor based on the plain C data-type
@@ -120,7 +133,7 @@ class Platform: public CLState {
 // =================================================================================================
 
 // C++11 version of cl_device_id
-class Device {
+class Device: public Object {
  public:
 
   // Constructor based on the plain C data-type
@@ -197,18 +210,13 @@ class Device {
     return std::string(result.data());
   }
 
-  // Error handling
-  void Error(const std::string &message) {
-    throw std::runtime_error("Internal OpenCL error: "+message);
-  }
-
   cl_device_id device_;
 };
 
 // =================================================================================================
 
 // C++11 version of cl_context
-class Context {
+class Context: public ObjectWithState {
  public:
 
   // Constructor based on the plain C data-type
@@ -242,30 +250,25 @@ class Context {
   cl_context operator()() const { return context_; }
   cl_context& operator()() { return context_; }
  private:
-
-  // Error handling
-  void Error(const std::string &message) {
-    throw std::runtime_error("Internal OpenCL error: "+message);
-  }
-
   cl_context context_;
 };
 
 // =================================================================================================
 
 // C++11 version of cl_program. Additionally holds the program's source code.
-class Program {
+class Program: public ObjectWithState {
  public:
 
-  // TODO: remove default constructor because of uninitialized data-members
-  Program() {}
+  // Note that there is no constructor based on the plain C data-type because of extra state
 
   // Memory management
   Program(const Context &context, const std::string &source):
     length_(source.length()) {
       std::copy(source.begin(), source.end(), back_inserter(source_));
       source_ptr_ = source_.data();
-      program_ = clCreateProgramWithSource(context(), 1, &source_ptr_, &length_, nullptr);
+      auto status = CL_SUCCESS;
+      program_ = clCreateProgramWithSource(context(), 1, &source_ptr_, &length_, &status);
+      if (status != CL_SUCCESS) { Error("status "+status); }
     }
   ~Program() {
     clReleaseProgram(program_);
@@ -314,7 +317,7 @@ class Program {
 // =================================================================================================
 
 // C++11 version of cl_kernel
-class Kernel {
+class Kernel: public ObjectWithState {
  public:
 
   // Constructor based on the plain C data-type
@@ -323,8 +326,11 @@ class Kernel {
   }
 
   // Memory management
-  Kernel(const Program &program, const std::string &name, cl_int &err):
-    kernel_(clCreateKernel(program(), name.c_str(), &err)) { }
+  Kernel(const Program &program, const std::string &name) {
+    auto status = CL_SUCCESS;
+    kernel_ = clCreateKernel(program(), name.c_str(), &status);
+    if (status != CL_SUCCESS) { Error("status "+status); }
+  }
   ~Kernel() {
     clReleaseKernel(kernel_);
   }
@@ -363,7 +369,7 @@ class Kernel {
 // =================================================================================================
 
 // C++11 version of cl_command_queue
-class CommandQueue {
+class CommandQueue: public ObjectWithState {
  public:
 
   // Constructor based on the plain C data-type
@@ -413,19 +419,13 @@ class CommandQueue {
   cl_command_queue operator()() const { return queue_; }
   cl_command_queue& operator()() { return queue_; }
  private:
-
-  // Error handling
-  void Error(const std::string &message) {
-    throw std::runtime_error("Internal OpenCL error: "+message);
-  }
-
   cl_command_queue queue_;
 };
 
 // =================================================================================================
 
 // C++11 version of cl_mem
-class Buffer {
+class Buffer: public ObjectWithState {
  public:
 
   // Constructor based on the plain C data-type
@@ -434,8 +434,11 @@ class Buffer {
   }
 
   // Memory management
-  Buffer(const Context &context, const cl_mem_flags flags, const size_t bytes):
-    buffer_(clCreateBuffer(context(), flags, bytes, nullptr, nullptr)) { }
+  Buffer(const Context &context, const cl_mem_flags flags, const size_t bytes) {
+    auto status = CL_SUCCESS;
+    buffer_ = clCreateBuffer(context(), flags, bytes, nullptr, &status);
+    if (status != CL_SUCCESS) { Error("status "+status); }
+  }
   ~Buffer() {
     clReleaseMemObject(buffer_);
   }

@@ -223,7 +223,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
   }
 
   // Sets the kernel and its arguments
-  auto tune_kernel = Kernel(program, kernel.name(), status);
+  auto tune_kernel = Kernel(program, kernel.name());
   if (status != CL_SUCCESS) { throw std::runtime_error("Kernel creation error: " + status); }
   for (auto &i: arguments_input_) { tune_kernel.SetArgument(static_cast<cl_uint>(i.index), i.buffer); }
   for (auto &i: arguments_output_) { tune_kernel.SetArgument(static_cast<cl_uint>(i.index), i.buffer); }
