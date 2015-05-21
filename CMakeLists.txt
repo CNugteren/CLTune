@@ -95,8 +95,6 @@ set(TUNER
     src/cltune.cc
     src/tuner_impl.cc
     src/kernel_info.cc
-    src/memory.cc
-    src/opencl.cc
     src/searcher.cc
     src/searchers/full_search.cc
     src/searchers/random_search.cc
@@ -109,10 +107,7 @@ target_link_libraries(cltune ${OPENCL_LIBRARIES})
 
 # Installs the library
 install(TARGETS cltune DESTINATION lib)
-install(FILES
-    include/cltune.h
-    include/cl.hpp
-    DESTINATION include)
+install(FILES include/cltune.h DESTINATION include)
 
 # ==================================================================================================
 # Optional: Enables compilation of sample programs

@@ -43,8 +43,9 @@ class KernelInfoTest : public testing::Test {
 
   // Constructor
   explicit KernelInfoTest() :
-    opencl_{new cltune::OpenCL(0, 0)},
-    kernel_{new cltune::KernelInfo("name", "source", opencl_)} {
+    platform_(cltune::Platform(size_t{0})),
+    device_(cltune::Device(platform_, CL_DEVICE_TYPE_ALL, size_t{0})),
+    kernel_{new cltune::KernelInfo("name", "source", device_)} {
   }
 
   // Initializes the tester
@@ -102,7 +103,8 @@ class KernelInfoTest : public testing::Test {
   }
 
   // Member variables
-  std::shared_ptr<cltune::OpenCL> opencl_;
+  cltune::Platform platform_;
+  cltune::Device device_;
   std::unique_ptr<cltune::KernelInfo> kernel_;
   std::vector<std::string> names_;
   std::vector<std::vector<size_t>> values_list_;

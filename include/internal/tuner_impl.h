@@ -32,15 +32,24 @@
 #ifndef CLTUNE_TUNER_IMPL_H_
 #define CLTUNE_TUNER_IMPL_H_
 
-#include "internal/memory.h"
+#include "internal/clpp11.h" // For OpenCL C++11 wrappers
+
 #include "internal/kernel_info.h"
 
 #include <string> // std::string
 #include <vector> // std::vector
 #include <memory> // std::shared_ptr
+#include <complex> // std::complex
 
 namespace cltune {
 // =================================================================================================
+
+// Shorthands for complex data-types
+using float2 = std::complex<float>; // cl_float2;
+using double2 = std::complex<double>; // cl_double2;
+
+// Enumeration of currently supported data-types by this class
+enum class MemType { kInt, kSizeT, kFloat, kDouble, kFloat2, kDouble2 };
 
 // See comment at top of file for a description of the class
 class TunerImpl {
@@ -62,12 +71,15 @@ class TunerImpl {
   static const std::string kMessageResult;
   static const std::string kMessageBest;
 
+  // Types of devices to consider
+  const cl_device_type kDeviceType = CL_DEVICE_TYPE_ALL;
+
   // Helper structure to store an OpenCL memory argument for a kernel
   struct MemArgument {
     size_t index;       // The OpenCL kernel-argument index
     size_t size;        // The number of elements (not bytes)
     MemType type;       // The data-type (e.g. float)
-    cl::Buffer buffer;  // The host memory and OpenCL buffer on the device
+    Buffer buffer;      // The OpenCL buffer on the device
   };
 
   // Helper structure to hold the results of a tuning run
@@ -96,11 +108,11 @@ class TunerImpl {
 
   // Stores the output of the reference run into the host memory
   void StoreReferenceOutput();
-  template <typename T> void DownloadReference(const MemArgument &device_buffer);
+  template <typename T> void DownloadReference(MemArgument &device_buffer);
 
   // Downloads the output of a tuning run and compares it against the reference run
   bool VerifyOutput();
-  template <typename T> bool DownloadAndCompare(const MemArgument &device_buffer, const size_t i);
+  template <typename T> bool DownloadAndCompare(MemArgument &device_buffer, const size_t i);
   template <typename T> double AbsoluteDifference(const T reference, const T result);
 
   // Prints results of a particular kernel run
@@ -112,8 +124,20 @@ class TunerImpl {
   // Prints a header of a new section in the tuning process
   void PrintHeader(const std::string &header_name) const;
 
-  // OpenCL platform
-  std::shared_ptr<OpenCL> opencl_;
+  // Specific implementations of the helper structure to get the memory-type based on a template
+  // argument. Supports all enumerations of MemType.
+  template <typename T> MemType GetType();
+
+  // Accessors to OpenCL data-types
+  const Device device() const { return device_; }
+  const Context context() const { return context_; }
+  CommandQueue queue() const { return queue_; }
+
+  // OpenCL variables
+  Platform platform_;
+  Device device_;
+  Context context_;
+  CommandQueue queue_;
 
   // Settings
   bool has_reference_;
