@@ -107,10 +107,7 @@ target_link_libraries(cltune ${OPENCL_LIBRARIES})
 
 # Installs the library
 install(TARGETS cltune DESTINATION lib)
-install(FILES
-    include/cltune.h
-    include/cl.hpp
-    DESTINATION include)
+install(FILES include/cltune.h DESTINATION include)
 
 # ==================================================================================================
 # Optional: Enables compilation of sample programs
