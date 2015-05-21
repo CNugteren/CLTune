@@ -50,6 +50,12 @@ KernelInfo::KernelInfo(const std::string name, const std::string source, const D
 
 // =================================================================================================
 
+void KernelInfo::PrependSource(const std::string &extra_source) {
+  source_ = extra_source + "\n" + source_;
+}
+
+// =================================================================================================
+
 // Pushes a new parameter to the list of parameters
 void KernelInfo::AddParameter(const std::string &name, const std::vector<size_t> &values) {
   Parameter parameter = {name, values};
