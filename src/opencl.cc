@@ -48,41 +48,26 @@ OpenCL::OpenCL(const size_t platform_id, const size_t device_id):
   }
 
   // Initializes the OpenCL platform
-  auto platforms = std::vector<cl::Platform>{};
-  cl::Platform::get(&platforms);
-  if (platforms.size() == 0) {
-    throw std::runtime_error("No OpenCL platforms found");
-  }
-  if (platform_id >= platforms.size()) {
-    throw std::runtime_error("Invalid OpenCL platform number: " + ToString(platform_id));
-  }
-  platform_ = platforms[platform_id];
+  auto status = platform_.GetPlatform(platform_id);
+  if (status != CL_SUCCESS) { throw OpenCL::Exception("Platform creation error", status); }
 
   // Initializes the OpenCL device
-  auto devices = std::vector<cl::Device>{};
-  platform_.getDevices(kDeviceType, &devices);
-  if (devices.size() == 0) {
-    throw std::runtime_error("No OpenCL devices found on platform " + ToString(platform_id));
-  }
-  if (device_id >= devices.size()) {
-    throw std::runtime_error("Invalid OpenCL device number: " + ToString(device_id));
-  }
-  device_ = devices[device_id];
+  status = device_.GetDevice(platform_(), kDeviceType, device_id);
+  if (status != CL_SUCCESS) { throw OpenCL::Exception("Device creation error", status); }
 
   // Creates the context and the queue
-  auto status = CL_SUCCESS;
-  context_ = Context(device_());
+  context_ = Context(device_(), status);
   if (status != CL_SUCCESS) { throw OpenCL::Exception("Context creation error", status); }
-  queue_ = CommandQueue(context_, device_());
+  queue_ = CommandQueue(context_, device_, status);
   if (status != CL_SUCCESS) { throw OpenCL::Exception("Command queue creation error", status); }
 
   // Gets platform and device properties
-  auto opencl_version = device_.getInfo<CL_DEVICE_VERSION>();
-  device_name_        = device_.getInfo<CL_DEVICE_NAME>();
-  max_local_dims_     = device_.getInfo<CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS>();
-  max_local_threads_  = device_.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
-  max_local_sizes_    = device_.getInfo<CL_DEVICE_MAX_WORK_ITEM_SIZES>();
-  local_memory_size_  = device_.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>();
+  auto opencl_version = device_.Version();
+  device_name_        = device_.Name();
+  max_local_dims_     = device_.MaxWorkItemDimensions();
+  max_local_threads_  = device_.MaxWorkGroupSize();
+  max_local_sizes_    = device_.MaxWorkItemSizes();
+  local_memory_size_  = device_.LocalMemSize();
 
   // Prints the device name
   if (!suppress_output_) {
@@ -113,13 +98,6 @@ bool OpenCL::ValidThreadSizes(const IntRange &global, const IntRange &local) con
   }
   if (local_size > max_local_threads_) { return false; }
   if (local.size() > max_local_dims_) { return false; }
-  return true;
-}
-
-// Verifies the local memory usage of the kernel (provided as argument) against the device
-// limitation (obtained in the constructor).
-bool OpenCL::ValidLocalMemory(const size_t local_memory) const {
-  if (local_memory > local_memory_size_) { return false; }
   return true;
 }
 

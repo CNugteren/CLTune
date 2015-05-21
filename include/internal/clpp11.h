@@ -5,10 +5,11 @@
 //
 // Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
 //
-// This file implements a C++11 wrapper around some OpenCL C data-types, similar to Khronos' cl.hpp:
-// https://www.khronos.org/registry/cl/api/1.1/cl.hpp
-// The main differences are modern C++11 support and an implemenation of only the basic needs (for
-// this project).
+// This file implements a C++11 wrapper around some OpenCL C data-types, similar to Khronos' cl.hpp.
+// The main differences are modern C++11 support and a straightforward implemenation of the basic
+// needs (as required for this project). It also includes some extra functionality not available
+// in cl.hpp, such as including the sources with a Program object and querying a Kernel's validity
+// in terms of local memory usage.
 //
 // -------------------------------------------------------------------------------------------------
 //
@@ -82,13 +83,31 @@ class Event {
 class Platform {
  public:
 
-  // Public functions
+  // Constructor based on the plain C data-type
+  Platform(const cl_platform_id platform): platform_(platform) { }
+
+  // TODO: Default construction results in uninitialized device!
+  Platform() { }
+
+  // Initialize the device. Note: if this function is not called, the device is not initialized!
+  cl_int GetPlatform(const size_t platform_id) {
+    auto num_platforms = cl_uint{0};
+    auto status = clGetPlatformIDs(0, nullptr, &num_platforms);
+    if (status != CL_SUCCESS) { return status; }
+    if (num_platforms == 0) { return CL_INVALID_PLATFORM; }
+    auto platforms = std::vector<cl_platform_id>(num_platforms);
+    status = clGetPlatformIDs(num_platforms, platforms.data(), nullptr);
+    if (status != CL_SUCCESS) { return status; }
+    if (platform_id >= num_platforms) { return CL_INVALID_PLATFORM; }
+    platform_ = platforms[platform_id];
+    return CL_SUCCESS;
+  }
 
   // Accessors to the private data-member
-  cl_platform_id operator()() const { return device_; }
-  cl_platform_id& operator()() { return device_; }
+  cl_platform_id operator()() const { return platform_; }
+  cl_platform_id& operator()() { return platform_; }
  private:
-  cl_platform_id device_;
+  cl_platform_id platform_;
 };
 
 // =================================================================================================
@@ -97,24 +116,52 @@ class Platform {
 class Device {
  public:
 
+  // Constructor based on the plain C data-type
+  Device(const cl_device_id device): device_(device) { }
+
+  // TODO: Default construction results in uninitialized device!
+  Device() { }
+
+  // Initialize the device. Note: if this function is not called, the device is not initialized!
+  cl_int GetDevice(const Platform &platform, const cl_device_type type, const size_t device_id) {
+    auto num_devices = cl_uint{0};
+    auto status = clGetDeviceIDs(platform(), type, 0, nullptr, &num_devices);
+    if (status != CL_SUCCESS) { return status; }
+    if (num_devices == 0) { return CL_INVALID_DEVICE; }
+    auto devices = std::vector<cl_device_id>(num_devices);
+    status = clGetDeviceIDs(platform(), type, num_devices, devices.data(), nullptr);
+    if (status != CL_SUCCESS) { return status; }
+    if (device_id >= num_devices) { return CL_INVALID_DEVICE; }
+    device_ = devices[device_id];
+    return CL_SUCCESS;
+  }
+
   // Public functions
-  std::string DeviceVersion() const {
+  std::string Version() const {
     return GetInfoString(CL_DEVICE_VERSION);
   }
-  std::string DeviceName() const {
+  std::string Name() const {
     return GetInfoString(CL_DEVICE_NAME);
   }
-  cl_uint MaxWorkItemDimensions() const {
-    return GetInfo<uint>(CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS);
+  std::string Extensions() const {
+    return GetInfoString(CL_DEVICE_EXTENSIONS);
   }
-  cl_uint MaxWorkGroupSize() const {
-    return GetInfo<uint>(CL_DEVICE_MAX_WORK_GROUP_SIZE);
+  cl_uint MaxWorkItemDimensions() const {
+    return GetInfo<cl_uint>(CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS);
+  }
+  size_t MaxWorkGroupSize() const {
+    return GetInfo<size_t>(CL_DEVICE_MAX_WORK_GROUP_SIZE);
   }
   std::vector<size_t> MaxWorkItemSizes() const {
-    return GetInfo<std::vector<size_t>>(CL_DEVICE_MAX_WORK_ITEM_SIZES);
+    return GetInfoVector<size_t>(CL_DEVICE_MAX_WORK_ITEM_SIZES);
   }
   cl_ulong LocalMemSize() const {
     return GetInfo<cl_ulong>(CL_DEVICE_LOCAL_MEM_SIZE);
+  }
+
+  // Configuration-validity checks
+  bool ValidLocalMemory(const size_t local_mem_usage) const {
+    return (local_mem_usage <= LocalMemSize());
   }
 
   // Accessors to the private data-member
@@ -132,6 +179,14 @@ class Device {
     clGetDeviceInfo(device_, info, bytes, &result, nullptr);
     return result;
   }
+  template <typename T>
+  std::vector<T> GetInfoVector(const cl_device_info info) const {
+    auto bytes = size_t{0};
+    clGetDeviceInfo(device_, info, 0, nullptr, &bytes);
+    auto result = std::vector<T>(bytes/sizeof(T));
+    clGetDeviceInfo(device_, info, bytes, result.data(), nullptr);
+    return result;
+  }
   std::string GetInfoString(const cl_device_info info) const {
     auto bytes = size_t{0};
     clGetDeviceInfo(device_, info, 0, nullptr, &bytes);
@@ -147,16 +202,21 @@ class Device {
 class Context {
  public:
 
-  // TODO: remove later
+  // TODO: remove default constructor because of uninitialized data-members
   Context() {}
 
+  // Constructor based on the plain C data-type
+  Context(const cl_context context): context_(context) {
+    clRetainContext(context_);
+  }
+
   // Memory management
-  Context(const cl_device_id device):
-    context_(clCreateContext(nullptr, 1, &device, nullptr, nullptr, nullptr)) { }
+  Context(const cl_device_id device, cl_int &err):
+    context_(clCreateContext(nullptr, 1, &device, nullptr, nullptr, &err)) { }
   ~Context() {
     clReleaseContext(context_);
   }
-  Context(const Context& other):
+  Context(const Context &other):
     context_(other.context_) {
     clRetainContext(context_);
   }
@@ -164,7 +224,7 @@ class Context {
     swap(*this, other);
     return *this;
   }
-  friend void swap(Context& first, Context& second) {
+  friend void swap(Context &first, Context &second) {
     std::swap(first.context_, second.context_);
   }
 
@@ -183,8 +243,11 @@ class Context {
 class Program {
  public:
 
+  // TODO: remove default constructor because of uninitialized data-members
+  Program() {}
+
   // Memory management
-  Program(const Context context, const std::string &source):
+  Program(const Context &context, const std::string &source):
     length_(source.length()) {
       std::copy(source.begin(), source.end(), back_inserter(source_));
       source_ptr_ = source_.data();
@@ -193,7 +256,7 @@ class Program {
   ~Program() {
     clReleaseProgram(program_);
   }
-  Program(const Program& other):
+  Program(const Program &other):
       length_(other.length_),
       source_(other.source_),
       source_ptr_(other.source_ptr_),
@@ -204,7 +267,7 @@ class Program {
     swap(*this, other);
     return *this;
   }
-  friend void swap(Program& first, Program& second) {
+  friend void swap(Program &first, Program &second) {
     std::swap(first.length_, second.length_);
     std::swap(first.source_, second.source_);
     std::swap(first.source_ptr_, second.source_ptr_);
@@ -212,14 +275,15 @@ class Program {
   }
 
   // Public functions
-  cl_int Build(const cl_device_id device, const std::string options) {
-    return clBuildProgram(program_, 1, &device, options.c_str(), nullptr, nullptr);
+  cl_int Build(const Device &device, const std::string &options) {
+    const cl_device_id dev = device();
+    return clBuildProgram(program_, 1, &dev, options.c_str(), nullptr, nullptr);
   }
-  std::string GetBuildInfo(const cl_device_id device) const {
+  std::string GetBuildInfo(const Device &device) const {
     auto bytes = size_t{0};
-    clGetProgramBuildInfo(program_, device, CL_PROGRAM_BUILD_LOG, 0, nullptr, &bytes);
+    clGetProgramBuildInfo(program_, device(), CL_PROGRAM_BUILD_LOG, 0, nullptr, &bytes);
     auto result = std::vector<char>(bytes);
-    clGetProgramBuildInfo(program_, device, CL_PROGRAM_BUILD_LOG, bytes, result.data(), nullptr);
+    clGetProgramBuildInfo(program_, device(), CL_PROGRAM_BUILD_LOG, bytes, result.data(), nullptr);
     return std::string(result.data());
   }
 
@@ -239,13 +303,18 @@ class Program {
 class Kernel {
  public:
 
+  // Constructor based on the plain C data-type
+  Kernel(const cl_kernel kernel): kernel_(kernel) {
+    clRetainKernel(kernel_);
+  }
+
   // Memory management
-  Kernel(const Program program, const std::string &name):
-    kernel_(clCreateKernel(program(), name.c_str(), nullptr)) { }
+  Kernel(const Program &program, const std::string &name, cl_int &err):
+    kernel_(clCreateKernel(program(), name.c_str(), &err)) { }
   ~Kernel() {
     clReleaseKernel(kernel_);
   }
-  Kernel(const Kernel& other):
+  Kernel(const Kernel &other):
     kernel_(other.kernel_) {
     clRetainKernel(kernel_);
   }
@@ -253,7 +322,7 @@ class Kernel {
     swap(*this, other);
     return *this;
   }
-  friend void swap(Kernel& first, Kernel& second) {
+  friend void swap(Kernel &first, Kernel &second) {
     std::swap(first.kernel_, second.kernel_);
   }
 
@@ -262,17 +331,12 @@ class Kernel {
   cl_int SetArgument(const cl_uint index, const T value) {
     return clSetKernelArg(kernel_, index, sizeof(T), &value);
   }
-  size_t LocalMemUsage(const cl_device_id device) {
+  size_t LocalMemUsage(const Device &device) {
     auto bytes = size_t{0};
-    clGetKernelWorkGroupInfo(kernel_, device, CL_KERNEL_LOCAL_MEM_SIZE, 0, nullptr, &bytes);
+    clGetKernelWorkGroupInfo(kernel_, device(), CL_KERNEL_LOCAL_MEM_SIZE, 0, nullptr, &bytes);
     auto result = size_t{0};
-    clGetKernelWorkGroupInfo(kernel_, device, CL_KERNEL_LOCAL_MEM_SIZE, bytes, &result, nullptr);
+    clGetKernelWorkGroupInfo(kernel_, device(), CL_KERNEL_LOCAL_MEM_SIZE, bytes, &result, nullptr);
     return result;
-  }
-
-  // Kernel-validity checks
-  bool ValidLocalMemory(const Device device) {
-    return (LocalMemUsage(device()) <= device.LocalMemSize());
   }
 
   // Accessors to the private data-member
@@ -288,16 +352,21 @@ class Kernel {
 class CommandQueue {
  public:
 
-  // TODO: remove later
+  // TODO: remove default constructor because of uninitialized data-members
   CommandQueue() {}
 
+  // Constructor based on the plain C data-type
+  CommandQueue(const cl_command_queue queue): queue_(queue) {
+    clRetainCommandQueue(queue_);
+  }
+
   // Memory management
-  CommandQueue(const Context context, const cl_device_id device):
-    queue_(clCreateCommandQueue(context(), device, CL_QUEUE_PROFILING_ENABLE, nullptr)) { }
+  CommandQueue(const Context &context, const Device &device, cl_int &err):
+    queue_(clCreateCommandQueue(context(), device(), CL_QUEUE_PROFILING_ENABLE, &err)) { }
   ~CommandQueue() {
     clReleaseCommandQueue(queue_);
   }
-  CommandQueue(const CommandQueue& other):
+  CommandQueue(const CommandQueue &other):
     queue_(other.queue_) {
     clRetainCommandQueue(queue_);
   }
@@ -305,15 +374,22 @@ class CommandQueue {
     swap(*this, other);
     return *this;
   }
-  friend void swap(CommandQueue& first, CommandQueue& second) {
+  friend void swap(CommandQueue &first, CommandQueue &second) {
     std::swap(first.queue_, second.queue_);
   }
 
   // Public functions
-  cl_int EnqueueKernel(const Kernel kernel, const std::vector<size_t> &global,
+  cl_int EnqueueKernel(const Kernel &kernel, const std::vector<size_t> &global,
                        const std::vector<size_t> &local, Event &event) {
     return clEnqueueNDRangeKernel(queue_, kernel(), static_cast<cl_uint>(global.size()), nullptr,
                                   global.data(), local.data(), 0, nullptr, &(event()));
+  }
+  Context GetContext() const {
+    auto bytes = size_t{0};
+    clGetCommandQueueInfo(queue_, CL_QUEUE_CONTEXT, 0, nullptr, &bytes);
+    cl_context result;
+    clGetCommandQueueInfo(queue_, CL_QUEUE_CONTEXT, bytes, &result, nullptr);
+    return Context(result);
   }
   cl_int Finish() {
     return clFinish(queue_);
@@ -332,13 +408,18 @@ class CommandQueue {
 class Buffer {
  public:
 
+  // Constructor based on the plain C data-type
+  Buffer(const cl_mem buffer): buffer_(buffer) {
+    clRetainMemObject(buffer_);
+  }
+
   // Memory management
-  Buffer(const Context context, const cl_mem_flags flags, const size_t bytes):
+  Buffer(const Context &context, const cl_mem_flags flags, const size_t bytes):
     buffer_(clCreateBuffer(context(), flags, bytes, nullptr, nullptr)) { }
   ~Buffer() {
     clReleaseMemObject(buffer_);
   }
-  Buffer(const Buffer& other):
+  Buffer(const Buffer &other):
     buffer_(other.buffer_) {
     clRetainMemObject(buffer_);
   }
@@ -346,25 +427,25 @@ class Buffer {
     swap(*this, other);
     return *this;
   }
-  friend void swap(Buffer& first, Buffer& second) {
+  friend void swap(Buffer &first, Buffer &second) {
     std::swap(first.buffer_, second.buffer_);
   }
 
   // Public functions
   template <typename T>
-  cl_int ReadBuffer(const CommandQueue queue, const size_t bytes, T* host) {
+  cl_int ReadBuffer(const CommandQueue &queue, const size_t bytes, T* host) {
     return clEnqueueReadBuffer(queue(), buffer_, CL_TRUE, 0, bytes, host, 0, nullptr, nullptr);
   }
   template <typename T>
-  cl_int ReadBuffer(const CommandQueue queue, const size_t bytes, std::vector<T> &host) {
+  cl_int ReadBuffer(const CommandQueue &queue, const size_t bytes, std::vector<T> &host) {
     return ReadBuffer(queue, bytes, host.data());
   }
   template <typename T>
-  cl_int WriteBuffer(const CommandQueue queue, const size_t bytes, T* host) {
+  cl_int WriteBuffer(const CommandQueue &queue, const size_t bytes, T* host) {
     return clEnqueueWriteBuffer(queue(), buffer_, CL_TRUE, 0, bytes, host, 0, nullptr, nullptr);
   }
   template <typename T>
-  cl_int WriteBuffer(const CommandQueue queue, const size_t bytes, std::vector<T> &host) {
+  cl_int WriteBuffer(const CommandQueue &queue, const size_t bytes, std::vector<T> &host) {
     return WriteBuffer(queue, bytes, host.data());
   }
 

@@ -71,7 +71,7 @@ class OpenCL {
   ~OpenCL();
 
   // Accessors
-  const cl::Device device() const { return device_; }
+  const Device device() const { return device_; }
   const Context context() const { return context_; }
   CommandQueue queue() const { return queue_; }
   const std::string device_name() const { return device_name_; }
@@ -79,7 +79,6 @@ class OpenCL {
   // Checks whether the global and local thread-sizes, and local memory size are compatible with the
   // current device
   bool ValidThreadSizes(const IntRange &global, const IntRange &local) const;
-  bool ValidLocalMemory(const size_t local_memory) const;
   
  private:
 
@@ -87,8 +86,8 @@ class OpenCL {
   bool suppress_output_;
 
   // OpenCL variables
-  cl::Platform platform_;
-  cl::Device device_;
+  Platform platform_;
+  Device device_;
   Context context_;
   CommandQueue queue_;
 

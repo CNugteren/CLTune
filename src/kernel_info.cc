@@ -218,8 +218,8 @@ bool KernelInfo::ValidConfiguration(const Configuration &config) {
   if (local_memory_.parameters.size() != values_local_memory.size()) {
     throw Exception("Invalid settings for the local memory usage constraint");
   }
-  auto local_memory_usage = local_memory_.amount(values_local_memory);
-  if (!opencl_->ValidLocalMemory(local_memory_usage)) { return false; };
+  auto local_mem_usage = local_memory_.amount(values_local_memory);
+  if (!opencl_->device().ValidLocalMemory(local_mem_usage)) { return false; };
 
   // Everything was OK: this configuration is valid
   return true;

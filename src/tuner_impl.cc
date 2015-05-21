@@ -193,9 +193,6 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
                                             const size_t configuration_id,
                                             const size_t num_configurations) {
 
-  // Retrieves the OpenCL device
-  auto device = opencl_->device()();
-
   // Removes the use of C++11 string literals (if any) from the kernel source code
   auto string_literal_start = std::regex{"R\"\\("};
   auto string_literal_end = std::regex{"\\)\";"};
@@ -205,9 +202,9 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
   // Compiles the kernel and prints the compiler errors/warnings
   auto status = CL_SUCCESS;
   auto program = Program(opencl_->context(), processed_source);
-  status = program.Build(device, "");
+  status = program.Build(opencl_->device(), "");
   if (status == CL_BUILD_PROGRAM_FAILURE) {
-    auto message = program.GetBuildInfo(device);
+    auto message = program.GetBuildInfo(opencl_->device());
     fprintf(stdout, "OpenCL compiler error/warning: %s\n", message.c_str());
     throw std::runtime_error("OpenCL compiler error/warning occurred ^^\n");
   }
@@ -226,7 +223,8 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
   }
 
   // Sets the kernel and its arguments
-  auto tune_kernel = Kernel(program, kernel.name());
+  auto tune_kernel = Kernel(program, kernel.name(), status);
+  if (status != CL_SUCCESS) { throw OpenCL::Exception("Kernel creation error", status); }
   for (auto &i: arguments_input_) { tune_kernel.SetArgument(static_cast<cl_uint>(i.index), i.buffer); }
   for (auto &i: arguments_output_) { tune_kernel.SetArgument(static_cast<cl_uint>(i.index), i.buffer); }
   for (auto &i: arguments_int_) { tune_kernel.SetArgument(static_cast<cl_uint>(i.first), i.second); }
@@ -243,10 +241,9 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
   // In case of an exception, skip this run
   try {
 
-    // Obtains and verifies the local memory usage of the kernel
-    auto local_memory = tune_kernel.LocalMemUsage(device);
-    if (status != CL_SUCCESS) { throw OpenCL::Exception("Get kernel information error", status); }
-    if (!opencl_->ValidLocalMemory(local_memory)) {
+    // Verifies the local memory usage of the kernel
+    auto local_mem_usage = tune_kernel.LocalMemUsage(opencl_->device());
+    if (!opencl_->device().ValidLocalMemory(local_mem_usage)) {
       throw std::runtime_error("Using too much local memory");
     }
 
