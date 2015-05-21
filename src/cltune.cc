@@ -97,6 +97,12 @@ void Tuner::AddParameter(const size_t id, const std::string &parameter_name,
   pimpl->kernels_[id].AddParameter(parameter_name, values);
 }
 
+// As above, but now adds a single valued parameter to the reference
+void Tuner::AddParameterReference(const std::string &parameter_name, const size_t value) {
+  auto value_string = std::string{std::to_string(static_cast<long long>(value))};
+  pimpl->reference_kernel_->PrependSource("#define "+parameter_name+" "+value_string);
+}
+
 // =================================================================================================
 
 // These functions forward their work (adding a modifier to global/local thread-sizes) to an object

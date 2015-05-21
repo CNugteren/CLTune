@@ -65,7 +65,7 @@ class KernelInfo {
     std::string GetDefine() const { return "#define "+name+" "+GetValueString()+"\n"; }
     std::string GetConfig() const { return name+" "+GetValueString(); }
     std::string GetDatabase() const { return "{\""+name+"\","+GetValueString()+"}"; }
-    std::string GetValueString() const { return std::to_string((long long)value); }
+    std::string GetValueString() const { return std::to_string(static_cast<long long>(value)); }
   };
   using Configuration = std::vector<Setting>;
 
@@ -110,6 +110,9 @@ class KernelInfo {
   // Accessors (setters) - Note that these also pre-set the final global/local size
   void set_global_base(IntRange global) { global_base_ = global; global_ = global; }
   void set_local_base(IntRange local) { local_base_ = local; local_ = local; }
+
+  // Prepend to the source-code
+  void PrependSource(const std::string &extra_source);
 
   // Adds a new parameter with a name and a vector of possible values
   void AddParameter(const std::string &name, const std::vector<size_t> &values);

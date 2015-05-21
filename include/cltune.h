@@ -73,6 +73,9 @@ class Tuner {
   void AddParameter(const size_t id, const std::string &parameter_name,
                     const std::initializer_list<size_t> &values);
 
+  // As above, but now adds a single valued parameter to the reference
+  void AddParameterReference(const std::string &parameter_name, const size_t value);
+
   // Modifies the global or local thread-size (integers) by one of the parameters (strings). The
   // modifier can be multiplication or division.
   void MulGlobalSize(const size_t id, const StringRange range);
