@@ -152,7 +152,7 @@ template <typename T>
 void Tuner::AddArgumentInput(std::vector<T> &source) {
   auto device_buffer = Buffer(pimpl->opencl_->context(), CL_MEM_READ_ONLY, source.size()*sizeof(T));
   auto status = device_buffer.WriteBuffer(pimpl->opencl_->queue(), source.size()*sizeof(T), source);
-  if (status != CL_SUCCESS) { throw OpenCL::Exception("Write buffer error", status); }
+  if (status != CL_SUCCESS) { throw std::runtime_error("Write buffer error: " + status); }
   auto argument = TunerImpl::MemArgument{pimpl->argument_counter_++, source.size(),
                                          pimpl->GetType<T>(), device_buffer};
   pimpl->arguments_input_.push_back(argument);
@@ -303,7 +303,7 @@ void Tuner::PrintFormatted() const {
   // Prints the best result in C++ database format
   auto count = 0UL;
   pimpl->PrintHeader("Printing best result in database format to stdout");
-  fprintf(stdout, "{ \"%s\", { ", pimpl->opencl_->device_name().c_str());
+  fprintf(stdout, "{ \"%s\", { ", pimpl->opencl_->device().Name().c_str());
   for (auto &setting: best_result.configuration) {
     fprintf(stdout, "%s", setting.GetDatabase().c_str());
     if (count < best_result.configuration.size()-1) {

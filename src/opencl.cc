@@ -39,66 +39,25 @@ const std::string OpenCL::kMessageFull = "\x1b[32m[==========]\x1b[0m";
 // Gets a list of all platforms/devices and chooses the selected ones. Initializes OpenCL and also
 // downloads properties of the device for later use.
 OpenCL::OpenCL(const size_t platform_id, const size_t device_id):
-    suppress_output_{false} {
-
-  // Starting on a new platform/device
-  if (!suppress_output_) {
-    fprintf(stdout, "\n%s Initializing OpenCL on platform %lu device %lu\n",
-            kMessageFull.c_str(), platform_id, device_id);
-  }
-
-  // Initializes the OpenCL platform
-  auto status = platform_.GetPlatform(platform_id);
-  if (status != CL_SUCCESS) { throw OpenCL::Exception("Platform creation error", status); }
-
-  // Initializes the OpenCL device
-  status = device_.GetDevice(platform_(), kDeviceType, device_id);
-  if (status != CL_SUCCESS) { throw OpenCL::Exception("Device creation error", status); }
-
-  // Creates the context and the queue
-  context_ = Context(device_(), status);
-  if (status != CL_SUCCESS) { throw OpenCL::Exception("Context creation error", status); }
-  queue_ = CommandQueue(context_, device_, status);
-  if (status != CL_SUCCESS) { throw OpenCL::Exception("Command queue creation error", status); }
-
-  // Gets platform and device properties
-  auto opencl_version = device_.Version();
-  device_name_        = device_.Name();
-  max_local_dims_     = device_.MaxWorkItemDimensions();
-  max_local_threads_  = device_.MaxWorkGroupSize();
-  max_local_sizes_    = device_.MaxWorkItemSizes();
-  local_memory_size_  = device_.LocalMemSize();
+    suppress_output_{false},
+    platform_(Platform(platform_id)),
+    device_(Device(platform_, kDeviceType, device_id)),
+    context_(Context(device_)),
+    queue_(CommandQueue(context_, device_)) {
 
   // Prints the device name
   if (!suppress_output_) {
+    fprintf(stdout, "\n%s Initializing OpenCL on platform %lu device %lu\n",
+            kMessageFull.c_str(), platform_id, device_id);
+    auto opencl_version = device_.Version();
+    auto device_name = device_.Name();
     fprintf(stdout, "%s Device name: '%s' (%s)\n", kMessageFull.c_str(),
-            device_name_.c_str(), opencl_version.c_str());
+            device_name.c_str(), opencl_version.c_str());
   }
 }
 
 // Releases the OpenCL objects
 OpenCL::~OpenCL() {
-}
-
-// =================================================================================================
-
-// !!!!!
-// TODO: Integrate these functions into clpp11.h
-// !!!!!
-
-// Verifies: 1) the local worksize in each dimension, 2) the local worksize in all dimensions
-// combined, and 3) the number of dimensions. For now, the global size is not verified.
-bool OpenCL::ValidThreadSizes(const IntRange &global, const IntRange &local) const {
-  auto local_size = size_t{1};
-  auto global_size = size_t{1};
-  for (auto &item: global) { global_size *= item; }
-  for (auto &item: local) { local_size *= item; }
-  for (auto i=size_t{0}; i<local.size(); ++i) {
-    if (local[i] > max_local_sizes_[i]) { return false; }
-  }
-  if (local_size > max_local_threads_) { return false; }
-  if (local.size() > max_local_dims_) { return false; }
-  return true;
 }
 
 // =================================================================================================

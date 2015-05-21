@@ -36,6 +36,7 @@
 #include <algorithm> // std::copy
 #include <string> // std::string
 #include <vector> // std::vector
+#include <stdexcept> // std::runtime_error
 
 // Includes the normal OpenCL C header
 #if defined(__APPLE__) || defined(__MACOSX)
@@ -45,8 +46,18 @@
 #endif
 
 namespace cltune {
-// =================================================================================================
 
+// =================================================================================================
+class CLState {
+ protected:
+
+  // Error handling
+  void Error(const std::string &message) {
+    throw std::runtime_error("Internal OpenCL error: "+message);
+  }
+};
+
+// =================================================================================================
 // C++11 version of cl_event
 class Event {
  public:
@@ -80,27 +91,23 @@ class Event {
 // =================================================================================================
 
 // C++11 version of cl_platform_id
-class Platform {
+class Platform: public CLState {
  public:
 
   // Constructor based on the plain C data-type
   Platform(const cl_platform_id platform): platform_(platform) { }
 
-  // TODO: Default construction results in uninitialized device!
-  Platform() { }
-
-  // Initialize the device. Note: if this function is not called, the device is not initialized!
-  cl_int GetPlatform(const size_t platform_id) {
+  // Initialize the platform. Note that this constructor can throw exceptions!
+  Platform(const size_t platform_id) {
     auto num_platforms = cl_uint{0};
     auto status = clGetPlatformIDs(0, nullptr, &num_platforms);
-    if (status != CL_SUCCESS) { return status; }
-    if (num_platforms == 0) { return CL_INVALID_PLATFORM; }
+    if (status != CL_SUCCESS) { Error("status "+status); }
+    if (num_platforms == 0) { Error("no platforms found"); }
     auto platforms = std::vector<cl_platform_id>(num_platforms);
     status = clGetPlatformIDs(num_platforms, platforms.data(), nullptr);
-    if (status != CL_SUCCESS) { return status; }
-    if (platform_id >= num_platforms) { return CL_INVALID_PLATFORM; }
+    if (status != CL_SUCCESS) { Error("status "+status); }
+    if (platform_id >= num_platforms) { Error("invalid platform ID "+platform_id); }
     platform_ = platforms[platform_id];
-    return CL_SUCCESS;
   }
 
   // Accessors to the private data-member
@@ -119,56 +126,51 @@ class Device {
   // Constructor based on the plain C data-type
   Device(const cl_device_id device): device_(device) { }
 
-  // TODO: Default construction results in uninitialized device!
-  Device() { }
-
-  // Initialize the device. Note: if this function is not called, the device is not initialized!
-  cl_int GetDevice(const Platform &platform, const cl_device_type type, const size_t device_id) {
+  // Initialize the device. Note that this constructor can throw exceptions!
+  Device(const Platform &platform, const cl_device_type type, const size_t device_id) {
     auto num_devices = cl_uint{0};
     auto status = clGetDeviceIDs(platform(), type, 0, nullptr, &num_devices);
-    if (status != CL_SUCCESS) { return status; }
-    if (num_devices == 0) { return CL_INVALID_DEVICE; }
+    if (status != CL_SUCCESS) { Error("status "+status); }
+    if (num_devices == 0) { Error("no devices found"); }
     auto devices = std::vector<cl_device_id>(num_devices);
     status = clGetDeviceIDs(platform(), type, num_devices, devices.data(), nullptr);
-    if (status != CL_SUCCESS) { return status; }
-    if (device_id >= num_devices) { return CL_INVALID_DEVICE; }
+    if (status != CL_SUCCESS) { Error("status "+status); }
+    if (device_id >= num_devices) { Error("invalid device ID "+device_id); }
     device_ = devices[device_id];
-    return CL_SUCCESS;
   }
 
   // Public functions
-  std::string Version() const {
-    return GetInfoString(CL_DEVICE_VERSION);
-  }
-  std::string Name() const {
-    return GetInfoString(CL_DEVICE_NAME);
-  }
-  std::string Extensions() const {
-    return GetInfoString(CL_DEVICE_EXTENSIONS);
-  }
+  std::string Version()     const { return GetInfoString(CL_DEVICE_VERSION); }
+  std::string Name()        const { return GetInfoString(CL_DEVICE_NAME); }
+  std::string Extensions()  const { return GetInfoString(CL_DEVICE_EXTENSIONS); }
+  size_t MaxWorkGroupSize() const { return GetInfo<size_t>(CL_DEVICE_MAX_WORK_GROUP_SIZE); }
+  cl_ulong LocalMemSize()   const { return GetInfo<cl_ulong>(CL_DEVICE_LOCAL_MEM_SIZE); }
   cl_uint MaxWorkItemDimensions() const {
     return GetInfo<cl_uint>(CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS);
-  }
-  size_t MaxWorkGroupSize() const {
-    return GetInfo<size_t>(CL_DEVICE_MAX_WORK_GROUP_SIZE);
   }
   std::vector<size_t> MaxWorkItemSizes() const {
     return GetInfoVector<size_t>(CL_DEVICE_MAX_WORK_ITEM_SIZES);
   }
-  cl_ulong LocalMemSize() const {
-    return GetInfo<cl_ulong>(CL_DEVICE_LOCAL_MEM_SIZE);
-  }
 
   // Configuration-validity checks
-  bool ValidLocalMemory(const size_t local_mem_usage) const {
+  bool IsLocalMemoryValid(const size_t local_mem_usage) const {
     return (local_mem_usage <= LocalMemSize());
+  }
+  bool IsThreadConfigValid(const std::vector<size_t> &local) const {
+    auto local_size = size_t{1};
+    for (auto &item: local) { local_size *= item; }
+    for (auto i=size_t{0}; i<local.size(); ++i) {
+      if (local[i] > MaxWorkItemSizes()[i]) { return false; }
+    }
+    if (local_size > MaxWorkGroupSize()) { return false; }
+    if (local.size() > MaxWorkItemDimensions()) { return false; }
+    return true;
   }
 
   // Accessors to the private data-member
   cl_device_id operator()() const { return device_; }
   cl_device_id& operator()() { return device_; }
  private:
-  cl_device_id device_;
 
   // Helper functions
   template <typename T>
@@ -194,6 +196,13 @@ class Device {
     clGetDeviceInfo(device_, info, bytes, result.data(), nullptr);
     return std::string(result.data());
   }
+
+  // Error handling
+  void Error(const std::string &message) {
+    throw std::runtime_error("Internal OpenCL error: "+message);
+  }
+
+  cl_device_id device_;
 };
 
 // =================================================================================================
@@ -202,17 +211,18 @@ class Device {
 class Context {
  public:
 
-  // TODO: remove default constructor because of uninitialized data-members
-  Context() {}
-
   // Constructor based on the plain C data-type
   Context(const cl_context context): context_(context) {
     clRetainContext(context_);
   }
 
   // Memory management
-  Context(const cl_device_id device, cl_int &err):
-    context_(clCreateContext(nullptr, 1, &device, nullptr, nullptr, &err)) { }
+  Context(const Device &device) {
+    auto status = CL_SUCCESS;
+    const cl_device_id dev = device();
+    context_ = clCreateContext(nullptr, 1, &dev, nullptr, nullptr, &status);
+    if (status != CL_SUCCESS) { Error("status "+status); }
+  }
   ~Context() {
     clReleaseContext(context_);
   }
@@ -228,18 +238,22 @@ class Context {
     std::swap(first.context_, second.context_);
   }
 
-  // Public functions
-
   // Accessors to the private data-member
   cl_context operator()() const { return context_; }
   cl_context& operator()() { return context_; }
  private:
+
+  // Error handling
+  void Error(const std::string &message) {
+    throw std::runtime_error("Internal OpenCL error: "+message);
+  }
+
   cl_context context_;
 };
 
 // =================================================================================================
 
-// C++11 version of cl_program
+// C++11 version of cl_program. Additionally holds the program's source code.
 class Program {
  public:
 
@@ -352,17 +366,17 @@ class Kernel {
 class CommandQueue {
  public:
 
-  // TODO: remove default constructor because of uninitialized data-members
-  CommandQueue() {}
-
   // Constructor based on the plain C data-type
   CommandQueue(const cl_command_queue queue): queue_(queue) {
     clRetainCommandQueue(queue_);
   }
 
   // Memory management
-  CommandQueue(const Context &context, const Device &device, cl_int &err):
-    queue_(clCreateCommandQueue(context(), device(), CL_QUEUE_PROFILING_ENABLE, &err)) { }
+  CommandQueue(const Context &context, const Device &device) {
+    auto status = CL_SUCCESS;
+    queue_ = clCreateCommandQueue(context(), device(), CL_QUEUE_PROFILING_ENABLE, &status);
+    if (status != CL_SUCCESS) { Error("status "+status); }
+  }
   ~CommandQueue() {
     clReleaseCommandQueue(queue_);
   }
@@ -399,6 +413,12 @@ class CommandQueue {
   cl_command_queue operator()() const { return queue_; }
   cl_command_queue& operator()() { return queue_; }
  private:
+
+  // Error handling
+  void Error(const std::string &message) {
+    throw std::runtime_error("Internal OpenCL error: "+message);
+  }
+
   cl_command_queue queue_;
 };
 

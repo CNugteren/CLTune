@@ -203,10 +203,10 @@ bool KernelInfo::ValidConfiguration(const Configuration &config) {
   ComputeRanges(config);
 
   // Verifies the global/local thread-sizes against device properties
-  if (!opencl_->ValidThreadSizes(global_, local_)) { return false; };
+  if (!opencl_->device().IsThreadConfigValid(local_)) { return false; };
 
   // Verifies the local memory usage
-  std::vector<size_t> values_local_memory(size_t{0});
+  std::vector<size_t> values_local_memory(0);
   for (auto &parameter: local_memory_.parameters) {
     for (auto &setting: config) {
       if (setting.name == parameter) {
@@ -219,7 +219,7 @@ bool KernelInfo::ValidConfiguration(const Configuration &config) {
     throw Exception("Invalid settings for the local memory usage constraint");
   }
   auto local_mem_usage = local_memory_.amount(values_local_memory);
-  if (!opencl_->device().ValidLocalMemory(local_mem_usage)) { return false; };
+  if (!opencl_->device().IsLocalMemoryValid(local_mem_usage)) { return false; };
 
   // Everything was OK: this configuration is valid
   return true;
