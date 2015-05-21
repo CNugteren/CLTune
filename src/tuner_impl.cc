@@ -58,7 +58,10 @@ const std::string TunerImpl::kMessageBest    = "\x1b[35m[     BEST ]\x1b[0m";
 
 // Initializes the platform and device to the default 0
 TunerImpl::TunerImpl():
-    opencl_(new OpenCL(0, 0)),
+    platform_(Platform(size_t{0})),
+    device_(Device(platform_, kDeviceType, size_t{0})),
+    context_(Context(device_)),
+    queue_(CommandQueue(context_, device_)),
     has_reference_(false),
     suppress_output_(false),
     output_search_process_(false),
@@ -66,11 +69,21 @@ TunerImpl::TunerImpl():
     search_method_(SearchMethod::FullSearch),
     search_args_(0),
     argument_counter_(0) {
+  if (!suppress_output_) {
+    fprintf(stdout, "\n%s Initializing OpenCL on platform 0 device 0\n", kMessageFull.c_str());
+    auto opencl_version = device_.Version();
+    auto device_name = device_.Name();
+    fprintf(stdout, "%s Device name: '%s' (%s)\n", kMessageFull.c_str(),
+            device_name.c_str(), opencl_version.c_str());
+  }
 }
 
 // Initializes with a custom platform and device
 TunerImpl::TunerImpl(size_t platform_id, size_t device_id):
-    opencl_(new OpenCL(platform_id, device_id)),
+    platform_(Platform(platform_id)),
+    device_(Device(platform_, kDeviceType, device_id)),
+    context_(Context(device_)),
+    queue_(CommandQueue(context_, device_)),
     has_reference_(false),
     suppress_output_(false),
     output_search_process_(false),
@@ -78,6 +91,14 @@ TunerImpl::TunerImpl(size_t platform_id, size_t device_id):
     search_method_(SearchMethod::FullSearch),
     search_args_(0),
     argument_counter_(0) {
+  if (!suppress_output_) {
+    fprintf(stdout, "\n%s Initializing OpenCL on platform %lu device %lu\n",
+            kMessageFull.c_str(), platform_id, device_id);
+    auto opencl_version = device_.Version();
+    auto device_name = device_.Name();
+    fprintf(stdout, "%s Device name: '%s' (%s)\n", kMessageFull.c_str(),
+            device_name.c_str(), opencl_version.c_str());
+  }
 }
 
 // End of the tuner
@@ -201,10 +222,10 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
   // Compiles the kernel and prints the compiler errors/warnings
   auto status = CL_SUCCESS;
-  auto program = Program(opencl_->context(), processed_source);
-  status = program.Build(opencl_->device(), "");
+  auto program = Program(context_, processed_source);
+  status = program.Build(device_, "");
   if (status == CL_BUILD_PROGRAM_FAILURE) {
-    auto message = program.GetBuildInfo(opencl_->device());
+    auto message = program.GetBuildInfo(device_);
     fprintf(stdout, "OpenCL compiler error/warning: %s\n", message.c_str());
     throw std::runtime_error("OpenCL compiler error/warning occurred ^^\n");
   }
@@ -242,20 +263,20 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
   try {
 
     // Verifies the local memory usage of the kernel
-    auto local_mem_usage = tune_kernel.LocalMemUsage(opencl_->device());
-    if (!opencl_->device().IsLocalMemoryValid(local_mem_usage)) {
+    auto local_mem_usage = tune_kernel.LocalMemUsage(device_);
+    if (!device_.IsLocalMemoryValid(local_mem_usage)) {
       throw std::runtime_error("Using too much local memory");
     }
 
     // Prepares the kernel
-    status = opencl_->queue().Finish();
+    status = queue_.Finish();
     if (status != CL_SUCCESS) { throw std::runtime_error("Command queue error: " + status); }
 
     // Runs the kernel (this is the timed part)
     fprintf(stdout, "%s Running %s\n", kMessageRun.c_str(), kernel.name().c_str());
     auto events = std::vector<Event>(kNumRuns);
     for (auto t=0; t<kNumRuns; ++t) {
-      status = opencl_->queue().EnqueueKernel(tune_kernel, global, local, events[t]);
+      status = queue_.EnqueueKernel(tune_kernel, global, local, events[t]);
       if (status != CL_SUCCESS) { throw std::runtime_error("Kernel launch error: " + status); }
       status = events[t].Wait();
       if (status != CL_SUCCESS) {
@@ -263,7 +284,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
         throw std::runtime_error("Kernel error: " + status);
       }
     }
-    status = opencl_->queue().Finish();
+    status = queue_.Finish();
     if (status != CL_SUCCESS) { throw std::runtime_error("Command queue error: " + status); }
 
     // Collects the timing information
@@ -304,7 +325,7 @@ void TunerImpl::ResetMemArgument(MemArgument &argument) {
 
   // Copy the new array to the OpenCL buffer on the device
   auto bytes = sizeof(T)*argument.size;
-  auto status = argument.buffer.WriteBuffer(opencl_->queue(), bytes, buffer);
+  auto status = argument.buffer.WriteBuffer(queue_, bytes, buffer);
   if (status != CL_SUCCESS) { throw std::runtime_error("Write buffer error: " + status); }
 }
 
@@ -328,7 +349,7 @@ void TunerImpl::StoreReferenceOutput() {
 template <typename T> void TunerImpl::DownloadReference(MemArgument &device_buffer) {
   auto host_buffer = new T[device_buffer.size];
   auto bytes = sizeof(T)*device_buffer.size;
-  auto status = device_buffer.buffer.ReadBuffer(opencl_->queue(), bytes, host_buffer);
+  auto status = device_buffer.buffer.ReadBuffer(queue_, bytes, host_buffer);
   if (status != CL_SUCCESS) { throw std::runtime_error("Read buffer error: " + status); }
   reference_outputs_.push_back(host_buffer);
 }
@@ -366,7 +387,7 @@ bool TunerImpl::DownloadAndCompare(MemArgument &device_buffer, const size_t i) {
   // Downloads the results to the host
   std::vector<T> host_buffer(device_buffer.size);
   auto bytes = sizeof(T)*device_buffer.size;
-  auto status = device_buffer.buffer.ReadBuffer(opencl_->queue(), bytes, host_buffer);
+  auto status = device_buffer.buffer.ReadBuffer(queue_, bytes, host_buffer);
   if (status != CL_SUCCESS) { throw std::runtime_error("Read buffer error: " + status); }
 
   // Compares the results (L2 norm)

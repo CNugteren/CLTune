@@ -35,15 +35,14 @@ namespace cltune {
 
 // Initializes the name and OpenCL source-code, creates empty containers for all other member
 // variables.
-KernelInfo::KernelInfo(const std::string name, const std::string source,
-                      std::shared_ptr<OpenCL> opencl) :
+KernelInfo::KernelInfo(const std::string name, const std::string source, const Device &device):
   name_(name),
   source_(source),
   parameters_(),
   configurations_(),
   constraints_(),
   local_memory_(LocalMemory{[] (std::vector<size_t> v) { return 0UL; }, std::vector<std::string>(0)}),
-  opencl_(opencl),
+  device_(device),
   global_base_(), local_base_(),
   global_(), local_(),
   thread_size_modifiers_() {
@@ -203,7 +202,7 @@ bool KernelInfo::ValidConfiguration(const Configuration &config) {
   ComputeRanges(config);
 
   // Verifies the global/local thread-sizes against device properties
-  if (!opencl_->device().IsThreadConfigValid(local_)) { return false; };
+  if (!device_.IsThreadConfigValid(local_)) { return false; };
 
   // Verifies the local memory usage
   std::vector<size_t> values_local_memory(0);
@@ -219,7 +218,7 @@ bool KernelInfo::ValidConfiguration(const Configuration &config) {
     throw Exception("Invalid settings for the local memory usage constraint");
   }
   auto local_mem_usage = local_memory_.amount(values_local_memory);
-  if (!opencl_->device().IsLocalMemoryValid(local_mem_usage)) { return false; };
+  if (!device_.IsLocalMemoryValid(local_mem_usage)) { return false; };
 
   // Everything was OK: this configuration is valid
   return true;

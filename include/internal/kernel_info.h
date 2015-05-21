@@ -36,13 +36,10 @@
 #include <iostream>
 #include <stdexcept>
 #include <memory>
-#include <functional>
 
 #include "internal/clpp11.h"
 
 #include "cltune.h"
-
-#include "internal/opencl.h"
 
 namespace cltune {
 // =================================================================================================
@@ -80,14 +77,12 @@ class KernelInfo {
 
   // Helper structure holding a constraint on parameters. This constraint consists of a constraint
   // function object and a vector of paramater names represented as strings.
-  using ConstraintFunction = std::function<bool(std::vector<size_t>)>;
   struct Constraint {
     ConstraintFunction valid_if;
     std::vector<std::string> parameters;
   };
 
   // As above, but for local memory size.
-  using LocalMemoryFunction = std::function<size_t(std::vector<size_t>)>;
   struct LocalMemory {
     LocalMemoryFunction amount;
     std::vector<std::string> parameters;
@@ -100,8 +95,7 @@ class KernelInfo {
   };
 
   // Initializes the class with a given name and a string of OpenCL source-code
-  explicit KernelInfo(const std::string name, const std::string source,
-                      std::shared_ptr<OpenCL> opencl);
+  explicit KernelInfo(const std::string name, const std::string source, const Device &device);
 
   // Accessors (getters)
   std::string name() const { return name_; }
@@ -162,8 +156,8 @@ class KernelInfo {
   std::vector<Constraint> constraints_;
   LocalMemory local_memory_;
 
-  // OpenCL platform
-  std::shared_ptr<OpenCL> opencl_;
+  // OpenCL device
+  Device device_;
 
   // Global/local thread-sizes
   IntRange global_base_;

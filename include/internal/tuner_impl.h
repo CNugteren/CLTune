@@ -71,6 +71,9 @@ class TunerImpl {
   static const std::string kMessageResult;
   static const std::string kMessageBest;
 
+  // Types of devices to consider
+  const cl_device_type kDeviceType = CL_DEVICE_TYPE_ALL;
+
   // Helper structure to store an OpenCL memory argument for a kernel
   struct MemArgument {
     size_t index;       // The OpenCL kernel-argument index
@@ -125,8 +128,16 @@ class TunerImpl {
   // argument. Supports all enumerations of MemType.
   template <typename T> MemType GetType();
 
-  // OpenCL platform
-  std::shared_ptr<OpenCL> opencl_;
+  // Accessors to OpenCL data-types
+  const Device device() const { return device_; }
+  const Context context() const { return context_; }
+  CommandQueue queue() const { return queue_; }
+
+  // OpenCL variables
+  Platform platform_;
+  Device device_;
+  Context context_;
+  CommandQueue queue_;
 
   // Settings
   bool has_reference_;
