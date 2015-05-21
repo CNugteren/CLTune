@@ -37,7 +37,6 @@
 #include "internal/clpp11.h"
 
 #include "cltune.h"
-#include "cl.hpp"
 
 namespace cltune {
 // =================================================================================================

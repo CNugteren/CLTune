@@ -38,8 +38,10 @@
 #include <memory>
 #include <functional>
 
-#include "cl.hpp"
+#include "internal/clpp11.h"
+
 #include "cltune.h"
+
 #include "internal/opencl.h"
 
 namespace cltune {
