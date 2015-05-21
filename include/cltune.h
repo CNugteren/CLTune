@@ -59,14 +59,20 @@ class Tuner {
   ~Tuner();
 
   // Adds a new kernel to the list of tuning-kernels and returns a unique ID (to be used when
-  // adding tuning parameters)
+  // adding tuning parameters). Either loads the source from filenames or from string.
   size_t AddKernel(const std::vector<std::string> &filenames, const std::string &kernel_name,
                    const IntRange &global, const IntRange &local);
+  size_t AddKernelFromString(const std::string &source, const std::string &kernel_name,
+                             const IntRange &global, const IntRange &local);
 
   // Sets the reference kernel. Same as the AddKernel function, but in this case there is only one
   // reference kernel. Calling this function again will overwrite the previous reference kernel.
-  void SetReference(const std::vector<std::string> &filenames, const std::string &kernel_name,
+  void SetReference(const std::vector<std::string> &filenames,
+                    const std::string &kernel_name,
                     const IntRange &global, const IntRange &local);
+  void SetReferenceFromString(const std::string &source,
+                              const std::string &kernel_name,
+                              const IntRange &global, const IntRange &local);
 
   // Adds a new tuning parameter for a kernel with a specific ID. The parameter has a name, the
   // number of values, and a list of values.

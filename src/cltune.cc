@@ -49,19 +49,21 @@ Tuner::~Tuner() {
 
 // =================================================================================================
 
-// Loads the OpenCL source-code from a file and creates a new variable of type KernelInfo to store
-// all the kernel-information.
+// Loads the OpenCL source-code from a file and calls the function-overload below.
 size_t Tuner::AddKernel(const std::vector<std::string> &filenames, const std::string &kernel_name,
                         const IntRange &global, const IntRange &local) {
-
-  // Loads the source-code and adds the kernel
   auto source = std::string{};
   for (auto &filename: filenames) {
     source += pimpl->LoadFile(filename);
   }
-  pimpl->kernels_.push_back(KernelInfo(kernel_name, source, pimpl->device()));
+  return AddKernelFromString(source, kernel_name, global, local);
+}
 
-  // Sets the global and local thread sizes
+// Loads the OpenCL source-code from a string and creates a new variable of type KernelInfo to store
+// all the kernel-information.
+size_t Tuner::AddKernelFromString(const std::string &source, const std::string &kernel_name,
+                                  const IntRange &global, const IntRange &local) {
+  pimpl->kernels_.push_back(KernelInfo(kernel_name, source, pimpl->device()));
   auto id = pimpl->kernels_.size() - 1;
   pimpl->kernels_[id].set_global_base(global);
   pimpl->kernels_[id].set_local_base(local);
@@ -75,11 +77,15 @@ size_t Tuner::AddKernel(const std::vector<std::string> &filenames, const std::st
 // overwrite the old reference.
 void Tuner::SetReference(const std::vector<std::string> &filenames, const std::string &kernel_name,
                          const IntRange &global, const IntRange &local) {
-  pimpl->has_reference_ = true;
   auto source = std::string{};
   for (auto &filename: filenames) {
     source += pimpl->LoadFile(filename);
   }
+  SetReferenceFromString(source, kernel_name, global, local);
+}
+void Tuner::SetReferenceFromString(const std::string &source, const std::string &kernel_name,
+                                   const IntRange &global, const IntRange &local) {
+  pimpl->has_reference_ = true;
   pimpl->reference_kernel_.reset(new KernelInfo(kernel_name, source, pimpl->device()));
   pimpl->reference_kernel_->set_global_base(global);
   pimpl->reference_kernel_->set_local_base(local);
