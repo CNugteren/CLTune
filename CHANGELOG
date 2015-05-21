@@ -1,4 +1,12 @@
 
+Version 1.6.0
+- Much cleaner API due to Pimpl idiom: only cltune.h header is now required
+- Replaced Khronos' cl.hpp with a custom C++11 version tailored for CLTune
+- Code clean-up / reorganisation
+- Added an option to add fixed defines to reference kernels
+- Added an option to load a kernel from string instead of from file
+- Added support for size_t OpenCL buffers
+
 Version 1.5.1
 - Improved the GEMM example to support the Intel MIC (Xeon Phi) accelerators
 - Updated compiler check and compiler flags
