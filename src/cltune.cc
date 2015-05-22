@@ -288,7 +288,7 @@ double Tuner::PrintToScreen() const {
   // Prints all valid results and the one with the lowest execution time
   pimpl->PrintHeader("Printing results to stdout");
   for (auto &tuning_result: pimpl->tuning_results_) {
-    if (tuning_result.status) {
+    if (tuning_result.status && tuning_result.time != std::numeric_limits<double>::max()) {
       pimpl->PrintResult(stdout, tuning_result, pimpl->kMessageResult);
     }
   }
