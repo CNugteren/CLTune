@@ -27,7 +27,7 @@ cmake_minimum_required(VERSION 2.8)
 project("cltune" CXX)
 set(cltune_VERSION_MAJOR 1)
 set(cltune_VERSION_MINOR 6)
-set(cltune_VERSION_PATCH 0)
+set(cltune_VERSION_PATCH 1)
 
 # Options
 option(SAMPLES "Enable compilation of sample programs" ON)

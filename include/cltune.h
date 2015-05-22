@@ -103,7 +103,7 @@ class Tuner {
 
   // Functions to add kernel-arguments for input buffers, output buffers, and scalars. Make sure to
   // call these in the order in which the arguments appear in the OpenCL kernel.
-  template <typename T> void AddArgumentInput(std::vector<T> &source);
+  template <typename T> void AddArgumentInput(const std::vector<T> &source);
   template <typename T> void AddArgumentOutput(const std::vector<T> &source);
   template <typename T> void AddArgumentScalar(const T argument);
 

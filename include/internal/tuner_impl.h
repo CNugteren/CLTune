@@ -40,6 +40,7 @@
 #include <vector> // std::vector
 #include <memory> // std::shared_ptr
 #include <complex> // std::complex
+#include <stdexcept> // std::runtime_error
 
 namespace cltune {
 // =================================================================================================
@@ -89,6 +90,13 @@ class TunerImpl {
     size_t threads;
     bool status;
     KernelInfo::Configuration configuration;
+  };
+
+  // OpenCL exception with status printing
+  class OpenCLException: public std::runtime_error {
+   public:
+    OpenCLException(const std::string &message, int status):
+      std::runtime_error(message + std::to_string(status)) {}
   };
 
   // Initialize either with platform 0 and device 0 or with a custom platform/device

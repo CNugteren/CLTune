@@ -161,7 +161,7 @@ void Tuner::SetLocalMemoryUsage(const size_t id, LocalMemoryFunction amount,
 // Creates a new buffer of type Memory (containing both host and device data) based on a source
 // vector of data. Then, upload it to the device and store the argument in a list.
 template <typename T>
-void Tuner::AddArgumentInput(std::vector<T> &source) {
+void Tuner::AddArgumentInput(const std::vector<T> &source) {
   auto device_buffer = Buffer(pimpl->context(), CL_MEM_READ_ONLY, source.size()*sizeof(T));
   auto status = device_buffer.WriteBuffer(pimpl->queue(), source.size()*sizeof(T), source);
   if (status != CL_SUCCESS) { throw std::runtime_error("Write buffer error: " + status); }
@@ -171,12 +171,12 @@ void Tuner::AddArgumentInput(std::vector<T> &source) {
 }
 
 // Compiles the function for various data-types
-template void Tuner::AddArgumentInput<int>(std::vector<int>&);
-template void Tuner::AddArgumentInput<size_t>(std::vector<size_t>&);
-template void Tuner::AddArgumentInput<float>(std::vector<float>&);
-template void Tuner::AddArgumentInput<double>(std::vector<double>&);
-template void Tuner::AddArgumentInput<float2>(std::vector<float2>&);
-template void Tuner::AddArgumentInput<double2>(std::vector<double2>&);
+template void Tuner::AddArgumentInput<int>(const std::vector<int>&);
+template void Tuner::AddArgumentInput<size_t>(const std::vector<size_t>&);
+template void Tuner::AddArgumentInput<float>(const std::vector<float>&);
+template void Tuner::AddArgumentInput<double>(const std::vector<double>&);
+template void Tuner::AddArgumentInput<float2>(const std::vector<float2>&);
+template void Tuner::AddArgumentInput<double2>(const std::vector<double2>&);
 
 // Similar to the above function, but now marked as output buffer. Output buffers are special in the
 // sense that they will be checked in the verification process.
@@ -288,7 +288,7 @@ double Tuner::PrintToScreen() const {
   // Prints all valid results and the one with the lowest execution time
   pimpl->PrintHeader("Printing results to stdout");
   for (auto &tuning_result: pimpl->tuning_results_) {
-    if (tuning_result.status) {
+    if (tuning_result.status && tuning_result.time != std::numeric_limits<double>::max()) {
       pimpl->PrintResult(stdout, tuning_result, pimpl->kMessageResult);
     }
   }

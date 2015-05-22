@@ -46,25 +46,30 @@
 #endif
 
 namespace cltune {
-
 // =================================================================================================
+
 // Base class for any object
 class Object {
  protected:
 
   // Error handling
-  void Error(const std::string &message) {
+  [[noreturn]] void Error(const std::string &message) {
     throw std::runtime_error("Internal OpenCL error: "+message);
+  }
+  [[noreturn]] void Error(const cl_int status) {
+    throw std::runtime_error("Internal OpenCL error with status: "+std::to_string(status));
   }
 };
 
 // =================================================================================================
+
 // Base class for objects which require memory management
 class ObjectWithState: public Object {
 
 };
 
 // =================================================================================================
+
 // C++11 version of cl_event
 class Event: public Object {
  public:
@@ -114,12 +119,12 @@ class Platform: public Object {
   Platform(const size_t platform_id) {
     auto num_platforms = cl_uint{0};
     auto status = clGetPlatformIDs(0, nullptr, &num_platforms);
-    if (status != CL_SUCCESS) { Error("status "+status); }
+    if (status != CL_SUCCESS) { Error(status); }
     if (num_platforms == 0) { Error("no platforms found"); }
     auto platforms = std::vector<cl_platform_id>(num_platforms);
     status = clGetPlatformIDs(num_platforms, platforms.data(), nullptr);
-    if (status != CL_SUCCESS) { Error("status "+status); }
-    if (platform_id >= num_platforms) { Error("invalid platform ID "+platform_id); }
+    if (status != CL_SUCCESS) { Error(status); }
+    if (platform_id >= num_platforms) { Error("invalid platform ID "+std::to_string(platform_id)); }
     platform_ = platforms[platform_id];
   }
 
@@ -143,12 +148,12 @@ class Device: public Object {
   Device(const Platform &platform, const cl_device_type type, const size_t device_id) {
     auto num_devices = cl_uint{0};
     auto status = clGetDeviceIDs(platform(), type, 0, nullptr, &num_devices);
-    if (status != CL_SUCCESS) { Error("status "+status); }
+    if (status != CL_SUCCESS) { Error(status); }
     if (num_devices == 0) { Error("no devices found"); }
     auto devices = std::vector<cl_device_id>(num_devices);
     status = clGetDeviceIDs(platform(), type, num_devices, devices.data(), nullptr);
-    if (status != CL_SUCCESS) { Error("status "+status); }
-    if (device_id >= num_devices) { Error("invalid device ID "+device_id); }
+    if (status != CL_SUCCESS) { Error(status); }
+    if (device_id >= num_devices) { Error("invalid device ID "+std::to_string(device_id)); }
     device_ = devices[device_id];
   }
 
@@ -229,7 +234,7 @@ class Context: public ObjectWithState {
     auto status = CL_SUCCESS;
     const cl_device_id dev = device();
     context_ = clCreateContext(nullptr, 1, &dev, nullptr, nullptr, &status);
-    if (status != CL_SUCCESS) { Error("status "+status); }
+    if (status != CL_SUCCESS) { Error(status); }
   }
   ~Context() {
     clReleaseContext(context_);
@@ -268,7 +273,7 @@ class Program: public ObjectWithState {
       source_ptr_ = source_.data();
       auto status = CL_SUCCESS;
       program_ = clCreateProgramWithSource(context(), 1, &source_ptr_, &length_, &status);
-      if (status != CL_SUCCESS) { Error("status "+status); }
+      if (status != CL_SUCCESS) { Error(status); }
     }
   ~Program() {
     clReleaseProgram(program_);
@@ -329,7 +334,7 @@ class Kernel: public ObjectWithState {
   Kernel(const Program &program, const std::string &name) {
     auto status = CL_SUCCESS;
     kernel_ = clCreateKernel(program(), name.c_str(), &status);
-    if (status != CL_SUCCESS) { Error("status "+status); }
+    if (status != CL_SUCCESS) { Error(status); }
   }
   ~Kernel() {
     clReleaseKernel(kernel_);
@@ -381,7 +386,7 @@ class CommandQueue: public ObjectWithState {
   CommandQueue(const Context &context, const Device &device) {
     auto status = CL_SUCCESS;
     queue_ = clCreateCommandQueue(context(), device(), CL_QUEUE_PROFILING_ENABLE, &status);
-    if (status != CL_SUCCESS) { Error("status "+status); }
+    if (status != CL_SUCCESS) { Error(status); }
   }
   ~CommandQueue() {
     clReleaseCommandQueue(queue_);
@@ -411,6 +416,13 @@ class CommandQueue: public ObjectWithState {
     clGetCommandQueueInfo(queue_, CL_QUEUE_CONTEXT, bytes, &result, nullptr);
     return Context(result);
   }
+  Device GetDevice() const {
+    auto bytes = size_t{0};
+    clGetCommandQueueInfo(queue_, CL_QUEUE_DEVICE, 0, nullptr, &bytes);
+    cl_device_id result;
+    clGetCommandQueueInfo(queue_, CL_QUEUE_DEVICE, bytes, &result, nullptr);
+    return Device(result);
+  }
   cl_int Finish() {
     return clFinish(queue_);
   }
@@ -437,7 +449,7 @@ class Buffer: public ObjectWithState {
   Buffer(const Context &context, const cl_mem_flags flags, const size_t bytes) {
     auto status = CL_SUCCESS;
     buffer_ = clCreateBuffer(context(), flags, bytes, nullptr, &status);
-    if (status != CL_SUCCESS) { Error("status "+status); }
+    if (status != CL_SUCCESS) { Error(status); }
   }
   ~Buffer() {
     clReleaseMemObject(buffer_);
@@ -464,12 +476,12 @@ class Buffer: public ObjectWithState {
     return ReadBuffer(queue, bytes, host.data());
   }
   template <typename T>
-  cl_int WriteBuffer(const CommandQueue &queue, const size_t bytes, T* host) {
+  cl_int WriteBuffer(const CommandQueue &queue, const size_t bytes, const T* host) {
     return clEnqueueWriteBuffer(queue(), buffer_, CL_TRUE, 0, bytes, host, 0, nullptr, nullptr);
   }
   template <typename T>
-  cl_int WriteBuffer(const CommandQueue &queue, const size_t bytes, std::vector<T> &host) {
-    return WriteBuffer(queue, bytes, host.data());
+  cl_int WriteBuffer(const CommandQueue &queue, const size_t bytes, const std::vector<T> &host) {
+    return WriteBuffer(queue, bytes, &host[0]);
   }
 
   // Accessors to the private data-member

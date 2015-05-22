@@ -1,4 +1,8 @@
 
+Version 1.6.1
+- Fixed a couple of issues related to exceptions
+- Improved reporting of failed runs
+
 Version 1.6.0
 - Much cleaner API due to Pimpl idiom: only cltune.h header is now required
 - Replaced Khronos' cl.hpp with a custom C++11 version tailored for CLTune
