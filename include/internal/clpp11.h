@@ -464,12 +464,12 @@ class Buffer: public ObjectWithState {
     return ReadBuffer(queue, bytes, host.data());
   }
   template <typename T>
-  cl_int WriteBuffer(const CommandQueue &queue, const size_t bytes, T* host) {
+  cl_int WriteBuffer(const CommandQueue &queue, const size_t bytes, const T* host) {
     return clEnqueueWriteBuffer(queue(), buffer_, CL_TRUE, 0, bytes, host, 0, nullptr, nullptr);
   }
   template <typename T>
-  cl_int WriteBuffer(const CommandQueue &queue, const size_t bytes, std::vector<T> &host) {
-    return WriteBuffer(queue, bytes, host.data());
+  cl_int WriteBuffer(const CommandQueue &queue, const size_t bytes, const std::vector<T> &host) {
+    return WriteBuffer(queue, bytes, &host[0]);
   }
 
   // Accessors to the private data-member
