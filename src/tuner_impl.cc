@@ -193,6 +193,11 @@ void TunerImpl::Tune() {
         if (!tuning_result.status) {
           PrintResult(stdout, tuning_result, kMessageWarning);
         }
+        if (tuning_result.time == std::numeric_limits<double>::max()) {
+          tuning_result.time = 0.0;
+          PrintResult(stdout, tuning_result, kMessageFailure);
+          tuning_result.time = std::numeric_limits<double>::max();
+        }
       }
 
       // Prints a log of the searching process. This is disabled per default, but can be enabled
