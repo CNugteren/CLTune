@@ -229,7 +229,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     fprintf(stdout, "OpenCL compiler error/warning: %s\n", message.c_str());
     throw std::runtime_error("OpenCL compiler error/warning occurred ^^\n");
   }
-  if (status != CL_SUCCESS) { throw std::runtime_error("Program build error: " + status); }
+  if (status != CL_SUCCESS) { throw OpenCLException("Program build error: ", status); }
 
   // Sets the output buffer(s) to zero
   for (auto &output: arguments_output_) {
@@ -245,7 +245,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
   // Sets the kernel and its arguments
   auto tune_kernel = Kernel(program, kernel.name());
-  if (status != CL_SUCCESS) { throw std::runtime_error("Kernel creation error: " + status); }
+  if (status != CL_SUCCESS) { throw OpenCLException("Kernel creation error: ", status); }
   for (auto &i: arguments_input_) { tune_kernel.SetArgument(static_cast<cl_uint>(i.index), i.buffer); }
   for (auto &i: arguments_output_) { tune_kernel.SetArgument(static_cast<cl_uint>(i.index), i.buffer); }
   for (auto &i: arguments_int_) { tune_kernel.SetArgument(static_cast<cl_uint>(i.first), i.second); }
@@ -270,22 +270,22 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
     // Prepares the kernel
     status = queue_.Finish();
-    if (status != CL_SUCCESS) { throw std::runtime_error("Command queue error: " + status); }
+    if (status != CL_SUCCESS) { throw OpenCLException("Command queue error: ", status); }
 
     // Runs the kernel (this is the timed part)
     fprintf(stdout, "%s Running %s\n", kMessageRun.c_str(), kernel.name().c_str());
     auto events = std::vector<Event>(kNumRuns);
     for (auto t=0; t<kNumRuns; ++t) {
       status = queue_.EnqueueKernel(tune_kernel, global, local, events[t]);
-      if (status != CL_SUCCESS) { throw std::runtime_error("Kernel launch error: " + status); }
+      if (status != CL_SUCCESS) { throw OpenCLException("Kernel launch error: ", status); }
       status = events[t].Wait();
       if (status != CL_SUCCESS) {
         fprintf(stdout, "%s Kernel %s failed\n", kMessageFailure.c_str(), kernel.name().c_str());
-        throw std::runtime_error("Kernel error: " + status);
+        throw OpenCLException("Kernel error: ", status);
       }
     }
     status = queue_.Finish();
-    if (status != CL_SUCCESS) { throw std::runtime_error("Command queue error: " + status); }
+    if (status != CL_SUCCESS) { throw OpenCLException("Command queue error: ", status); }
 
     // Collects the timing information
     auto elapsed_time = std::numeric_limits<double>::max();
@@ -309,6 +309,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
   // There was an exception, now return an invalid tuner results
   catch(std::exception& e) {
+    printf("Catched exception: %s\n", e.what());
     TunerResult result = {kernel.name(), std::numeric_limits<double>::max(), 0, false, {}};
     return result;
   }
@@ -326,7 +327,7 @@ void TunerImpl::ResetMemArgument(MemArgument &argument) {
   // Copy the new array to the OpenCL buffer on the device
   auto bytes = sizeof(T)*argument.size;
   auto status = argument.buffer.WriteBuffer(queue_, bytes, buffer);
-  if (status != CL_SUCCESS) { throw std::runtime_error("Write buffer error: " + status); }
+  if (status != CL_SUCCESS) { throw OpenCLException("Write buffer error: ", status); }
 }
 
 // =================================================================================================
@@ -350,7 +351,7 @@ template <typename T> void TunerImpl::DownloadReference(MemArgument &device_buff
   auto host_buffer = new T[device_buffer.size];
   auto bytes = sizeof(T)*device_buffer.size;
   auto status = device_buffer.buffer.ReadBuffer(queue_, bytes, host_buffer);
-  if (status != CL_SUCCESS) { throw std::runtime_error("Read buffer error: " + status); }
+  if (status != CL_SUCCESS) { throw OpenCLException("Read buffer error: ", status); }
   reference_outputs_.push_back(host_buffer);
 }
 
@@ -388,7 +389,7 @@ bool TunerImpl::DownloadAndCompare(MemArgument &device_buffer, const size_t i) {
   std::vector<T> host_buffer(device_buffer.size);
   auto bytes = sizeof(T)*device_buffer.size;
   auto status = device_buffer.buffer.ReadBuffer(queue_, bytes, host_buffer);
-  if (status != CL_SUCCESS) { throw std::runtime_error("Read buffer error: " + status); }
+  if (status != CL_SUCCESS) { throw OpenCLException("Read buffer error: ", status); }
 
   // Compares the results (L2 norm)
   T* reference_output = (T*)reference_outputs_[i];
