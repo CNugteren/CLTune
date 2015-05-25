@@ -53,10 +53,10 @@ class Object {
  protected:
 
   // Error handling
-  [[noreturn]] void Error(const std::string &message) {
+  [[noreturn]] void Error(const std::string &message) const {
     throw std::runtime_error("Internal OpenCL error: "+message);
   }
-  [[noreturn]] void Error(const cl_int status) {
+  [[noreturn]] void Error(const cl_int status) const {
     throw std::runtime_error("Internal OpenCL error with status: "+std::to_string(status));
   }
 };
@@ -75,10 +75,10 @@ class Event: public Object {
  public:
 
   // Constructor based on the plain C data-type
-  Event(const cl_event event): event_(event) { }
+  explicit Event(const cl_event event): event_(event) { }
 
   // New event
-  Event() {}
+  Event(): event_() {}
 
   // Public functions
   size_t GetProfilingStart() const {
@@ -113,10 +113,10 @@ class Platform: public Object {
  public:
 
   // Constructor based on the plain C data-type
-  Platform(const cl_platform_id platform): platform_(platform) { }
+  explicit Platform(const cl_platform_id platform): platform_(platform) { }
 
   // Initialize the platform. Note that this constructor can throw exceptions!
-  Platform(const size_t platform_id) {
+  explicit Platform(const size_t platform_id) {
     auto num_platforms = cl_uint{0};
     auto status = clGetPlatformIDs(0, nullptr, &num_platforms);
     if (status != CL_SUCCESS) { Error(status); }
@@ -142,10 +142,10 @@ class Device: public Object {
  public:
 
   // Constructor based on the plain C data-type
-  Device(const cl_device_id device): device_(device) { }
+  explicit Device(const cl_device_id device): device_(device) { }
 
   // Initialize the device. Note that this constructor can throw exceptions!
-  Device(const Platform &platform, const cl_device_type type, const size_t device_id) {
+  explicit Device(const Platform &platform, const cl_device_type type, const size_t device_id) {
     auto num_devices = cl_uint{0};
     auto status = clGetDeviceIDs(platform(), type, 0, nullptr, &num_devices);
     if (status != CL_SUCCESS) { Error(status); }
@@ -159,6 +159,8 @@ class Device: public Object {
 
   // Public functions
   std::string Version()     const { return GetInfoString(CL_DEVICE_VERSION); }
+  cl_device_type Type()     const { return GetInfo<cl_device_type>(CL_DEVICE_TYPE); }
+  std::string Vendor()      const { return GetInfoString(CL_DEVICE_VENDOR); }
   std::string Name()        const { return GetInfoString(CL_DEVICE_NAME); }
   std::string Extensions()  const { return GetInfoString(CL_DEVICE_EXTENSIONS); }
   size_t MaxWorkGroupSize() const { return GetInfo<size_t>(CL_DEVICE_MAX_WORK_GROUP_SIZE); }
@@ -225,12 +227,12 @@ class Context: public ObjectWithState {
  public:
 
   // Constructor based on the plain C data-type
-  Context(const cl_context context): context_(context) {
+  explicit Context(const cl_context context): context_(context) {
     clRetainContext(context_);
   }
 
   // Memory management
-  Context(const Device &device) {
+  explicit Context(const Device &device) {
     auto status = CL_SUCCESS;
     const cl_device_id dev = device();
     context_ = clCreateContext(nullptr, 1, &dev, nullptr, nullptr, &status);
@@ -267,7 +269,7 @@ class Program: public ObjectWithState {
   // Note that there is no constructor based on the plain C data-type because of extra state
 
   // Memory management
-  Program(const Context &context, const std::string &source):
+  explicit Program(const Context &context, const std::string &source):
     length_(source.length()) {
       std::copy(source.begin(), source.end(), back_inserter(source_));
       source_ptr_ = source_.data();
@@ -289,6 +291,16 @@ class Program: public ObjectWithState {
     swap(*this, other);
     return *this;
   }
+  /*
+  TODO: Implement move construction/assignment?
+  Program(Program &&other) {
+    clRetainProgram(program_);
+    swap(*this, other);
+  }
+  Program& operator=(Program &&other) {
+    swap(*this, other);
+    return *this;
+  }*/
   friend void swap(Program &first, Program &second) {
     std::swap(first.length_, second.length_);
     std::swap(first.source_, second.source_);
@@ -326,12 +338,12 @@ class Kernel: public ObjectWithState {
  public:
 
   // Constructor based on the plain C data-type
-  Kernel(const cl_kernel kernel): kernel_(kernel) {
+  explicit Kernel(const cl_kernel kernel): kernel_(kernel) {
     clRetainKernel(kernel_);
   }
 
   // Memory management
-  Kernel(const Program &program, const std::string &name) {
+  explicit Kernel(const Program &program, const std::string &name) {
     auto status = CL_SUCCESS;
     kernel_ = clCreateKernel(program(), name.c_str(), &status);
     if (status != CL_SUCCESS) { Error(status); }
@@ -352,11 +364,11 @@ class Kernel: public ObjectWithState {
   }
 
   // Public functions
-  template <typename T>
-  cl_int SetArgument(const cl_uint index, const T value) {
+  template <typename T> // Note: doesn't work with T=Buffer
+  cl_int SetArgument(const cl_uint index, const T &value) {
     return clSetKernelArg(kernel_, index, sizeof(T), &value);
   }
-  size_t LocalMemUsage(const Device &device) {
+  size_t LocalMemUsage(const Device &device) const {
     auto bytes = size_t{0};
     clGetKernelWorkGroupInfo(kernel_, device(), CL_KERNEL_LOCAL_MEM_SIZE, 0, nullptr, &bytes);
     auto result = size_t{0};
@@ -378,12 +390,12 @@ class CommandQueue: public ObjectWithState {
  public:
 
   // Constructor based on the plain C data-type
-  CommandQueue(const cl_command_queue queue): queue_(queue) {
+  explicit CommandQueue(const cl_command_queue queue): queue_(queue) {
     clRetainCommandQueue(queue_);
   }
 
   // Memory management
-  CommandQueue(const Context &context, const Device &device) {
+  explicit CommandQueue(const Context &context, const Device &device) {
     auto status = CL_SUCCESS;
     queue_ = clCreateCommandQueue(context(), device(), CL_QUEUE_PROFILING_ENABLE, &status);
     if (status != CL_SUCCESS) { Error(status); }
@@ -441,12 +453,12 @@ class Buffer: public ObjectWithState {
  public:
 
   // Constructor based on the plain C data-type
-  Buffer(const cl_mem buffer): buffer_(buffer) {
+  explicit Buffer(const cl_mem buffer): buffer_(buffer) {
     clRetainMemObject(buffer_);
   }
 
   // Memory management
-  Buffer(const Context &context, const cl_mem_flags flags, const size_t bytes) {
+  explicit Buffer(const Context &context, const cl_mem_flags flags, const size_t bytes) {
     auto status = CL_SUCCESS;
     buffer_ = clCreateBuffer(context(), flags, bytes, nullptr, &status);
     if (status != CL_SUCCESS) { Error(status); }
@@ -482,6 +494,15 @@ class Buffer: public ObjectWithState {
   template <typename T>
   cl_int WriteBuffer(const CommandQueue &queue, const size_t bytes, const std::vector<T> &host) {
     return WriteBuffer(queue, bytes, &host[0]);
+  }
+  size_t GetSize() const {
+    auto bytes = size_t{0};
+    auto status = clGetMemObjectInfo(buffer_, CL_MEM_SIZE, 0, nullptr, &bytes);
+    if (status != CL_SUCCESS) { Error(status); }
+    auto result = size_t{0};
+    status = clGetMemObjectInfo(buffer_, CL_MEM_SIZE, bytes, &result, nullptr);
+    if (status != CL_SUCCESS) { Error(status); }
+    return result;
   }
 
   // Accessors to the private data-member

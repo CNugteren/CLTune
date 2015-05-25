@@ -1,4 +1,9 @@
 
+Version 1.6.2
+- Fixed another exception-related bug
+- Further improved reporting of failed runs
+- Updated C++11 OpenCL API
+
 Version 1.6.1
 - Fixed a couple of issues related to exceptions
 - Improved reporting of failed runs
