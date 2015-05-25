@@ -190,13 +190,13 @@ void TunerImpl::Tune() {
         // Stores the parameters and the timing-result
         tuning_result.configuration = permutation;
         tuning_results_.push_back(tuning_result);
-        if (!tuning_result.status) {
-          PrintResult(stdout, tuning_result, kMessageWarning);
-        }
         if (tuning_result.time == std::numeric_limits<double>::max()) {
           tuning_result.time = 0.0;
           PrintResult(stdout, tuning_result, kMessageFailure);
           tuning_result.time = std::numeric_limits<double>::max();
+        }
+        else if (!tuning_result.status) {
+          PrintResult(stdout, tuning_result, kMessageWarning);
         }
       }
 
