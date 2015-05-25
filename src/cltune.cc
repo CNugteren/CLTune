@@ -164,7 +164,9 @@ template <typename T>
 void Tuner::AddArgumentInput(const std::vector<T> &source) {
   auto device_buffer = Buffer(pimpl->context(), CL_MEM_READ_ONLY, source.size()*sizeof(T));
   auto status = device_buffer.WriteBuffer(pimpl->queue(), source.size()*sizeof(T), source);
-  if (status != CL_SUCCESS) { throw std::runtime_error("Write buffer error: " + status); }
+  if (status != CL_SUCCESS) {
+    throw std::runtime_error("Write buffer error: " + std::to_string(status));
+  }
   auto argument = TunerImpl::MemArgument{pimpl->argument_counter_++, source.size(),
                                          pimpl->GetType<T>(), device_buffer};
   pimpl->arguments_input_.push_back(argument);
