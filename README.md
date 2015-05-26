@@ -12,10 +12,11 @@ Compilation
 
 CLTune can be compiled as a shared library using CMake. The pre-requisites are:
 
-* CMake version 2.8 or higher
+* CMake version 2.8.10 or higher
 * A C++11 compiler, for example:
-  - GCC 4.9.0 or newer
+  - GCC 4.8.0 or newer
   - Clang 3.3 or newer
+  - AppleClang 5.0 or newer
   - ICC 14.0 or newer
 * An OpenCL library. CLTune has been tested with:
   - Apple OpenCL
@@ -88,13 +89,14 @@ Examples are included as part of the CLTune distribution. They illustrate some m
 
 The latter two take optionally command-line arguments. The first argument is an integer for the device to run on, the second argument is an integer to select a search strategy (0=random, 1=annealing, 2=PSO, 3=fullsearch), and the third an optional search-strategy parameter.
 
+
 Development and tests
 -------------
 
 The CLTune project follows the Google C++ styleguide (with some exceptions) and uses a tab-size of
 two spaces and a max-width of 100 characters per line. It is furthermore based on practises from the
 third edition of Effective C++ and the first edition of Effective Modern C++. The project is
-licensed under the MIT license by SURFsara, (c) 2014. The contributing authors so far are:
+licensed under the APACHE 2.0 license by SURFsara, (c) 2014. The contributing authors so far are:
 
 * Cedric Nugteren
 
@@ -103,7 +105,7 @@ providing the `-TESTS=ON` option to CMake. Running the tests goes as follows:
 
     ./unit_tests
 
-Other useful tests are the provided examples, since they include a verification kernel:
+However, the more useful tests are the provided examples, since they include a verification kernel. Running the examples on device Y on platform X goes as follows:
 
-    ./sample_conv 0 0
-    ./sample_gemm 0 0
+    ./sample_conv X Y
+    ./sample_gemm X Y

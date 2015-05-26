@@ -37,7 +37,6 @@
 #include <fstream> // std::ifstream, std::stringstream
 #include <iostream> // FILE
 #include <limits> // std::numeric_limits
-#include <regex> // std::regex, std::regex_replace
 #include <algorithm> // std::min
 
 namespace cltune {
@@ -219,11 +218,15 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
                                             const size_t configuration_id,
                                             const size_t num_configurations) {
 
+  // Note: the following code is disabled because of GCC 4.8.0 compatibility
+  auto processed_source = source;
+  /*
   // Removes the use of C++11 string literals (if any) from the kernel source code
   auto string_literal_start = std::regex{"R\"\\("};
   auto string_literal_end = std::regex{"\\)\";"};
   auto processed_source = std::regex_replace(source, string_literal_start, "");
   processed_source = std::regex_replace(processed_source, string_literal_end, "");
+  */
 
   // In case of an exception, skip this run
   try {

@@ -1,4 +1,8 @@
 
+Version 1.6.3
+- Reduced the requirements from GCC 4.9.0 to 4.8.0
+- Minor updates to the CMake file
+
 Version 1.6.2
 - Fixed another exception-related bug
 - Further improved reporting of failed runs
