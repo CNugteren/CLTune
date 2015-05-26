@@ -23,7 +23,7 @@
 # ==================================================================================================
 
 # CMake project
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.10)
 project("cltune" CXX)
 set(cltune_VERSION_MAJOR 1)
 set(cltune_VERSION_MINOR 6)
