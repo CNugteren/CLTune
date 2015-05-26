@@ -45,33 +45,36 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH false) # Don't add the automatically deter
 
 # Compiler-version check (requires at least CMake 2.8.10)
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
-        message(FATAL_ERROR "GCC version must be at least 4.8")
-    endif()
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
+    message(FATAL_ERROR "GCC version must be at least 4.8")
+  endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3)
-        message(FATAL_ERROR "Clang version must be at least 3.3")
-    endif()
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3)
+    message(FATAL_ERROR "Clang version must be at least 3.3")
+  endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0)
-        message(FATAL_ERROR "Clang version must be at least 5.0")
-    endif()
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0)
+    message(FATAL_ERROR "Clang version must be at least 5.0")
+  endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14.0)
-        message(FATAL_ERROR "ICC version must be at least 14.0")
-    endif()
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14.0)
+    message(FATAL_ERROR "ICC version must be at least 14.0")
+  endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 18.0)
-        message(FATAL_ERROR "MS Visual Studio version must be at least 18.0")
-    endif()
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 18.0)
+    message(FATAL_ERROR "MS Visual Studio version must be at least 18.0")
+  endif()
 endif()
 
 # C++ compiler settings
 set(FLAGS "-O3 -std=c++11")
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   set(FLAGS "${FLAGS} -Wall -Wno-comment")
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8.4)
+    set(FLAGS "${FLAGS} -Wno-attributes")
+  endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-  #set(FLAGS "${FLAGS} -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded")
+  set(FLAGS "${FLAGS} -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded")
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS}")
 
@@ -86,9 +89,7 @@ find_package(OpenCL REQUIRED)
 # ==================================================================================================
 
 # The includes
-include_directories(
-    ${cltune_SOURCE_DIR}/include
-    ${OPENCL_INCLUDE_DIRS})
+include_directories(${cltune_SOURCE_DIR}/include ${OPENCL_INCLUDE_DIRS})
 
 # Gathers all source-files
 set(TUNER
@@ -113,35 +114,32 @@ install(FILES include/cltune.h DESTINATION include)
 # Optional: Enables compilation of sample programs
 if (SAMPLES)
 
-    # Adds sample programs
-    add_executable(sample_simple samples/simple/simple.cc)
-    add_executable(sample_gemm samples/gemm/gemm.cc)
-    add_executable(sample_conv samples/conv/conv.cc)
-    target_link_libraries(sample_simple cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
-    target_link_libraries(sample_gemm cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
-    target_link_libraries(sample_conv cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
+  # Adds sample programs
+  add_executable(sample_simple samples/simple/simple.cc)
+  add_executable(sample_gemm samples/gemm/gemm.cc)
+  add_executable(sample_conv samples/conv/conv.cc)
+  target_link_libraries(sample_simple cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
+  target_link_libraries(sample_gemm cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
+  target_link_libraries(sample_conv cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
 
-    # Note: these are not installed because they depend on their separate OpenCL kernel files
+  # Note: these are not installed because they depend on their separate OpenCL kernel files
 
 endif()
 # ==================================================================================================
 # Optional: Enables compilation of the Google tests
 if (TESTS)
 
-    # Enables Google Test tests (source-code is shipped with the project)
-    add_subdirectory(external/gtest-1.7.0)
-    enable_testing()
-    include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+  # Enables Google Test tests (source-code is shipped with the project)
+  add_subdirectory(external/gtest-1.7.0)
+  enable_testing()
+  include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
-    # Compiles the tests
-    add_executable(unit_tests test/tuner.cc test/kernel_info.cc)
-    target_link_libraries(unit_tests gtest gtest_main cltune ${OPENCL_LIBRARIES})
+  # Compiles the tests
+  add_executable(unit_tests test/tuner.cc test/kernel_info.cc)
+  target_link_libraries(unit_tests gtest gtest_main cltune ${OPENCL_LIBRARIES})
 
-    # Adds the tests
-    add_test(
-        name unit_tests
-        command unit_tests
-    )
+  # Adds the tests
+  add_test(name unit_tests command unit_tests)
 
 endif()
 # ==================================================================================================
