@@ -46,9 +46,9 @@ Annealing::Annealing(const Configurations &configurations,
     neighbour_state_(0),
     num_already_visisted_states_(0),
     generator_(RandomSeed()),
-    int_distribution_(0, configurations_.size()),
+    int_distribution_(0, static_cast<int>(configurations_.size())),
     probability_distribution_(0.0, 1.0) {
-  auto random_initial_state = int_distribution_(generator_);
+  auto random_initial_state = static_cast<size_t>(int_distribution_(generator_));
   current_state_ = random_initial_state;
   index_ = random_initial_state;
 }
@@ -82,7 +82,7 @@ void Annealing::CalculateNextIndex() {
 
   // Computes the new neighbour state
   auto neighbours = GetNeighboursOf(current_state_);
-  neighbour_state_ = neighbours[int_distribution_(generator_) % neighbours.size()];
+  neighbour_state_ = neighbours[static_cast<size_t>(int_distribution_(generator_))%neighbours.size()];
 
   // Checks whether this neighbour was already visited. If so, calculate a new neighbour instead.
   // This continues up to a maximum number, because all neighbours might already be visited. In
@@ -102,7 +102,7 @@ void Annealing::CalculateNextIndex() {
 
 // The number of configurations is equal to all possible configurations
 size_t Annealing::NumConfigurations() {
-  return configurations_.size()*fraction_;
+  return std::max(size_t{1}, static_cast<size_t>(configurations_.size()*fraction_));
 }
 
 // =================================================================================================
@@ -123,12 +123,12 @@ void Annealing::PushExecutionTime(const double execution_time) {
 // configurations is large.
 std::vector<size_t> Annealing::GetNeighboursOf(const size_t reference_id) const {
   auto neighbours = std::vector<size_t>{};
-  auto other_id = 0;
+  auto other_id = size_t{0};
   for (auto &configuration: configurations_) {
 
     // Count the number of different settings for this configuration
-    auto differences = 0;
-    auto setting_id = 0;
+    auto differences = size_t{0};
+    auto setting_id = size_t{0};
     for (auto &setting: configuration) {
       if (setting.value != configurations_[reference_id][setting_id].value) { ++differences; }
       ++setting_id;

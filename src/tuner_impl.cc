@@ -103,7 +103,7 @@ TunerImpl::TunerImpl(size_t platform_id, size_t device_id):
 // End of the tuner
 TunerImpl::~TunerImpl() {
   for (auto &reference_output: reference_outputs_) {
-    delete[] (int*)reference_output;
+    delete[] static_cast<int*>(reference_output);
   }
   if (!suppress_output_) {
     fprintf(stdout, "\n%s End of the tuning process\n\n", kMessageFull.c_str());
@@ -246,6 +246,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     for (auto &output: arguments_output_) {
       switch (output.type) {
         case MemType::kInt: ResetMemArgument<int>(output); break;
+        case MemType::kSizeT: ResetMemArgument<size_t>(output); break;
         case MemType::kFloat: ResetMemArgument<float>(output); break;
         case MemType::kDouble: ResetMemArgument<double>(output); break;
         case MemType::kFloat2: ResetMemArgument<float2>(output); break;
@@ -283,7 +284,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     // Runs the kernel (this is the timed part)
     fprintf(stdout, "%s Running %s\n", kMessageRun.c_str(), kernel.name().c_str());
     auto events = std::vector<Event>(kNumRuns);
-    for (auto t=0; t<kNumRuns; ++t) {
+    for (auto t=size_t{0}; t<kNumRuns; ++t) {
       status = queue_.EnqueueKernel(tune_kernel, global, local, events[t]);
       if (status != CL_SUCCESS) { throw OpenCLException("Kernel launch error: ", status); }
       status = events[t].Wait();
@@ -294,7 +295,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
     // Collects the timing information
     auto elapsed_time = std::numeric_limits<double>::max();
-    for (auto t=0; t<kNumRuns; ++t) {
+    for (auto t=size_t{0}; t<kNumRuns; ++t) {
       auto start_time = events[t].GetProfilingStart();
       auto end_time = events[t].GetProfilingEnd();
       elapsed_time = std::min(elapsed_time, (end_time - start_time) * 1.0e-6);
@@ -345,6 +346,7 @@ void TunerImpl::StoreReferenceOutput() {
   for (auto &output_buffer: arguments_output_) {
     switch (output_buffer.type) {
       case MemType::kInt: DownloadReference<int>(output_buffer); break;
+      case MemType::kSizeT: DownloadReference<size_t>(output_buffer); break;
       case MemType::kFloat: DownloadReference<float>(output_buffer); break;
       case MemType::kDouble: DownloadReference<double>(output_buffer); break;
       case MemType::kFloat2: DownloadReference<float2>(output_buffer); break;
@@ -370,10 +372,11 @@ template <typename T> void TunerImpl::DownloadReference(MemArgument &device_buff
 bool TunerImpl::VerifyOutput() {
   auto status = true;
   if (has_reference_) {
-    auto i = 0;
+    auto i = size_t{0};
     for (auto &output_buffer: arguments_output_) {
       switch (output_buffer.type) {
         case MemType::kInt: status &= DownloadAndCompare<int>(output_buffer, i); break;
+        case MemType::kSizeT: status &= DownloadAndCompare<size_t>(output_buffer, i); break;
         case MemType::kFloat: status &= DownloadAndCompare<float>(output_buffer, i); break;
         case MemType::kDouble: status &= DownloadAndCompare<double>(output_buffer, i); break;
         case MemType::kFloat2: status &= DownloadAndCompare<float2>(output_buffer, i); break;
@@ -398,7 +401,7 @@ bool TunerImpl::DownloadAndCompare(MemArgument &device_buffer, const size_t i) {
   if (status != CL_SUCCESS) { throw OpenCLException("Read buffer error: ", status); }
 
   // Compares the results (L2 norm)
-  T* reference_output = (T*)reference_outputs_[i];
+  T* reference_output = static_cast<T*>(reference_outputs_[i]);
   for (auto j=0UL; j<device_buffer.size; ++j) {
     l2_norm += AbsoluteDifference(reference_output[j], host_buffer[j]);
   }

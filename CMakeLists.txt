@@ -27,7 +27,7 @@ cmake_minimum_required(VERSION 2.8.10)
 project("cltune" CXX)
 set(cltune_VERSION_MAJOR 1)
 set(cltune_VERSION_MINOR 6)
-set(cltune_VERSION_PATCH 3)
+set(cltune_VERSION_PATCH 4)
 
 # Options
 option(SAMPLES "Enable compilation of sample programs" ON)
@@ -45,8 +45,8 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH false) # Don't add the automatically deter
 
 # Compiler-version check (requires at least CMake 2.8.10)
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
-    message(FATAL_ERROR "GCC version must be at least 4.8")
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
+    message(FATAL_ERROR "GCC version must be at least 4.7")
   endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3)
@@ -75,6 +75,9 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   set(FLAGS "${FLAGS} -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded")
+  set(FLAGS "${FLAGS} -Wno-missing-prototypes -Wno-float-equal -Wno-weak-vtables")
+  set(FLAGS "${FLAGS} -Wno-exit-time-destructors -Wno-global-constructors -Wno-missing-prototypes")
+  set(FLAGS "${FLAGS} -Wno-missing-noreturn -Wno-covered-switch-default")
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS}")
 
@@ -129,6 +132,9 @@ endif()
 # Optional: Enables compilation of the Google tests
 if (TESTS)
 
+  # The tests use specific flags to reduce the amount of warnings from GTest.
+  set(CMAKE_CXX_FLAGS "-O3 -std=c++11")
+
   # Enables Google Test tests (source-code is shipped with the project)
   add_subdirectory(external/gtest-1.7.0)
   enable_testing()
@@ -140,6 +146,5 @@ if (TESTS)
 
   # Adds the tests
   add_test(name unit_tests command unit_tests)
-
 endif()
 # ==================================================================================================

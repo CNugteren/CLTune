@@ -48,6 +48,7 @@ class Searcher {
 
   // Base constructor
   Searcher(const Configurations &configurations);
+  virtual ~Searcher() { }
 
   // Pushes feedback (in the form of execution time) from the tuner to the search algorithm
   virtual void PushExecutionTime(const double execution_time);
@@ -63,10 +64,10 @@ class Searcher {
  protected:
 
   // Pseudo-random seed based on the time
-  unsigned long RandomSeed() const {
+  unsigned int RandomSeed() const {
     // std::random_device rd;
     // return rd();
-    return std::chrono::system_clock::now().time_since_epoch().count();
+    return static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count());
   }
 
   // Protected member variables accessible by derived classes

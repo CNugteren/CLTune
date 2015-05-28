@@ -52,10 +52,10 @@ PSO::PSO(const Configurations &configurations, const Parameters &parameters,
     local_best_configs_(swarm_size_),
     parameters_(parameters),
     generator_(RandomSeed()),
-    int_distribution_(0, configurations_.size()),
+    int_distribution_(0, static_cast<int>(configurations_.size())),
     probability_distribution_(0.0, 1.0) {
   for (auto &position: particle_positions_) {
-    position = int_distribution_(generator_);
+    position = static_cast<size_t>(int_distribution_(generator_));
   }
   index_ = particle_positions_[particle_index_];
 }
@@ -91,7 +91,7 @@ void PSO::CalculateNextIndex() {
       }
       // Move in a random direction
       else if (probability_distribution_(generator_) <= influence_random_) {
-        std::uniform_int_distribution<int> distribution(0, parameters_[i].values.size());
+        std::uniform_int_distribution<size_t> distribution(0, parameters_[i].values.size());
         next_configuration[i].value = parameters_[i].values[distribution(generator_)];
       }
       // Else: stay at current location
@@ -108,7 +108,7 @@ void PSO::CalculateNextIndex() {
 
 // The number of configurations is equal to all possible configurations
 size_t PSO::NumConfigurations() {
-  return configurations_.size()*fraction_;
+  return std::max(size_t{1}, static_cast<size_t>(configurations_.size()*fraction_));
 }
 
 // =================================================================================================

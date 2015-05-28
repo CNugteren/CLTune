@@ -59,7 +59,7 @@ class TunerImpl {
 
   // Parameters
   static constexpr auto kMaxL2Norm = 1e-4; // This is the threshold for 'correctness'
-  static constexpr auto kNumRuns = 1; // This is used for more-accurate execution time measurement
+  static constexpr auto kNumRuns = size_t{1}; // This is used for more-accurate execution time measurement
 
   // Messages printed to stdout (in colours)
   static const std::string kMessageFull;

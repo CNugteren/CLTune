@@ -50,7 +50,7 @@ int main() {
 
   // Create a random number generator
   const auto random_seed = std::chrono::system_clock::now().time_since_epoch().count();
-  std::default_random_engine generator(random_seed);
+  std::default_random_engine generator(static_cast<unsigned int>(random_seed));
   std::uniform_real_distribution<float> distribution(-2.0f, 2.0f);
 
   // Populates input data structures

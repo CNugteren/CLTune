@@ -14,7 +14,7 @@ CLTune can be compiled as a shared library using CMake. The pre-requisites are:
 
 * CMake version 2.8.10 or higher
 * A C++11 compiler, for example:
-  - GCC 4.8.0 or newer
+  - GCC 4.7.0 or newer
   - Clang 3.3 or newer
   - AppleClang 5.0 or newer
   - ICC 14.0 or newer

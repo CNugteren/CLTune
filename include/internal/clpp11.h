@@ -52,11 +52,11 @@ namespace cltune {
 class Object {
  protected:
 
-  // Error handling
-  [[noreturn]] void Error(const std::string &message) const {
+  // Error handling (NOTE: these functions are [[noreturn]])
+  void Error(const std::string &message) const {
     throw std::runtime_error("Internal OpenCL error: "+message);
   }
-  [[noreturn]] void Error(const cl_int status) const {
+  void Error(const cl_int status) const {
     throw std::runtime_error("Internal OpenCL error with status: "+std::to_string(status));
   }
 };

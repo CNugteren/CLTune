@@ -91,7 +91,7 @@ class KernelInfo {
   // Exception of the KernelInfo class
   class Exception : public std::runtime_error {
    public:
-    Exception(const std::string &message): std::runtime_error(message) { };
+    Exception(const std::string &message): std::runtime_error(message) { }
   };
 
   // Initializes the class with a given name and a string of OpenCL source-code
