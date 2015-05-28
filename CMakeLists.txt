@@ -131,6 +131,9 @@ endif()
 # ==================================================================================================
 # Optional: Enables compilation of the Google tests
 if (TESTS)
+  
+  # The tests use specific flags to reduce the amount of warnings from GTest.
+  set(CMAKE_CXX_FLAGS "-O3 -std=c++11")
 
   # Enables Google Test tests (source-code is shipped with the project)
   add_subdirectory(external/gtest-1.7.0)
@@ -143,6 +146,5 @@ if (TESTS)
 
   # Adds the tests
   add_test(name unit_tests command unit_tests)
-
 endif()
 # ==================================================================================================
