@@ -53,6 +53,7 @@ class PSO: public Searcher {
   PSO(const Configurations &configurations, const Parameters &parameters,
       const double fraction, const size_t swarm_size, const double influence_global,
       const double influence_local, const double influence_random);
+  ~PSO() { }
 
   // Retrieves the next configuration to test
   virtual KernelInfo::Configuration GetConfiguration() override;
@@ -77,9 +78,9 @@ class PSO: public Searcher {
 
   // Percentages of influence on the whole swarm's best (global), the particle's best (local), and
   // the random values. The remainder fraction is the chance of staying in the current position.
-  float influence_global_;
-  float influence_local_;
-  float influence_random_;
+  double influence_global_;
+  double influence_local_;
+  double influence_random_;
 
   // Locations of the particles in the swarm
   size_t particle_index_;

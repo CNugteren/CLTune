@@ -56,7 +56,7 @@ void RandomSearch::CalculateNextIndex() {
 
 // The number of configurations is equal to all possible configurations
 size_t RandomSearch::NumConfigurations() {
-  return configurations_.size()*fraction_;
+  return std::max(size_t{1}, static_cast<size_t>(configurations_.size()*fraction_));
 }
 
 // =================================================================================================

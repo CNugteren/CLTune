@@ -33,6 +33,8 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <chrono>
+#include <random>
 
 // Includes the OpenCL tuner library
 #include "cltune.h"
@@ -48,9 +50,9 @@ constexpr auto kDefaultSearchMethod = 1;
 constexpr auto kDefaultSearchParameter1 = 4;
 
 // Settings (sizes)
-constexpr auto kSizeM = 2048;
-constexpr auto kSizeN = 2048;
-constexpr auto kSizeK = 2048;
+constexpr auto kSizeM = size_t{2048};
+constexpr auto kSizeN = size_t{2048};
+constexpr auto kSizeK = size_t{2048};
 
 // =================================================================================================
 
@@ -78,14 +80,18 @@ int main(int argc, char* argv[]) {
   auto mat_b = std::vector<float>(kSizeN*kSizeK);
   auto mat_c = std::vector<float>(kSizeM*kSizeN);
 
+  // Create a random number generator
+  const auto random_seed = std::chrono::system_clock::now().time_since_epoch().count();
+  std::default_random_engine generator(static_cast<unsigned int>(random_seed));
+  std::uniform_real_distribution<float> distribution(-2.0f, 2.0f);
+
   // Populates input data structures
-  srand(time(nullptr));
-  for (auto &item: mat_a) { item = (float)rand() / (float)RAND_MAX; }
-  for (auto &item: mat_b) { item = (float)rand() / (float)RAND_MAX; }
+  for (auto &item: mat_a) { item = distribution(generator); }
+  for (auto &item: mat_b) { item = distribution(generator); }
   for (auto &item: mat_c) { item = 0.0; }
 
   // Initializes the tuner (platform 0, device 'device_id')
-  cltune::Tuner tuner(0, device_id);
+  cltune::Tuner tuner(0, static_cast<size_t>(device_id));
 
   // Sets one of the following search methods:
   // 0) Random search
@@ -94,8 +100,8 @@ int main(int argc, char* argv[]) {
   // 3) Full search
   auto fraction = 1/2048.0f;
   if      (method == 0) { tuner.UseRandomSearch(fraction); }
-  else if (method == 1) { tuner.UseAnnealing(fraction, search_param_1); }
-  else if (method == 2) { tuner.UsePSO(fraction, search_param_1, 0.4, 0.0, 0.4); }
+  else if (method == 1) { tuner.UseAnnealing(fraction, static_cast<size_t>(search_param_1)); }
+  else if (method == 2) { tuner.UsePSO(fraction, static_cast<size_t>(search_param_1), 0.4, 0.0, 0.4); }
   else                  { tuner.UseFullSearch(); }
 
   // Outputs the search process to a file
@@ -168,9 +174,9 @@ int main(int argc, char* argv[]) {
 
   // Sets the function's arguments. Note that all kernels have to accept (but not necessarily use)
   // all input arguments.
-  tuner.AddArgumentScalar(kSizeM);
-  tuner.AddArgumentScalar(kSizeN);
-  tuner.AddArgumentScalar(kSizeK);
+  tuner.AddArgumentScalar(static_cast<int>(kSizeM));
+  tuner.AddArgumentScalar(static_cast<int>(kSizeN));
+  tuner.AddArgumentScalar(static_cast<int>(kSizeK));
   tuner.AddArgumentInput(mat_a);
   tuner.AddArgumentInput(mat_b);
   tuner.AddArgumentOutput(mat_c);
@@ -184,9 +190,9 @@ int main(int argc, char* argv[]) {
   tuner.PrintFormatted();
 
   // Also prints the performance of the best-case in terms of GFLOPS
-  constexpr auto kGFLOP = (2*(long)kSizeM*(long)kSizeN*(long)kSizeK) / (1000.0*1000.0*1000.0);
+  constexpr auto kMGFLOP = (2*kSizeM*kSizeN*kSizeK) * 1.0e-6;
   if (time_ms != 0.0) {
-    printf("[ -------> ] %.1lf ms or %.3lf GFLOPS\n", time_ms, 1000*kGFLOP/time_ms);
+    printf("[ -------> ] %.1lf ms or %.3lf GFLOPS\n", time_ms, kMGFLOP/time_ms);
   }
 
   // End of the tuner example

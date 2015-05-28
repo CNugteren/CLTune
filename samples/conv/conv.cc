@@ -28,6 +28,8 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <chrono>
+#include <random>
 #include <cmath>
 #include <numeric>
 
@@ -52,8 +54,8 @@ constexpr auto kDefaultSearchParameter1 = 4;
 #define FS (HFS+HFS+1) // Filter size
 
 // Settings (sizes)
-constexpr auto kSizeX = 8192; // Matrix dimension X
-constexpr auto kSizeY = 4096; // Matrix dimension Y
+constexpr auto kSizeX = size_t{8192}; // Matrix dimension X
+constexpr auto kSizeY = size_t{4096}; // Matrix dimension Y
 
 // =================================================================================================
 
@@ -81,19 +83,23 @@ int main(int argc, char* argv[]) {
   auto mat_b = std::vector<float>(kSizeX*kSizeY);
   auto coeff = std::vector<float>(FS*FS);
 
-  // Populates data structures
-  srand(time(nullptr));
-  for (auto &item: mat_a) { item = (float)rand() / (float)RAND_MAX; }
+  // Create a random number generator
+  const auto random_seed = std::chrono::system_clock::now().time_since_epoch().count();
+  std::default_random_engine generator(static_cast<unsigned int>(random_seed));
+  std::uniform_real_distribution<float> distribution(-2.0f, 2.0f);
+
+  // Populates input data structures
+  for (auto &item: mat_a) { item = distribution(generator); }
   for (auto &item: mat_b) { item = 0.0; }
 
   // Creates the filter coefficients (gaussian blur)
   auto sigma = 1.0f;
   auto mean = FS/2.0f;
   auto sum = 0.0f;
-  for (auto x=0; x<FS; ++x) {
-    for (auto y=0; y<FS; ++y) {
-      auto exponent = -0.5 * (pow((x-mean)/sigma, 2.0) + pow((y-mean)/sigma,2.0));
-      coeff[y*FS + x] = exp(exponent) / (2 * M_PI * sigma * sigma);
+  for (auto x=size_t{0}; x<FS; ++x) {
+    for (auto y=size_t{0}; y<FS; ++y) {
+      auto exponent = -0.5f * (pow((x-mean)/sigma, 2.0f) + pow((y-mean)/sigma, 2.0f));
+      coeff[y*FS + x] = static_cast<float>(exp(exponent) / (2.0f * M_PI * sigma * sigma));
       sum += coeff[y*FS + x];
     }
   }
@@ -102,7 +108,7 @@ int main(int argc, char* argv[]) {
   // ===============================================================================================
 
   // Initializes the tuner (platform 0, device 'device_id')
-  cltune::Tuner tuner(0, device_id);
+  cltune::Tuner tuner(0, static_cast<size_t>(device_id));
 
   // Sets one of the following search methods:
   // 0) Random search
@@ -111,8 +117,8 @@ int main(int argc, char* argv[]) {
   // 3) Full search
   auto fraction = 1/32.0f;
   if      (method == 0) { tuner.UseRandomSearch(fraction); }
-  else if (method == 1) { tuner.UseAnnealing(fraction, search_param_1); }
-  else if (method == 2) { tuner.UsePSO(fraction, search_param_1, 0.4, 0.0, 0.4); }
+  else if (method == 1) { tuner.UseAnnealing(fraction, static_cast<size_t>(search_param_1)); }
+  else if (method == 2) { tuner.UsePSO(fraction, static_cast<size_t>(search_param_1), 0.4, 0.0, 0.4); }
   else                  { tuner.UseFullSearch(); }
 
   // Outputs the search process to a file
@@ -187,8 +193,8 @@ int main(int argc, char* argv[]) {
 
   // Sets the function's arguments. Note that all kernels have to accept (but not necessarily use)
   // all input arguments.
-  tuner.AddArgumentScalar(kSizeX);
-  tuner.AddArgumentScalar(kSizeY);
+  tuner.AddArgumentScalar(static_cast<int>(kSizeX));
+  tuner.AddArgumentScalar(static_cast<int>(kSizeY));
   tuner.AddArgumentInput(mat_a);
   tuner.AddArgumentInput(coeff);
   tuner.AddArgumentOutput(mat_b);
@@ -201,8 +207,8 @@ int main(int argc, char* argv[]) {
   tuner.PrintToFile("output.csv");
 
   // Also prints the performance of the best-case in terms of GB/s and GFLOPS
-  constexpr auto kMB = (sizeof(float)*2*(long)kSizeX*(long)kSizeY) / (1.0e6);
-  constexpr auto kMFLOPS = ((1+2*FS*FS)*(long)kSizeX*(long)kSizeY) / (1.0e6);
+  constexpr auto kMB = (sizeof(float)*2*kSizeX*kSizeY) * 1.0e-6;
+  constexpr auto kMFLOPS = ((1+2*FS*FS)*kSizeX*kSizeY) * 1.0e-6;
   if (time_ms != 0.0) {
     printf("[ -------> ] %.1lf ms or %.1lf GB/s or %1.lf GFLOPS\n",
            time_ms, kMB/time_ms, kMFLOPS/time_ms);

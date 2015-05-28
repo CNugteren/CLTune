@@ -40,6 +40,7 @@ namespace cltune {
 class FullSearch: public Searcher {
  public:
   FullSearch(const Configurations &configurations);
+  ~FullSearch() {}
 
   // Retrieves the next configuration to test
   virtual KernelInfo::Configuration GetConfiguration() override;
