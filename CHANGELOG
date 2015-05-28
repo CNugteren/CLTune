@@ -1,4 +1,8 @@
 
+Version 1.6.4
+- Reduced the requirements from GCC 4.8.0 to 4.7.0
+- Fixes various warnings on Clang
+
 Version 1.6.3
 - Reduced the requirements from GCC 4.9.0 to 4.8.0
 - Minor updates to the CMake file

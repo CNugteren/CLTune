@@ -27,7 +27,7 @@ cmake_minimum_required(VERSION 2.8.10)
 project("cltune" CXX)
 set(cltune_VERSION_MAJOR 1)
 set(cltune_VERSION_MINOR 6)
-set(cltune_VERSION_PATCH 3)
+set(cltune_VERSION_PATCH 4)
 
 # Options
 option(SAMPLES "Enable compilation of sample programs" ON)
@@ -131,7 +131,7 @@ endif()
 # ==================================================================================================
 # Optional: Enables compilation of the Google tests
 if (TESTS)
-  
+
   # The tests use specific flags to reduce the amount of warnings from GTest.
   set(CMAKE_CXX_FLAGS "-O3 -std=c++11")
 
