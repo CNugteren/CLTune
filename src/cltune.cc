@@ -315,7 +315,7 @@ void Tuner::PrintFormatted() const {
   }
 
   // Prints the best result in C++ database format
-  auto count = 0UL;
+  auto count = size_t{0};
   pimpl->PrintHeader("Printing best result in database format to stdout");
   fprintf(stdout, "{ \"%s\", { ", pimpl->device().Name().c_str());
   for (auto &setting: best_result.configuration) {
@@ -326,6 +326,45 @@ void Tuner::PrintFormatted() const {
     count++;
   }
   fprintf(stdout, " } }\n");
+}
+
+// Prints the best result in a JSON database format to screen
+void Tuner::PrintJSON(const std::string &name) const {
+
+  // Finds the best result
+  auto best_result = pimpl->tuning_results_[0];
+  auto best_time = std::numeric_limits<double>::max();
+  for (auto &tuning_result: pimpl->tuning_results_) {
+    if (tuning_result.status && best_time >= tuning_result.time) {
+      best_result = tuning_result;
+      best_time = tuning_result.time;
+    }
+  }
+
+  // Prints the best result in JSON database format
+  auto count = size_t{0};
+  pimpl->PrintHeader("Printing best result in JSON format to stdout");
+  auto device_type = pimpl->device().Type();
+  fprintf(stdout, "{\n");
+  fprintf(stdout, "  \"routine\": \"%s\",\n", name.c_str());
+  fprintf(stdout, "  \"precision\": \"INSERT PRECISION\",\n");
+  fprintf(stdout, "  \"entry\": [{\n");
+  fprintf(stdout, "    \"vendor\": \"%s\",\n", pimpl->device().Vendor().c_str());
+  fprintf(stdout, "    \"type\": \"%s\",\n", device_type.c_str());
+  fprintf(stdout, "    \"device\": [{\n");
+  fprintf(stdout, "      \"name\": \"%s\",\n", pimpl->device().Name().c_str());
+  fprintf(stdout, "      \"parameters\": [");
+  for (auto &setting: best_result.configuration) {
+    fprintf(stdout, "{\"%s\": %lu }", setting.name.c_str(), setting.value);
+    if (count < best_result.configuration.size()-1) {
+      fprintf(stdout, ",");
+    }
+    count++;
+  }
+  fprintf(stdout, "]}\n");
+  fprintf(stdout, "    ]}\n");
+  fprintf(stdout, "  ]\n");
+  fprintf(stdout, "}\n");
 }
 
 // Same as PrintToScreen, but now outputs into a file and does not mark the best-case

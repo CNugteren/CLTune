@@ -92,6 +92,7 @@ int main() {
 
   // Prints the results to screen
   tuner.PrintToScreen();
+  tuner.PrintJSON("simple");
   return 0;
 }
 

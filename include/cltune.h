@@ -126,6 +126,7 @@ class Tuner {
   // Returns the execution time in miliseconds.
   double PrintToScreen() const;
   void PrintFormatted() const;
+  void PrintJSON(const std::string &name) const;
   void PrintToFile(const std::string &filename) const;
 
   // Disables all further printing to stdout

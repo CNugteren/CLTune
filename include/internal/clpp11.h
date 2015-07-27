@@ -159,7 +159,7 @@ class Device: public Object {
 
   // Public functions
   std::string Version()     const { return GetInfoString(CL_DEVICE_VERSION); }
-  cl_device_type Type()     const { return GetInfo<cl_device_type>(CL_DEVICE_TYPE); }
+  //cl_device_type Type()     const { return GetInfo<cl_device_type>(CL_DEVICE_TYPE); }
   std::string Vendor()      const { return GetInfoString(CL_DEVICE_VENDOR); }
   std::string Name()        const { return GetInfoString(CL_DEVICE_NAME); }
   std::string Extensions()  const { return GetInfoString(CL_DEVICE_EXTENSIONS); }
@@ -170,6 +170,15 @@ class Device: public Object {
   }
   std::vector<size_t> MaxWorkItemSizes() const {
     return GetInfoVector<size_t>(CL_DEVICE_MAX_WORK_ITEM_SIZES);
+  }
+  std::string Type()  const {
+    switch (GetInfo<cl_device_type>(CL_DEVICE_TYPE)) {
+      case CL_DEVICE_TYPE_CPU: return "CL_DEVICE_TYPE_CPU";
+      case CL_DEVICE_TYPE_GPU: return "CL_DEVICE_TYPE_GPU";
+      case CL_DEVICE_TYPE_ACCELERATOR: return "CL_DEVICE_TYPE_ACCELERATOR";
+      case CL_DEVICE_TYPE_DEFAULT: return "CL_DEVICE_TYPE_DEFAULT";
+      default: Error("Unknown device type");
+    }
   }
 
   // Configuration-validity checks
