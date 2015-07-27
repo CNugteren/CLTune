@@ -72,9 +72,6 @@ class TunerImpl {
   static const std::string kMessageResult;
   static const std::string kMessageBest;
 
-  // Types of devices to consider
-  const cl_device_type kDeviceType = CL_DEVICE_TYPE_ALL;
-
   // Helper structure to store an OpenCL memory argument for a kernel
   struct MemArgument {
     size_t index;       // The OpenCL kernel-argument index
@@ -86,17 +83,10 @@ class TunerImpl {
   // Helper structure to hold the results of a tuning run
   struct TunerResult {
     std::string kernel_name;
-    double time;
+    float time;
     size_t threads;
     bool status;
     KernelInfo::Configuration configuration;
-  };
-
-  // OpenCL exception with status printing
-  class OpenCLException: public std::runtime_error {
-   public:
-    OpenCLException(const std::string &message, int status):
-      std::runtime_error(message + std::to_string(status)) {}
   };
 
   // Initialize either with platform 0 and device 0 or with a custom platform/device
@@ -139,13 +129,13 @@ class TunerImpl {
   // Accessors to OpenCL data-types
   const Device device() const { return device_; }
   const Context context() const { return context_; }
-  CommandQueue queue() const { return queue_; }
+  Queue queue() const { return queue_; }
 
   // OpenCL variables
   Platform platform_;
   Device device_;
   Context context_;
-  CommandQueue queue_;
+  Queue queue_;
 
   // Settings
   bool has_reference_;
