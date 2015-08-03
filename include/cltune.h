@@ -33,6 +33,7 @@
 #include <vector> // std::vector
 #include <memory> // std::unique_ptr
 #include <functional> // std::function
+#include <utility> // std::pair
 
 namespace cltune {
 // =================================================================================================
@@ -126,6 +127,8 @@ class Tuner {
   // Returns the execution time in miliseconds.
   double PrintToScreen() const;
   void PrintFormatted() const;
+  void PrintJSON(const std::string &filename,
+                 const std::vector<std::pair<std::string,std::string>> &descriptions) const;
   void PrintToFile(const std::string &filename) const;
 
   // Disables all further printing to stdout

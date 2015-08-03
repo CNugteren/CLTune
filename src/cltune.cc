@@ -162,11 +162,8 @@ void Tuner::SetLocalMemoryUsage(const size_t id, LocalMemoryFunction amount,
 // vector of data. Then, upload it to the device and store the argument in a list.
 template <typename T>
 void Tuner::AddArgumentInput(const std::vector<T> &source) {
-  auto device_buffer = Buffer(pimpl->context(), CL_MEM_READ_ONLY, source.size()*sizeof(T));
-  auto status = device_buffer.WriteBuffer(pimpl->queue(), source.size()*sizeof(T), source);
-  if (status != CL_SUCCESS) {
-    throw std::runtime_error("Write buffer error: " + std::to_string(status));
-  }
+  auto device_buffer = Buffer(pimpl->context(), source.size()*sizeof(T));
+  device_buffer.Write(pimpl->queue(), source.size()*sizeof(T), source);
   auto argument = TunerImpl::MemArgument{pimpl->argument_counter_++, source.size(),
                                          pimpl->GetType<T>(), device_buffer};
   pimpl->arguments_input_.push_back(argument);
@@ -184,7 +181,7 @@ template void Tuner::AddArgumentInput<double2>(const std::vector<double2>&);
 // sense that they will be checked in the verification process.
 template <typename T>
 void Tuner::AddArgumentOutput(const std::vector<T> &source) {
-  auto device_buffer = Buffer(pimpl->context(), CL_MEM_READ_WRITE, source.size()*sizeof(T));
+  auto device_buffer = Buffer(pimpl->context(), source.size()*sizeof(T));
   auto argument = TunerImpl::MemArgument{pimpl->argument_counter_++, source.size(),
                                          pimpl->GetType<T>(), device_buffer};
   pimpl->arguments_output_.push_back(argument);
@@ -315,7 +312,7 @@ void Tuner::PrintFormatted() const {
   }
 
   // Prints the best result in C++ database format
-  auto count = 0UL;
+  auto count = size_t{0};
   pimpl->PrintHeader("Printing best result in database format to stdout");
   fprintf(stdout, "{ \"%s\", { ", pimpl->device().Name().c_str());
   for (auto &setting: best_result.configuration) {
@@ -326,6 +323,51 @@ void Tuner::PrintFormatted() const {
     count++;
   }
   fprintf(stdout, " } }\n");
+}
+
+// Outputs all results in a JSON database format
+void Tuner::PrintJSON(const std::string &filename,
+                      const std::vector<std::pair<std::string,std::string>> &descriptions) const {
+
+  // Prints the best result in JSON database format
+  pimpl->PrintHeader("Printing results to file in JSON format");
+  auto file = fopen(filename.c_str(), "w");
+  auto device_type = pimpl->device().Type();
+  fprintf(file, "{\n");
+  for (auto &description: descriptions) {
+    fprintf(file, "  \"%s\": \"%s\",\n", description.first.c_str(), description.second.c_str());
+  }
+  fprintf(file, "  \"vendor\": \"%s\",\n", pimpl->device().Vendor().c_str());
+  fprintf(file, "  \"type\": \"%s\",\n", device_type.c_str());
+  fprintf(file, "  \"device\": \"%s\",\n", pimpl->device().Name().c_str());
+  fprintf(file, "  \"results\": [\n");
+
+  // Loops over all the results
+  auto num_results = pimpl->tuning_results_.size();
+  for (auto r=size_t{0}; r<num_results; ++r) {
+    auto result = pimpl->tuning_results_[r];
+    fprintf(file, "    {\n");
+    fprintf(file, "      \"kernel\": \"%s\",\n", result.kernel_name.c_str());
+    fprintf(file, "      \"time\": %.3lf,\n", result.time);
+
+    // Loops over all the parameters for this result
+    fprintf(file, "      \"parameters\": {");
+    auto num_configs = result.configuration.size();
+    for (auto p=size_t{0}; p<num_configs; ++p) {
+      auto config = result.configuration[p];
+      fprintf(file, "\"%s\": %lu", config.name.c_str(), config.value);
+      if (p < num_configs-1) { fprintf(file, ","); }
+    }
+    fprintf(file, "}\n");
+
+    // The footer
+    fprintf(file, "    }");
+    if (r < num_results-1) { fprintf(file, ","); }
+    fprintf(file, "\n");
+  }
+  fprintf(file, "  ]\n");
+  fprintf(file, "}\n");
+  fclose(file);
 }
 
 // Same as PrintToScreen, but now outputs into a file and does not mark the best-case

@@ -1,4 +1,8 @@
 
+Version 1.7.0
+- Now using the Claduc C++11 interface to OpenCL
+- Added a method to print all tuning results in JSON-format to file
+
 Version 1.6.4
 - Reduced the requirements from GCC 4.8.0 to 4.7.0
 - Fixes various warnings on Clang

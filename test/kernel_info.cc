@@ -44,7 +44,7 @@ class KernelInfoTest : public testing::Test {
   // Constructor
   explicit KernelInfoTest() :
     platform_(cltune::Platform(size_t{0})),
-    device_(cltune::Device(platform_, CL_DEVICE_TYPE_ALL, size_t{0})),
+    device_(cltune::Device(platform_, size_t{0})),
     kernel_{new cltune::KernelInfo("name", "source", device_)} {
   }
 
