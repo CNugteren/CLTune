@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
   // 1) Simulated annealing
   // 2) Particle swarm optimisation (PSO)
   // 3) Full search
-  auto fraction = 1/32.0f;
+  auto fraction = 1/128.0f;
   if      (method == 0) { tuner.UseRandomSearch(fraction); }
   else if (method == 1) { tuner.UseAnnealing(fraction, static_cast<size_t>(search_param_1)); }
   else if (method == 2) { tuner.UsePSO(fraction, static_cast<size_t>(search_param_1), 0.4, 0.0, 0.4); }
@@ -205,6 +205,7 @@ int main(int argc, char* argv[]) {
   // Prints the results to screen and to file
   auto time_ms = tuner.PrintToScreen();
   tuner.PrintToFile("output.csv");
+  tuner.PrintJSON("output.json", {{"sample","convolution"}});
 
   // Also prints the performance of the best-case in terms of GB/s and GFLOPS
   constexpr auto kMB = (sizeof(float)*2*kSizeX*kSizeY) * 1.0e-6;

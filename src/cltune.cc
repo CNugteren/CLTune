@@ -325,43 +325,49 @@ void Tuner::PrintFormatted() const {
   fprintf(stdout, " } }\n");
 }
 
-// Prints the best result in a JSON database format to screen
-void Tuner::PrintJSON(const std::string &name) const {
-
-  // Finds the best result
-  auto best_result = pimpl->tuning_results_[0];
-  auto best_time = std::numeric_limits<double>::max();
-  for (auto &tuning_result: pimpl->tuning_results_) {
-    if (tuning_result.status && best_time >= tuning_result.time) {
-      best_result = tuning_result;
-      best_time = tuning_result.time;
-    }
-  }
+// Outputs all results in a JSON database format
+void Tuner::PrintJSON(const std::string &filename,
+                      const std::vector<std::pair<std::string,std::string>> &descriptions) const {
 
   // Prints the best result in JSON database format
-  auto count = size_t{0};
-  pimpl->PrintHeader("Printing best result in JSON format to stdout");
+  pimpl->PrintHeader("Printing results to file in JSON format");
+  auto file = fopen(filename.c_str(), "w");
   auto device_type = pimpl->device().Type();
-  fprintf(stdout, "{\n");
-  fprintf(stdout, "  \"routine\": \"%s\",\n", name.c_str());
-  fprintf(stdout, "  \"precision\": \"INSERT PRECISION\",\n");
-  fprintf(stdout, "  \"entry\": [{\n");
-  fprintf(stdout, "    \"vendor\": \"%s\",\n", pimpl->device().Vendor().c_str());
-  fprintf(stdout, "    \"type\": \"%s\",\n", device_type.c_str());
-  fprintf(stdout, "    \"device\": [{\n");
-  fprintf(stdout, "      \"name\": \"%s\",\n", pimpl->device().Name().c_str());
-  fprintf(stdout, "      \"parameters\": [");
-  for (auto &setting: best_result.configuration) {
-    fprintf(stdout, "{\"%s\": %lu }", setting.name.c_str(), setting.value);
-    if (count < best_result.configuration.size()-1) {
-      fprintf(stdout, ",");
-    }
-    count++;
+  fprintf(file, "{\n");
+  for (auto &description: descriptions) {
+    fprintf(file, "  \"%s\": \"%s\",\n", description.first.c_str(), description.second.c_str());
   }
-  fprintf(stdout, "]}\n");
-  fprintf(stdout, "    ]}\n");
-  fprintf(stdout, "  ]\n");
-  fprintf(stdout, "}\n");
+  fprintf(file, "  \"vendor\": \"%s\",\n", pimpl->device().Vendor().c_str());
+  fprintf(file, "  \"type\": \"%s\",\n", device_type.c_str());
+  fprintf(file, "  \"device\": \"%s\",\n", pimpl->device().Name().c_str());
+  fprintf(file, "  \"results\": [\n");
+
+  // Loops over all the results
+  auto num_results = pimpl->tuning_results_.size();
+  for (auto r=size_t{0}; r<num_results; ++r) {
+    auto result = pimpl->tuning_results_[r];
+    fprintf(file, "    {\n");
+    fprintf(file, "      \"kernel\": \"%s\",\n", result.kernel_name.c_str());
+    fprintf(file, "      \"time\": %.3lf,\n", result.time);
+
+    // Loops over all the parameters for this result
+    fprintf(file, "      \"parameters\": {");
+    auto num_configs = result.configuration.size();
+    for (auto p=size_t{0}; p<num_configs; ++p) {
+      auto config = result.configuration[p];
+      fprintf(file, "\"%s\": %lu", config.name.c_str(), config.value);
+      if (p < num_configs-1) { fprintf(file, ","); }
+    }
+    fprintf(file, "}\n");
+
+    // The footer
+    fprintf(file, "    }");
+    if (r < num_results-1) { fprintf(file, ","); }
+    fprintf(file, "\n");
+  }
+  fprintf(file, "  ]\n");
+  fprintf(file, "}\n");
+  fclose(file);
 }
 
 // Same as PrintToScreen, but now outputs into a file and does not mark the best-case

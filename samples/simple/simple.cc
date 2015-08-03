@@ -92,7 +92,10 @@ int main() {
 
   // Prints the results to screen
   tuner.PrintToScreen();
-  tuner.PrintJSON("simple");
+
+  // Outputs all tuning results to JSON for later analysis. The argument provided here is an extra
+  // JSON entry: the name of this 'sample' is set to 'simple'.
+  tuner.PrintJSON("output.json", {{"sample","simple"}});
   return 0;
 }
 
