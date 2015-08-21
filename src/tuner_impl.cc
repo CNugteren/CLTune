@@ -34,6 +34,9 @@
 #include "internal/searchers/annealing.h"
 #include "internal/searchers/pso.h"
 
+// The machine learning models
+#include "internal/ml_models/linear_regression.h"
+
 #include <fstream> // std::ifstream, std::stringstream
 #include <iostream> // FILE
 #include <limits> // std::numeric_limits
@@ -422,6 +425,52 @@ template <> double TunerImpl::AbsoluteDifference(const double2 reference, const 
   auto real = fabs(reference.real() - result.real());
   auto imag = fabs(reference.imag() - result.imag());
   return real + imag;
+}
+
+// =================================================================================================
+
+// Trains a model and predicts all remaining configurations
+void TunerImpl::ModelPrediction(const Model model) {
+
+  // Retrieves the number of training samples and features
+  auto validation_samples = size_t{8};
+  auto training_samples = tuning_results_.size() - validation_samples;
+  auto features = tuning_results_[0].configuration.size();
+
+  // Sets the raw training and validation data
+  auto x_train = std::vector<std::vector<float>>(training_samples, std::vector<float>(features));
+  auto y_train = std::vector<float>(training_samples);
+  for (auto s=size_t{0}; s<training_samples; ++s) {
+    y_train[s] = tuning_results_[s].time;
+    for (auto f=size_t{0}; f<features; ++f) {
+      x_train[s][f] = static_cast<float>(tuning_results_[s].configuration[f].value);
+    }
+  }
+  auto x_validation = std::vector<std::vector<float>>(validation_samples, std::vector<float>(features));
+  auto y_validation = std::vector<float>(validation_samples);
+  for (auto s=size_t{0}; s<validation_samples; ++s) {
+    y_validation[s] = tuning_results_[s+training_samples].time;
+    for (auto f=size_t{0}; f<features; ++f) {
+      x_validation[s][f] = static_cast<float>(tuning_results_[s + training_samples].configuration[f].value);
+    }
+  }
+
+  // Linear regression
+  if (model == Model::kLinearRegression) {
+    PrintHeader("Training a linear regression model");
+    auto model = LinearRegression<float>(training_samples, features);
+
+    // Trains the model
+    model.Train(x_train, y_train);
+
+    // Validates the model
+    model.Validate(x_validation, y_validation);
+  }
+
+  // Unknown model
+  else {
+    throw std::runtime_error("Unknown machine learning model");
+  }
 }
 
 // =================================================================================================

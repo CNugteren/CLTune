@@ -103,7 +103,9 @@ set(TUNER
     src/searchers/full_search.cc
     src/searchers/random_search.cc
     src/searchers/annealing.cc
-    src/searchers/pso.cc)
+    src/searchers/pso.cc
+    src/ml_model.cc
+    src/ml_models/linear_regression.cc)
 
 # Creates and links the library
 add_library(cltune SHARED ${TUNER})

@@ -113,6 +113,9 @@ class TunerImpl {
   template <typename T> bool DownloadAndCompare(MemArgument &device_buffer, const size_t i);
   template <typename T> double AbsoluteDifference(const T reference, const T result);
 
+  // Trains and uses a machine learning model based on the search space explored so far
+  void ModelPrediction(const Model model);
+
   // Prints results of a particular kernel run
   void PrintResult(FILE* fp, const TunerResult &result, const std::string &message) const;
 

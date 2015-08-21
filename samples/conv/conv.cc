@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
   // 1) Simulated annealing
   // 2) Particle swarm optimisation (PSO)
   // 3) Full search
-  auto fraction = 1/128.0f;
+  auto fraction = 1/64.0f;
   if      (method == 0) { tuner.UseRandomSearch(fraction); }
   else if (method == 1) { tuner.UseAnnealing(fraction, static_cast<size_t>(search_param_1)); }
   else if (method == 2) { tuner.UsePSO(fraction, static_cast<size_t>(search_param_1), 0.4, 0.0, 0.4); }
@@ -201,6 +201,13 @@ int main(int argc, char* argv[]) {
 
   // Starts the tuner
   tuner.Tune();
+
+  // The search method only explored a random subset of the whole search space. The collected data
+  // is used to train a model which is then used to estimate all the other (not-explored) points in
+  // the search space.
+  if (method == 0) {
+    tuner.ModelPrediction(cltune::Model::kLinearRegression);
+  }
 
   // Prints the results to screen and to file
   auto time_ms = tuner.PrintToScreen();

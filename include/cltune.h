@@ -50,6 +50,9 @@ using LocalMemoryFunction = std::function<size_t(std::vector<size_t>)>;
 // Enumeration for search strategies
 enum class SearchMethod{FullSearch, RandomSearch, Annealing, PSO};
 
+// Machine learning models
+enum class Model { kLinearRegression };
+
 // The tuner class and its public API
 class Tuner {
  public:
@@ -122,6 +125,11 @@ class Tuner {
   // Starts the tuning process: compile all kernels and run them for each permutation of the tuning-
   // parameters. Note that this might take a while.
   void Tune();
+
+  // Trains a machine learning model based on the search space explored so far. Then, all the
+  // missing data-points are estimated based on this model. This is only useful if a fraction of
+  // the search space is explored, as is the case when doing random-search.
+  void ModelPrediction(const Model model);
 
   // Prints the results of the tuning either to screen (stdout) or to a specific output-file.
   // Returns the execution time in miliseconds.
