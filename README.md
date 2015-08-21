@@ -2,6 +2,8 @@
 CLTune: Automatic OpenCL kernel tuning
 ================
 
+[![Build Status](https://travis-ci.org/CNugteren/cltune.svg?branch=master)](https://travis-ci.org/CNugteren/cltune)
+
 CLTune is a C++ library which can be used to automatically tune your OpenCL kernels. The only thing you'll need to provide is a tuneable kernel and a list of allowed parameters and values.
 
 For example, if you would perform loop unrolling or local memory tiling through a pre-processor define, just remove the define from your kernel code, pass the kernel to CLTune and tell it what the name of your parameter(s) are and what values you want to try. CLTune will take care of the rest: it will iterate over all possible permutations, test them, and report the best combination.
