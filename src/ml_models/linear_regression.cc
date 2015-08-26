@@ -48,11 +48,13 @@ void LinearRegression<T>::Train(const std::vector<std::vector<T>> &x, const std:
 
   // Modifies features to get a better model
   ComputeNormalizations(x_temp);
-  NormalizeFeatures(x_temp);
-  AddPolynominalFeatures(x_temp, 2); // Second order
+  PreProcessFeatures(x_temp);
 
   // Runs gradient descent to train the model
-  GradientDescent(x_temp, y, 0.05, 800);
+  auto learning_rate = static_cast<T>(0.05);
+  auto lambda = static_cast<T>(0); // Regularization parameter
+  auto max_iterations = 800;
+  GradientDescent(x_temp, y, learning_rate, lambda, max_iterations);
 
   // Verifies the trained results
   auto margin = 0.10f; // 10%
@@ -67,14 +69,20 @@ void LinearRegression<T>::Validate(const std::vector<std::vector<T>> &x, const s
   auto x_temp = x;
 
   // Modifies features according to the training data
-  NormalizeFeatures(x_temp);
-  AddPolynominalFeatures(x_temp, 2); // Second order
+  PreProcessFeatures(x_temp);
 
   // Verifies the trained results
   auto margin = 0.10f; // 10%
   auto success_rate = Verify(x_temp, y, margin);
   printf("%s Validation success rate: %.0lf%% with +/- %.0lf%% margin\n",
          TunerImpl::kMessageResult.c_str(), success_rate, 100.0f*margin);
+}
+
+// Pre-processes the features based on normalization data
+template <typename T>
+void LinearRegression<T>::PreProcessFeatures(std::vector<std::vector<T>> &x) {
+  NormalizeFeatures(x);
+  AddPolynomialFeatures(x, {2}); // Second order polynomials
 }
 
 // =================================================================================================
@@ -92,7 +100,7 @@ T LinearRegression<T>::Hypothesis(const std::vector<T> &x) const {
 
 // Cost-function: computes the sum of squared differences
 template <typename T>
-T LinearRegression<T>::Cost(const size_t m, const size_t n,
+T LinearRegression<T>::Cost(const size_t m, const size_t n, const T lambda,
                             const std::vector<std::vector<T>> &x, const std::vector<T> &y) const {
   auto cost = static_cast<T>(0);
   for (auto mid=size_t{0}; mid<m; ++mid) {
@@ -104,7 +112,7 @@ T LinearRegression<T>::Cost(const size_t m, const size_t n,
 
 // Gradient-function: computes the gradient of the cost-function with respect to a specific feature
 template <typename T>
-T LinearRegression<T>::Gradient(const size_t m, const size_t n,
+T LinearRegression<T>::Gradient(const size_t m, const size_t n, const T lambda,
                                 const std::vector<std::vector<T>> &x, const std::vector<T> &y,
                                 const size_t gradient_id) const {
   auto gradient = static_cast<T>(0);

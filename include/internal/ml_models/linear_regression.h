@@ -44,7 +44,7 @@ class LinearRegression: public MLModel<T> {
   // Methods from the base class
   using MLModel<T>::ComputeNormalizations;
   using MLModel<T>::NormalizeFeatures;
-  using MLModel<T>::AddPolynominalFeatures;
+  using MLModel<T>::AddPolynomialFeatures;
   using MLModel<T>::GradientDescent;
   using MLModel<T>::Verify;
 
@@ -62,11 +62,14 @@ class LinearRegression: public MLModel<T> {
 
  private:
 
+  // Class-specific helper functions
+  void PreProcessFeatures(std::vector<std::vector<T>> &x);
+
   // Hypothesis, cost and gradient functions
   virtual T Hypothesis(const std::vector<T> &x) const override;
-  virtual T Cost(const size_t m, const size_t n,
+  virtual T Cost(const size_t m, const size_t n, const T lambda,
                  const std::vector<std::vector<T>> &x, const std::vector<T> &y) const override;
-  virtual T Gradient(const size_t m, const size_t n,
+  virtual T Gradient(const size_t m, const size_t n, const T lambda,
                      const std::vector<std::vector<T>> &x, const std::vector<T> &y,
                      const size_t gradient_id) const override;
 

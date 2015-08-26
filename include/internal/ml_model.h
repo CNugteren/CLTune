@@ -59,11 +59,12 @@ class MLModel {
   // Process the training data
   void ComputeNormalizations(const std::vector<std::vector<T>> &x);
   void NormalizeFeatures(std::vector<std::vector<T>> &x);
-  void AddPolynominalFeatures(std::vector<std::vector<T>> &x, const size_t order);
+  void AddPolynomialFeatures(std::vector<std::vector<T>> &x, const std::vector<size_t> &orders);
+  void AddPolynomialRecursive(std::vector<T> &xi, const size_t order, const T value, const size_t n);
 
   // Methods to minimize an unconstrained function
   void GradientDescent(const std::vector<std::vector<T>> &x, const std::vector<T> &y,
-                       const T alpha, const size_t iterations);
+                       const T alpha, const T lambda, const size_t iterations);
 
   // Verification methods
   float Verify(const std::vector<std::vector<T>> &x, const std::vector<T> &y,
@@ -71,9 +72,9 @@ class MLModel {
 
   // Pure virtual hypothesis, cost and gradient functions
   virtual T Hypothesis(const std::vector<T> &x) const = 0;
-  virtual T Cost(const size_t m, const size_t n,
+  virtual T Cost(const size_t m, const size_t n, const T lambda,
                  const std::vector<std::vector<T>> &x, const std::vector<T> &y) const = 0;
-  virtual T Gradient(const size_t m, const size_t n,
+  virtual T Gradient(const size_t m, const size_t n, const T lambda,
                      const std::vector<std::vector<T>> &x, const std::vector<T> &y,
                      const size_t gradient_id) const = 0;
 

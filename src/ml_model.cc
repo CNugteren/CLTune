@@ -30,6 +30,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <cmath>
 
 namespace cltune {
 // =================================================================================================
@@ -76,21 +77,30 @@ void MLModel<T>::NormalizeFeatures(std::vector<std::vector<T>> &x) {
   }
 }
 
-// Adds polynominal combinations of features as new features
+// Adds polynominal combinations of features as new features. This is implemented using recursion
+// and allows any order larger than 1.
 template <typename T>
-void MLModel<T>::AddPolynominalFeatures(std::vector<std::vector<T>> &x, const size_t order) {
-  auto m = x.size();
+void MLModel<T>::AddPolynomialFeatures(std::vector<std::vector<T>> &x,
+                                       const std::vector<size_t> &orders) {
   auto n = x[0].size();
-  for (auto mid=size_t{0}; mid<m; ++mid) {
-
-    // TODO: For now only 2 supported
-    if (order == 2) {
-      x[mid].reserve(x[mid].size() + n*n);
-      for (auto nid1=size_t{0}; nid1<n; ++nid1) {
-        for (auto nid2=size_t{0}; nid2<n; ++nid2) {
-          x[mid].push_back(x[mid][nid1] * x[mid][nid2]);
-        }
+  for (auto &xi: x) {
+    for (auto &order: orders) {
+      if (order > 1) {
+        xi.reserve(xi.size() + static_cast<size_t>(pow(n, order)));
+        AddPolynomialRecursive(xi, order, 1UL, n);
       }
+    }
+  }
+}
+template <typename T>
+void MLModel<T>::AddPolynomialRecursive(std::vector<T> &xi, const size_t order, const T value,
+                                        const size_t n) {
+  if (order == 0) {
+    xi.push_back(value);
+  }
+  else {
+    for (auto i=size_t{0}; i<n; ++i) {
+      AddPolynomialRecursive(xi, order-1, value*xi[i], n);
     }
   }
 }
@@ -101,7 +111,7 @@ void MLModel<T>::AddPolynominalFeatures(std::vector<std::vector<T>> &x, const si
 // function and gradient-function implemented by the derived class.
 template <typename T>
 void MLModel<T>::GradientDescent(const std::vector<std::vector<T>> &x, const std::vector<T> &y,
-                                 const T alpha, const size_t iterations) {
+                                 const T alpha, const T lambda, const size_t iterations) {
   auto m = x.size();
   auto n = x[0].size();
 
@@ -115,7 +125,7 @@ void MLModel<T>::GradientDescent(const std::vector<std::vector<T>> &x, const std
     auto theta_temp = std::vector<T>(n, static_cast<T>(0));
 
     // Computes the cost (to monitor convergence)
-    auto cost = Cost(m, n, x, y);
+    auto cost = Cost(m, n, lambda, x, y);
     if ((iter+1) % (iterations/kGradientDescentCostReportAmount) == 0) {
       printf("%s Gradient descent %lu/%lu: cost %.2e\n",
              TunerImpl::kMessageInfo.c_str(), iter+1, iterations, cost);
@@ -123,7 +133,7 @@ void MLModel<T>::GradientDescent(const std::vector<std::vector<T>> &x, const std
     
     // Computes the gradients and the updated parameters
     for (auto nid=size_t{0}; nid<n; ++nid) {
-      auto gradient = Gradient(m, n, x, y, nid);
+      auto gradient = Gradient(m, n, lambda, x, y, nid);
       theta_temp[nid] = theta_[nid] - alpha * (1.0f/static_cast<T>(m)) * gradient;
     }
 
