@@ -52,7 +52,7 @@ void LinearRegression<T>::Train(const std::vector<std::vector<T>> &x, const std:
 
   // Runs gradient descent to train the model
   auto learning_rate = static_cast<T>(0.05);
-  auto lambda = static_cast<T>(0); // Regularization parameter
+  auto lambda = static_cast<T>(1); // Regularization parameter
   auto max_iterations = 800;
   GradientDescent(x_temp, y, learning_rate, lambda, max_iterations);
 
@@ -102,12 +102,22 @@ T LinearRegression<T>::Hypothesis(const std::vector<T> &x) const {
 template <typename T>
 T LinearRegression<T>::Cost(const size_t m, const size_t n, const T lambda,
                             const std::vector<std::vector<T>> &x, const std::vector<T> &y) const {
+
+  // Computes the sum of squared differences
   auto cost = static_cast<T>(0);
   for (auto mid=size_t{0}; mid<m; ++mid) {
     auto difference = Hypothesis(x[mid]) - y[mid];
     cost += difference * difference;
   }
-  return cost / (static_cast<T>(2) * static_cast<T>(m));
+
+  // Computes the squared sum of theta's (not counting theta-zero) for the regularization term
+  auto theta_squared_sum = static_cast<T>(0);
+  for (auto nid=size_t{1}; nid<n; ++nid) {
+    theta_squared_sum += theta_[nid] * theta_[nid];
+  }
+
+  // Computes the final cost
+  return (cost + lambda*theta_squared_sum) / (static_cast<T>(2) * static_cast<T>(m));
 }
 
 // Gradient-function: computes the gradient of the cost-function with respect to a specific feature
@@ -115,11 +125,15 @@ template <typename T>
 T LinearRegression<T>::Gradient(const size_t m, const size_t n, const T lambda,
                                 const std::vector<std::vector<T>> &x, const std::vector<T> &y,
                                 const size_t gradient_id) const {
+
+  // Computes the gradient of the cost function
   auto gradient = static_cast<T>(0);
   for (auto mid=size_t{0}; mid<m; ++mid) {
     gradient += (Hypothesis(x[mid]) - y[mid]) * x[mid][gradient_id];
   }
-  return gradient;
+
+  // Computes the final gradient with regularization
+  return (gradient / static_cast<T>(m)) + ((lambda * theta_[gradient_id]) / static_cast<T>(m));
 }
 
 // =================================================================================================

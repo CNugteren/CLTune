@@ -134,7 +134,7 @@ void MLModel<T>::GradientDescent(const std::vector<std::vector<T>> &x, const std
     // Computes the gradients and the updated parameters
     for (auto nid=size_t{0}; nid<n; ++nid) {
       auto gradient = Gradient(m, n, lambda, x, y, nid);
-      theta_temp[nid] = theta_[nid] - alpha * (1.0f/static_cast<T>(m)) * gradient;
+      theta_temp[nid] = theta_[nid] - alpha * gradient;
     }
 
     // Sets the new values for theta
