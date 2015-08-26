@@ -146,7 +146,7 @@ void KernelInfo::ComputeRanges(const Configuration &config) {
 // Initializes an empty configuration (vector of name/value pairs) and kicks-off the recursive
 // function to find all configurations. It also applies the user-defined constraints within.
 void KernelInfo::SetConfigurations() {
-  Configuration config;
+  auto config = Configuration(parameters_.size());
   PopulateConfigurations(0, config);
 }
 
@@ -169,8 +169,8 @@ void KernelInfo::PopulateConfigurations(const size_t index, const Configuration 
   // recursively
   Parameter parameter = parameters_[index];
   for (auto &value: parameter.values) {
-    Configuration config_copy = config;
-    config_copy.push_back({parameter.name, value});
+    auto config_copy = config;
+    config_copy[index] = Setting{parameter.name, value};
     PopulateConfigurations(index+1, config_copy);
   }
 }
@@ -179,23 +179,20 @@ void KernelInfo::PopulateConfigurations(const size_t index, const Configuration 
 // Assumes initially all configurations are valid, then returns false if one of the constraints has
 // not been met. Constraints consist of a user-defined function and a list of parameter names, which
 // are replaced by parameter values in this function.
-bool KernelInfo::ValidConfiguration(const Configuration &config) {
+inline bool KernelInfo::ValidConfiguration(const Configuration &config) {
 
   // Iterates over all constraints
   for (auto &constraint: constraints_) {
 
     // Finds the values of the parameters
-    std::vector<size_t> values(size_t{0});
-    for (auto &parameter: constraint.parameters) {
+    auto values = std::vector<size_t>(constraint.parameters.size());
+    for (auto i=size_t{0}; i<constraint.parameters.size(); ++i) {
       for (auto &setting: config) {
-        if (setting.name == parameter) {
-          values.push_back(setting.value);
+        if (setting.name == constraint.parameters[i]) {
+          values[i] = setting.value;
           break;
         }
       }
-    }
-    if (constraint.parameters.size() != values.size()) {
-      throw Exception("Invalid tuning parameter constraint");
     }
 
     // Checks this constraint for these values
