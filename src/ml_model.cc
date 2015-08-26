@@ -51,13 +51,15 @@ void MLModel<T>::ComputeNormalizations(const std::vector<std::vector<T>> &x) {
   for (auto nid=size_t{0}; nid<n; ++nid) {
     auto min = std::numeric_limits<T>::max();
     auto max = -min;
+    auto sum = static_cast<T>(0);
     for (auto mid=size_t{0}; mid<m; ++mid) {
       auto value = x[mid][nid];
       if (value > max) { max = value; }
       if (value < min) { min = value; }
+      sum += value;
     }
     ranges_[nid] = max - min;
-    means_[nid] = static_cast<T>(0); // TODO: implement this
+    means_[nid] = sum / static_cast<T>(m);
   }
 }
 
