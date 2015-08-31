@@ -146,10 +146,10 @@ void MLModel<T>::GradientDescent(const std::vector<std::vector<T>> &x, const std
 
 // =================================================================================================
 
-// Classifies all training examples for verification
+// Verifies training examples: computes the success rate within a specified margin
 template <typename T>
-float MLModel<T>::Verify(const std::vector<std::vector<T>> &x, const std::vector<T> &y,
-                         const float margin) const {
+float MLModel<T>::SuccessRate(const std::vector<std::vector<T>> &x, const std::vector<T> &y,
+                              const float margin) const {
   auto m = x.size();
   auto correct = 0;
   for (auto mid=size_t{0}; mid<m; ++mid) {
@@ -163,6 +163,22 @@ float MLModel<T>::Verify(const std::vector<std::vector<T>> &x, const std::vector
   return success_rate;
 }
 
+// Verifies training examples: computes the cost function
+template <typename T>
+float MLModel<T>::Verify(const std::vector<std::vector<T>> &x, const std::vector<T> &y) const {
+  auto m = x.size();
+  auto n = x[0].size();
+
+  // Displays the data
+  for (auto mid=size_t{0}; mid<m; ++mid) {
+    auto hypothesis = Hypothesis(x[mid]);
+    auto relative_error = (y[mid] - hypothesis) / (y[mid]);
+    printf("[ -------> ] Hypothesis: %7.3lf; Actual: %7.3lf; Error: %7.2lf%%\n", hypothesis, y[mid], 100.0f*relative_error);
+  }
+
+  // Computes the cost
+  return Cost(m, n, 0, x, y);
+}
 // =================================================================================================
 
 // Compiles the class

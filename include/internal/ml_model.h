@@ -67,8 +67,9 @@ class MLModel {
                        const T alpha, const T lambda, const size_t iterations);
 
   // Verification methods
-  float Verify(const std::vector<std::vector<T>> &x, const std::vector<T> &y,
-               const float margin) const;
+  float SuccessRate(const std::vector<std::vector<T>> &x, const std::vector<T> &y,
+                    const float margin) const;
+  float Verify(const std::vector<std::vector<T>> &x, const std::vector<T> &y) const;
 
   // Pure virtual hypothesis, cost and gradient functions
   virtual T Hypothesis(const std::vector<T> &x) const = 0;

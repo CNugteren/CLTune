@@ -29,6 +29,7 @@
 #include "internal/ml_models/linear_regression.h"
 
 #include <vector>
+#include <cmath>
 
 namespace cltune {
 // =================================================================================================
@@ -57,10 +58,8 @@ void LinearRegression<T>::Train(const std::vector<std::vector<T>> &x, const std:
   GradientDescent(x_temp, y, learning_rate, lambda, max_iterations);
 
   // Verifies the trained results
-  auto margin = 0.10f; // 10%
-  auto success_rate = Verify(x_temp, y, margin);
-  printf("%s Training success rate: %.0lf%% with +/- %.0lf%% margin\n",
-         TunerImpl::kMessageResult.c_str(), success_rate, 100.0f*margin);
+  auto cost = Verify(x_temp, y);
+  printf("%s Training cost: %.2e\n", TunerImpl::kMessageResult.c_str(), cost);
 }
 
 // Validates the model
@@ -72,10 +71,8 @@ void LinearRegression<T>::Validate(const std::vector<std::vector<T>> &x, const s
   PreProcessFeatures(x_temp);
 
   // Verifies the trained results
-  auto margin = 0.10f; // 10%
-  auto success_rate = Verify(x_temp, y, margin);
-  printf("%s Validation success rate: %.0lf%% with +/- %.0lf%% margin\n",
-         TunerImpl::kMessageResult.c_str(), success_rate, 100.0f*margin);
+  auto cost = Verify(x_temp, y);
+  printf("%s Validation cost: %.2e\n", TunerImpl::kMessageResult.c_str(), cost);
 }
 
 // Pre-processes the features based on normalization data
