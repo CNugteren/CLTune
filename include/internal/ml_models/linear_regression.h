@@ -54,7 +54,7 @@ class LinearRegression: public MLModel<T> {
   using MLModel<T>::ranges_;
 
   // Constructor
-  LinearRegression(const size_t m, const size_t n);
+  LinearRegression();
 
   // Trains and validates the model
   virtual void Train(const std::vector<std::vector<T>> &x, const std::vector<T> &y) override;

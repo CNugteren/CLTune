@@ -36,8 +36,8 @@ namespace cltune {
 
 // Calls the base-class constructor
 template <typename T>
-LinearRegression<T>::LinearRegression(const size_t m, const size_t n):
-  MLModel<T>(m, n) {
+LinearRegression<T>::LinearRegression():
+  MLModel<T>() {
 }
 
 // =================================================================================================

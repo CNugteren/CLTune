@@ -37,9 +37,7 @@ namespace cltune {
 
 // Simple constructor
 template <typename T>
-MLModel<T>::MLModel(const size_t m, const size_t n):
-  ranges_(n, 1),
-  means_(n, 0) {
+MLModel<T>::MLModel() {
 }
 
 // =================================================================================================
@@ -49,7 +47,13 @@ template <typename T>
 void MLModel<T>::ComputeNormalizations(const std::vector<std::vector<T>> &x) {
   auto m = x.size();
   auto n = x[0].size();
+
+  // Loops over the features
+  ranges_.resize(n, static_cast<T>(1));
+  means_.resize(n, static_cast<T>(0));
   for (auto nid=size_t{0}; nid<n; ++nid) {
+
+    // Finds the maximum, the minimum, and the sum
     auto min = std::numeric_limits<T>::max();
     auto max = -min;
     auto sum = static_cast<T>(0);
@@ -59,6 +63,8 @@ void MLModel<T>::ComputeNormalizations(const std::vector<std::vector<T>> &x) {
       if (value < min) { min = value; }
       sum += value;
     }
+
+    // Sets the range and the mean
     ranges_[nid] = max - min;
     means_[nid] = sum / static_cast<T>(m);
   }
@@ -67,12 +73,9 @@ void MLModel<T>::ComputeNormalizations(const std::vector<std::vector<T>> &x) {
 // Normalizes the training features based on previously calculated ranges and means
 template <typename T>
 void MLModel<T>::NormalizeFeatures(std::vector<std::vector<T>> &x) {
-  auto m = x.size();
-  auto n = x[0].size();
-  for (auto nid=size_t{0}; nid<n; ++nid) {
-    for (auto mid=size_t{0}; mid<m; ++mid) {
-      auto value = x[mid][nid];
-      x[mid][nid] = (value - means_[nid]) / ranges_[nid];
+  for (auto mid=size_t{0}; mid<x.size(); ++mid) {
+    for (auto nid=size_t{0}; nid<x[mid].size(); ++nid) {
+      x[mid][nid] = (x[mid][nid] - means_[nid]) / ranges_[nid];
     }
   }
 }
@@ -82,12 +85,12 @@ void MLModel<T>::NormalizeFeatures(std::vector<std::vector<T>> &x) {
 template <typename T>
 void MLModel<T>::AddPolynomialFeatures(std::vector<std::vector<T>> &x,
                                        const std::vector<size_t> &orders) {
-  auto n = x[0].size();
-  for (auto &xi: x) {
+  for (auto mid=size_t{0}; mid<x.size(); ++mid) {
+    auto n = x[mid].size();
     for (auto &order: orders) {
       if (order > 1) {
-        xi.reserve(xi.size() + static_cast<size_t>(pow(n, order)));
-        AddPolynomialRecursive(xi, order, 1UL, n);
+        x[mid].reserve(x[mid].size() + static_cast<size_t>(pow(n, order)));
+        AddPolynomialRecursive(x[mid], order, 1UL, n);
       }
     }
   }
@@ -99,8 +102,8 @@ void MLModel<T>::AddPolynomialRecursive(std::vector<T> &xi, const size_t order, 
     xi.push_back(value);
   }
   else {
-    for (auto i=size_t{0}; i<n; ++i) {
-      AddPolynomialRecursive(xi, order-1, value*xi[i], n);
+    for (auto nid=size_t{0}; nid<n; ++nid) {
+      AddPolynomialRecursive(xi, order-1, value*xi[nid], n);
     }
   }
 }

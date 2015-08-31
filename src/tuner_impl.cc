@@ -433,7 +433,8 @@ template <> double TunerImpl::AbsoluteDifference(const double2 reference, const 
 void TunerImpl::ModelPrediction(const Model model) {
 
   // Retrieves the number of training samples and features
-  auto validation_samples = size_t{8};
+  auto validation_samples_fraction = 0.20f; // 20%
+  auto validation_samples = static_cast<size_t>(tuning_results_.size()*validation_samples_fraction);
   auto training_samples = tuning_results_.size() - validation_samples;
   auto features = tuning_results_[0].configuration.size();
 
@@ -458,12 +459,8 @@ void TunerImpl::ModelPrediction(const Model model) {
   // Linear regression
   if (model == Model::kLinearRegression) {
     PrintHeader("Training a linear regression model");
-    auto model = LinearRegression<float>(training_samples, features);
-
-    // Trains the model
+    auto model = LinearRegression<float>();
     model.Train(x_train, y_train);
-
-    // Validates the model
     model.Validate(x_validation, y_validation);
   }
 

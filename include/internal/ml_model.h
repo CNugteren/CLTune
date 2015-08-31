@@ -6,7 +6,8 @@
 // Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
 //
 // This file contains a base class which implements machine learning models. Actual models are
-// derived from this class, such as linear regression or a neural network.
+// derived from this class, such as linear regression or a neural network. This class contains
+// common functionality, such as gradient descent and feature normalization.
 //
 // -------------------------------------------------------------------------------------------------
 //
@@ -48,7 +49,7 @@ class MLModel {
   static constexpr auto kGradientDescentCostReportAmount = 10;
 
   // Constructor
-  MLModel(const size_t m, const size_t n);
+  MLModel();
 
   // Trains and validates the model
   virtual void Train(const std::vector<std::vector<T>> &x, const std::vector<T> &y) = 0;
@@ -56,7 +57,7 @@ class MLModel {
 
  protected:
 
-  // Process the training data
+  // Process the training data in various ways
   void ComputeNormalizations(const std::vector<std::vector<T>> &x);
   void NormalizeFeatures(std::vector<std::vector<T>> &x);
   void AddPolynomialFeatures(std::vector<std::vector<T>> &x, const std::vector<size_t> &orders);
@@ -71,7 +72,7 @@ class MLModel {
                     const float margin) const;
   float Verify(const std::vector<std::vector<T>> &x, const std::vector<T> &y) const;
 
-  // Pure virtual hypothesis, cost and gradient functions
+  // Pure virtual hypothesis, cost and gradient functions: to be implemented by derived classes
   virtual T Hypothesis(const std::vector<T> &x) const = 0;
   virtual T Cost(const size_t m, const size_t n, const T lambda,
                  const std::vector<std::vector<T>> &x, const std::vector<T> &y) const = 0;
