@@ -2,7 +2,7 @@
 CLTune: Automatic OpenCL kernel tuning
 ================
 
-[![Build Status](https://travis-ci.org/CNugteren/cltune.svg?branch=master)](https://travis-ci.org/CNugteren/cltune)
+[![Build Status](https://travis-ci.org/CNugteren/CLTune.svg?branch=master)](https://travis-ci.org/CNugteren/CLTune)
 
 CLTune is a C++ library which can be used to automatically tune your OpenCL kernels. The only thing you'll need to provide is a tuneable kernel and a list of allowed parameters and values.
 
@@ -25,7 +25,7 @@ CLTune can be compiled as a shared library using CMake. The pre-requisites are:
   - NVIDIA CUDA SDK
   - AMD APP SDK
 
-An example of an out-of-source build (starting from the root of the cltune folder):
+An example of an out-of-source build (starting from the root of the CLTune folder):
 
     mkdir build
     cd build
@@ -111,3 +111,11 @@ However, the more useful tests are the provided examples, since they include a v
 
     ./sample_conv X Y
     ./sample_gemm X Y
+
+
+Citation
+-------------
+
+If you refer to this work in a scientific publication, please cite the corresponding CLTune paper published in MCSoC '15:
+
+> Cedric Nugteren and Valeriu Codreanu. CLTune: A Generic Auto-Tuner for OpenCL Kernels. In: MCSoC: 9th International Symposium on Embedded Multicore/Many-core Systems-on-Chip. IEEE, 2015.
