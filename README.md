@@ -111,3 +111,11 @@ However, the more useful tests are the provided examples, since they include a v
 
     ./sample_conv X Y
     ./sample_gemm X Y
+
+
+Citation
+-------------
+
+If you refer to this work in a scientific publication, please cite the corresponding CLTune paper published in MCSoC '15:
+
+> Cedric Nugteren and Valeriu Codreanu. CLTune: A Generic Auto-Tuner for OpenCL Kernels. In: MCSoC: 9th International Symposium on Embedded Multicore/Many-core Systems-on-Chip. IEEE, 2015.
