@@ -41,6 +41,8 @@
 #include <iostream> // FILE
 #include <limits> // std::numeric_limits
 #include <algorithm> // std::min
+#include <memory> // std::unique_ptr
+#include <tuple> // std::tuple
 
 namespace cltune {
 // =================================================================================================
@@ -185,7 +187,7 @@ void TunerImpl::Tune() {
         auto tuning_result = RunKernel(source, kernel, p, search->NumConfigurations());
         tuning_result.status = VerifyOutput();
 
-        // Gives timing feedback to the search algorithm and calculate the next index
+        // Gives timing feedback to the search algorithm and calculates the next index
         search->PushExecutionTime(tuning_result.time);
         search->CalculateNextIndex();
 
@@ -430,43 +432,118 @@ template <> double TunerImpl::AbsoluteDifference(const double2 reference, const 
 // =================================================================================================
 
 // Trains a model and predicts all remaining configurations
-void TunerImpl::ModelPrediction(const Model model) {
+void TunerImpl::ModelPrediction(const Model model_type, const float validation_fraction,
+                                const size_t test_top_x_configurations) {
 
-  // Retrieves the number of training samples and features
-  auto validation_samples_fraction = 0.20f; // 20%
-  auto validation_samples = static_cast<size_t>(tuning_results_.size()*validation_samples_fraction);
-  auto training_samples = tuning_results_.size() - validation_samples;
-  auto features = tuning_results_[0].configuration.size();
+  // Iterates over all tunable kernels
+  for (auto &kernel: kernels_) {
 
-  // Sets the raw training and validation data
-  auto x_train = std::vector<std::vector<float>>(training_samples, std::vector<float>(features));
-  auto y_train = std::vector<float>(training_samples);
-  for (auto s=size_t{0}; s<training_samples; ++s) {
-    y_train[s] = tuning_results_[s].time;
-    for (auto f=size_t{0}; f<features; ++f) {
-      x_train[s][f] = static_cast<float>(tuning_results_[s].configuration[f].value);
+    // Retrieves the number of training samples and features
+    auto validation_fraction = 0.20f; // 20%
+    auto validation_samples = static_cast<size_t>(tuning_results_.size()*validation_fraction);
+    auto training_samples = tuning_results_.size() - validation_samples;
+    auto features = tuning_results_[0].configuration.size();
+
+    // Sets the raw training and validation data
+    auto x_train = std::vector<std::vector<float>>(training_samples, std::vector<float>(features));
+    auto y_train = std::vector<float>(training_samples);
+    for (auto s=size_t{0}; s<training_samples; ++s) {
+      y_train[s] = tuning_results_[s].time;
+      for (auto f=size_t{0}; f<features; ++f) {
+        x_train[s][f] = static_cast<float>(tuning_results_[s].configuration[f].value);
+      }
     }
-  }
-  auto x_validation = std::vector<std::vector<float>>(validation_samples, std::vector<float>(features));
-  auto y_validation = std::vector<float>(validation_samples);
-  for (auto s=size_t{0}; s<validation_samples; ++s) {
-    y_validation[s] = tuning_results_[s+training_samples].time;
-    for (auto f=size_t{0}; f<features; ++f) {
-      x_validation[s][f] = static_cast<float>(tuning_results_[s + training_samples].configuration[f].value);
+    auto x_validation = std::vector<std::vector<float>>(validation_samples, std::vector<float>(features));
+    auto y_validation = std::vector<float>(validation_samples);
+    for (auto s=size_t{0}; s<validation_samples; ++s) {
+      y_validation[s] = tuning_results_[s+training_samples].time;
+      for (auto f=size_t{0}; f<features; ++f) {
+        x_validation[s][f] = static_cast<float>(tuning_results_[s + training_samples].configuration[f].value);
+      }
     }
-  }
 
-  // Linear regression
-  if (model == Model::kLinearRegression) {
-    PrintHeader("Training a linear regression model");
-    auto model = LinearRegression<float>();
-    model.Train(x_train, y_train);
-    model.Validate(x_validation, y_validation);
-  }
+    // Pointer to one of the machine learning models
+    std::unique_ptr<MLModel<float>> model;
 
-  // Unknown model
-  else {
-    throw std::runtime_error("Unknown machine learning model");
+    // Sets the learning parameters
+    auto learning_iterations = 800UL; // For gradient descent
+    auto learning_rate = 0.05f; // For gradient descent
+    auto lambda = 0.5f; // Regularization parameter
+    auto debug_display = true; // Output learned data to stdout
+
+    // Trains a linear regression model
+    if (model_type == Model::kLinearRegression) {
+      PrintHeader("Training a linear regression model");
+      model = std::unique_ptr<MLModel<float>>(
+        new LinearRegression<float>(learning_iterations, learning_rate, lambda, debug_display)
+      );
+      model->Train(x_train, y_train);
+      model->Validate(x_validation, y_validation);
+    }
+
+    // Unknown model
+    else {
+      throw std::runtime_error("Unknown machine learning model");
+    }
+
+    // Iterates over all configurations (the permutations of the tuning parameters)
+    PrintHeader("Predicting the remaining configurations using the model");
+    auto model_results = std::vector<std::tuple<size_t,float>>();
+    auto p = size_t{0};
+    for (auto &permutation: kernel.configurations()) {
+
+      // Runs the trained model to predicts the result
+      auto x_test = std::vector<float>();
+      for (auto &setting: permutation) {
+        x_test.push_back(static_cast<float>(setting.value));
+      }
+      auto predicted_time = model->Predict(x_test);
+      model_results.push_back(std::make_tuple(p, predicted_time));
+      ++p;
+    }
+
+    // Sorts the modelled results by performance
+    std::sort(begin(model_results), end(model_results),
+      [](const std::tuple<size_t,float> &t1, const std::tuple<size_t,float> &t2) {
+        return std::get<1>(t1) < std::get<1>(t2);
+      }
+    );
+
+    // Tests the best configurations on the device to verify the results
+    PrintHeader("Testing the best-found configurations");
+    for (auto i=size_t{0}; i<test_top_x_configurations && i<model_results.size(); ++i) {
+      auto result = model_results[i];
+      printf("[ -------> ] The model predicted: %.3lf ms\n", std::get<1>(result));
+      auto p = std::get<0>(result);
+      auto permutations = kernel.configurations();
+      auto permutation = permutations[p];
+
+      // Adds the parameters to the source-code string as defines
+      auto source = std::string{};
+      for (auto &config: permutation) {
+        source += config.GetDefine();
+      }
+      source += kernel.source();
+
+      // Updates the local range with the parameter values
+      kernel.ComputeRanges(permutation);
+
+      // Compiles and runs the kernel
+      auto tuning_result = RunKernel(source, kernel, p, test_top_x_configurations);
+      tuning_result.status = VerifyOutput();
+
+      // Stores the parameters and the timing-result
+      tuning_result.configuration = permutation;
+      tuning_results_.push_back(tuning_result);
+      if (tuning_result.time == std::numeric_limits<double>::max()) {
+        tuning_result.time = 0.0;
+        PrintResult(stdout, tuning_result, kMessageFailure);
+        tuning_result.time = std::numeric_limits<double>::max();
+      }
+      else if (!tuning_result.status) {
+        PrintResult(stdout, tuning_result, kMessageWarning);
+      }
+    }
   }
 }
 

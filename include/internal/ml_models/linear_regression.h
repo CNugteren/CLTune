@@ -54,16 +54,24 @@ class LinearRegression: public MLModel<T> {
   using MLModel<T>::ranges_;
 
   // Constructor
-  LinearRegression();
+  LinearRegression(const size_t learning_iterations, const T learning_rate, const T lambda,
+                   const bool debug_display);
 
   // Trains and validates the model
   virtual void Train(const std::vector<std::vector<T>> &x, const std::vector<T> &y) override;
   virtual void Validate(const std::vector<std::vector<T>> &x, const std::vector<T> &y) override;
 
- private:
+  // Prediction
+  virtual T Predict(const std::vector<T> &x) const override;
 
-  // Class-specific helper functions
-  void PreProcessFeatures(std::vector<std::vector<T>> &x);
+ private:
+  // Pre and post-processing of data
+  void PreProcessFeatures(std::vector<std::vector<T>> &x) const;
+  void PreProcessExecutionTimes(std::vector<T> &y) const;
+  virtual T PostProcessExecutionTime(T value) const override;
+
+  // Initializes the weights
+  virtual void InitializeTheta() override;
 
   // Hypothesis, cost and gradient functions
   virtual T Hypothesis(const std::vector<T> &x) const override;
@@ -73,6 +81,9 @@ class LinearRegression: public MLModel<T> {
                      const std::vector<std::vector<T>> &x, const std::vector<T> &y,
                      const size_t gradient_id) const override;
 
+  size_t learning_iterations_;
+  T learning_rate_;
+  T lambda_; // Regularization parameter
 };
 
 // =================================================================================================

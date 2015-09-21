@@ -114,7 +114,8 @@ class TunerImpl {
   template <typename T> double AbsoluteDifference(const T reference, const T result);
 
   // Trains and uses a machine learning model based on the search space explored so far
-  void ModelPrediction(const Model model);
+  void ModelPrediction(const Model model_type, const float validation_fraction,
+                       const size_t test_top_x_configurations);
 
   // Prints results of a particular kernel run
   void PrintResult(FILE* fp, const TunerResult &result, const std::string &message) const;

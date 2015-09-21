@@ -36,8 +36,12 @@ namespace cltune {
 
 // Calls the base-class constructor
 template <typename T>
-LinearRegression<T>::LinearRegression():
-  MLModel<T>() {
+LinearRegression<T>::LinearRegression(const size_t learning_iterations, const T learning_rate,
+                                      const T lambda, const bool debug_display):
+  MLModel<T>(debug_display),
+  learning_iterations_(learning_iterations),
+  learning_rate_(learning_rate),
+  lambda_(lambda) {
 }
 
 // =================================================================================================
@@ -46,19 +50,18 @@ LinearRegression<T>::LinearRegression():
 template <typename T>
 void LinearRegression<T>::Train(const std::vector<std::vector<T>> &x, const std::vector<T> &y) {
   auto x_temp = x;
+  auto y_temp = y;
 
-  // Modifies features to get a better model
+  // Modifies data to get a better model
   ComputeNormalizations(x_temp);
   PreProcessFeatures(x_temp);
+  PreProcessExecutionTimes(y_temp);
 
   // Runs gradient descent to train the model
-  auto learning_rate = static_cast<T>(0.05);
-  auto lambda = static_cast<T>(1); // Regularization parameter
-  auto max_iterations = 800;
-  GradientDescent(x_temp, y, learning_rate, lambda, max_iterations);
+  GradientDescent(x_temp, y_temp, learning_rate_, lambda_, learning_iterations_);
 
-  // Verifies the trained results
-  auto cost = Verify(x_temp, y);
+  // Verifies and displays the trained results
+  auto cost = Verify(x_temp, y_temp);
   printf("%s Training cost: %.2e\n", TunerImpl::kMessageResult.c_str(), cost);
 }
 
@@ -66,20 +69,52 @@ void LinearRegression<T>::Train(const std::vector<std::vector<T>> &x, const std:
 template <typename T>
 void LinearRegression<T>::Validate(const std::vector<std::vector<T>> &x, const std::vector<T> &y) {
   auto x_temp = x;
+  auto y_temp = y;
 
-  // Modifies features according to the training data
+  // Modifies validation data in the same way as the training data
   PreProcessFeatures(x_temp);
+  PreProcessExecutionTimes(y_temp);
 
-  // Verifies the trained results
-  auto cost = Verify(x_temp, y);
+  // Verifies and displays the trained results
+  auto cost = Verify(x_temp, y_temp);
   printf("%s Validation cost: %.2e\n", TunerImpl::kMessageResult.c_str(), cost);
 }
 
+// Prediction: pre-processe a single sample and pass it through the model
+template <typename T>
+T LinearRegression<T>::Predict(const std::vector<T> &x) const {
+  auto x_preprocessed = std::vector<std::vector<T>>{x};
+  PreProcessFeatures(x_preprocessed);
+  return PostProcessExecutionTime(Hypothesis(x_preprocessed[0]));
+}
+
+// =================================================================================================
+
 // Pre-processes the features based on normalization data
 template <typename T>
-void LinearRegression<T>::PreProcessFeatures(std::vector<std::vector<T>> &x) {
+void LinearRegression<T>::PreProcessFeatures(std::vector<std::vector<T>> &x) const {
   NormalizeFeatures(x);
   AddPolynomialFeatures(x, {2}); // Second order polynomials
+}
+
+// Pre-processes the execution times using a logarithmic function
+template <typename T>
+void LinearRegression<T>::PreProcessExecutionTimes(std::vector<T> &y) const {
+  for (auto &value: y) { value = log(value); }
+}
+
+// Post-processes an execution time using an exponent function (inverse of the logarithm)
+template <typename T>
+T LinearRegression<T>::PostProcessExecutionTime(T value) const {
+  return exp(value);
+}
+
+// =================================================================================================
+
+// Initialization-function: sets the initial weights theta
+template <typename T>
+void LinearRegression<T>::InitializeTheta() {
+  std::fill(theta_.begin(), theta_.end(), static_cast<T>(0));
 }
 
 // =================================================================================================

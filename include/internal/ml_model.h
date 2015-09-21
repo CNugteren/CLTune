@@ -49,19 +49,22 @@ class MLModel {
   static constexpr auto kGradientDescentCostReportAmount = 10;
 
   // Constructor
-  MLModel();
+  MLModel(const bool debug_display);
 
   // Trains and validates the model
   virtual void Train(const std::vector<std::vector<T>> &x, const std::vector<T> &y) = 0;
   virtual void Validate(const std::vector<std::vector<T>> &x, const std::vector<T> &y) = 0;
 
- protected:
+  // Pure virtual prediction function: predicts 'y' based on 'x' and the learning parameters 'theta'
+  virtual T Predict(const std::vector<T> &x) const = 0;
 
+ protected:
   // Process the training data in various ways
   void ComputeNormalizations(const std::vector<std::vector<T>> &x);
-  void NormalizeFeatures(std::vector<std::vector<T>> &x);
-  void AddPolynomialFeatures(std::vector<std::vector<T>> &x, const std::vector<size_t> &orders);
-  void AddPolynomialRecursive(std::vector<T> &xi, const size_t order, const T value, const size_t n);
+  void NormalizeFeatures(std::vector<std::vector<T>> &x) const;
+  void AddPolynomialFeatures(std::vector<std::vector<T>> &x, const std::vector<size_t> &orders) const;
+  void AddPolynomialRecursive(std::vector<T> &xi, const size_t order, const T value,
+                              const size_t n) const;
 
   // Methods to minimize an unconstrained function
   void GradientDescent(const std::vector<std::vector<T>> &x, const std::vector<T> &y,
@@ -71,6 +74,12 @@ class MLModel {
   float SuccessRate(const std::vector<std::vector<T>> &x, const std::vector<T> &y,
                     const float margin) const;
   float Verify(const std::vector<std::vector<T>> &x, const std::vector<T> &y) const;
+
+  // Pre and post-processing of data
+  virtual T PostProcessExecutionTime(T value) const = 0;
+
+  // Pure virtual function for weights initialization
+  virtual void InitializeTheta() = 0;
 
   // Pure virtual hypothesis, cost and gradient functions: to be implemented by derived classes
   virtual T Hypothesis(const std::vector<T> &x) const = 0;
@@ -86,6 +95,9 @@ class MLModel {
   // Information for normalization
   std::vector<T> ranges_;
   std::vector<T> means_;
+
+  // Settings
+  const bool debug_display_;
 };
 
 // =================================================================================================

@@ -37,7 +37,8 @@ namespace cltune {
 
 // Simple constructor
 template <typename T>
-MLModel<T>::MLModel() {
+MLModel<T>::MLModel(const bool debug_display):
+    debug_display_(debug_display) {
 }
 
 // =================================================================================================
@@ -72,7 +73,7 @@ void MLModel<T>::ComputeNormalizations(const std::vector<std::vector<T>> &x) {
 
 // Normalizes the training features based on previously calculated ranges and means
 template <typename T>
-void MLModel<T>::NormalizeFeatures(std::vector<std::vector<T>> &x) {
+void MLModel<T>::NormalizeFeatures(std::vector<std::vector<T>> &x) const {
   for (auto mid=size_t{0}; mid<x.size(); ++mid) {
     for (auto nid=size_t{0}; nid<x[mid].size(); ++nid) {
       x[mid][nid] = (x[mid][nid] - means_[nid]) / ranges_[nid];
@@ -84,7 +85,7 @@ void MLModel<T>::NormalizeFeatures(std::vector<std::vector<T>> &x) {
 // and allows any order larger than 1.
 template <typename T>
 void MLModel<T>::AddPolynomialFeatures(std::vector<std::vector<T>> &x,
-                                       const std::vector<size_t> &orders) {
+                                       const std::vector<size_t> &orders) const {
   for (auto mid=size_t{0}; mid<x.size(); ++mid) {
     auto n = x[mid].size();
     for (auto &order: orders) {
@@ -97,7 +98,7 @@ void MLModel<T>::AddPolynomialFeatures(std::vector<std::vector<T>> &x,
 }
 template <typename T>
 void MLModel<T>::AddPolynomialRecursive(std::vector<T> &xi, const size_t order, const T value,
-                                        const size_t n) {
+                                        const size_t n) const {
   if (order == 0) {
     xi.push_back(value);
   }
@@ -119,9 +120,8 @@ void MLModel<T>::GradientDescent(const std::vector<std::vector<T>> &x, const std
   auto n = x[0].size();
 
   // Sets the initial theta values
-  // TODO: Move to a separate function
   theta_.resize(n);
-  std::fill(theta_.begin(), theta_.end(), static_cast<T>(0));
+  InitializeTheta();
 
   // Runs gradient descent
   for (auto iter=size_t{0}; iter<iterations; ++iter) {
@@ -156,11 +156,12 @@ float MLModel<T>::SuccessRate(const std::vector<std::vector<T>> &x, const std::v
   auto m = x.size();
   auto correct = 0;
   for (auto mid=size_t{0}; mid<m; ++mid) {
-    auto hypothesis = Hypothesis(x[mid]);
-    auto limit_max = y[mid]*(1 + margin);
-    auto limit_min = y[mid]*(1 - margin);
+    auto hypothesis = PostProcessExecutionTime(Hypothesis(x[mid]));
+    auto reference = PostProcessExecutionTime(y[mid]);
+    auto limit_max = reference*(1 + margin);
+    auto limit_min = reference*(1 - margin);
     if (hypothesis < limit_max && hypothesis > limit_min) { correct++; }
-    printf("[ -------> ] Hypothesis: %7.3lf; Actual: %7.3lf\n", hypothesis, y[mid]);
+    printf("[ -------> ] Hypothesis: %7.3lf; Actual: %7.3lf\n", hypothesis, reference);
   }
   auto success_rate = 100.0f*correct/static_cast<float>(m);
   return success_rate;
@@ -173,10 +174,14 @@ float MLModel<T>::Verify(const std::vector<std::vector<T>> &x, const std::vector
   auto n = x[0].size();
 
   // Displays the data
-  for (auto mid=size_t{0}; mid<m; ++mid) {
-    auto hypothesis = Hypothesis(x[mid]);
-    auto relative_error = (y[mid] - hypothesis) / (y[mid]);
-    printf("[ -------> ] Hypothesis: %7.3lf; Actual: %7.3lf; Error: %7.2lf%%\n", hypothesis, y[mid], 100.0f*relative_error);
+  if (debug_display_) {
+    printf("hypothesis; actual; error\n");
+    for (auto mid=size_t{0}; mid<m; ++mid) {
+      auto hypothesis = PostProcessExecutionTime(Hypothesis(x[mid]));
+      auto reference = PostProcessExecutionTime(y[mid]);
+      auto relative_error = (reference - hypothesis) / (reference);
+      printf("%.3lf;%.3lf;%.2lf%%\n", hypothesis, reference, 100.0f*relative_error);
+    }
   }
 
   // Computes the cost

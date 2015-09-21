@@ -129,7 +129,8 @@ class Tuner {
   // Trains a machine learning model based on the search space explored so far. Then, all the
   // missing data-points are estimated based on this model. This is only useful if a fraction of
   // the search space is explored, as is the case when doing random-search.
-  void ModelPrediction(const Model model);
+  void ModelPrediction(const Model model_type, const float validation_fraction,
+                       const size_t test_top_x_configurations);
 
   // Prints the results of the tuning either to screen (stdout) or to a specific output-file.
   // Returns the execution time in miliseconds.
