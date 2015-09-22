@@ -41,7 +41,7 @@ KernelInfo::KernelInfo(const std::string name, const std::string source, const D
   parameters_(),
   configurations_(),
   constraints_(),
-  local_memory_(LocalMemory{[] (std::vector<size_t> v) { return size_t{0}; }, std::vector<std::string>(0)}),
+  local_memory_(LocalMemory{[] (std::vector<size_t>) { return size_t{0}; }, std::vector<std::string>(0)}),
   device_(device),
   global_base_(), local_base_(),
   global_(), local_(),

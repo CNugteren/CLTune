@@ -76,7 +76,8 @@ template <typename T>
 void MLModel<T>::NormalizeFeatures(std::vector<std::vector<T>> &x) const {
   for (auto mid=size_t{0}; mid<x.size(); ++mid) {
     for (auto nid=size_t{0}; nid<x[mid].size(); ++nid) {
-      x[mid][nid] = (x[mid][nid] - means_[nid]) / ranges_[nid];
+      auto value = x[mid][nid] - means_[nid];
+      x[mid][nid] = (ranges_[nid] == static_cast<T>(0)) ? value : value / ranges_[nid];
     }
   }
 }

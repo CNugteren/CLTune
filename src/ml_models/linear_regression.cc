@@ -100,13 +100,13 @@ void LinearRegression<T>::PreProcessFeatures(std::vector<std::vector<T>> &x) con
 // Pre-processes the execution times using a logarithmic function
 template <typename T>
 void LinearRegression<T>::PreProcessExecutionTimes(std::vector<T> &y) const {
-  for (auto &value: y) { value = log(value); }
+  for (auto &value: y) { value = static_cast<T>(log(static_cast<double>(value))); }
 }
 
 // Post-processes an execution time using an exponent function (inverse of the logarithm)
 template <typename T>
 T LinearRegression<T>::PostProcessExecutionTime(T value) const {
-  return exp(value);
+  return static_cast<T>(exp(static_cast<double>(value)));
 }
 
 // =================================================================================================
@@ -126,6 +126,7 @@ T LinearRegression<T>::Hypothesis(const std::vector<T> &x) const {
   auto hypothesis = static_cast<T>(0);
   for (auto nid=size_t{0}; nid<n; ++nid) {
     hypothesis += theta_[nid] * x[nid];
+
   }
   return hypothesis;
 }
@@ -154,7 +155,7 @@ T LinearRegression<T>::Cost(const size_t m, const size_t n, const T lambda,
 
 // Gradient-function: computes the gradient of the cost-function with respect to a specific feature
 template <typename T>
-T LinearRegression<T>::Gradient(const size_t m, const size_t n, const T lambda,
+T LinearRegression<T>::Gradient(const size_t m, const size_t, const T lambda,
                                 const std::vector<std::vector<T>> &x, const std::vector<T> &y,
                                 const size_t gradient_id) const {
 

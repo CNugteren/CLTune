@@ -194,10 +194,10 @@ void TunerImpl::Tune() {
         // Stores the parameters and the timing-result
         tuning_result.configuration = permutation;
         tuning_results_.push_back(tuning_result);
-        if (tuning_result.time == std::numeric_limits<double>::max()) {
+        if (tuning_result.time == std::numeric_limits<float>::max()) {
           tuning_result.time = 0.0;
           PrintResult(stdout, tuning_result, kMessageFailure);
-          tuning_result.time = std::numeric_limits<double>::max();
+          tuning_result.time = std::numeric_limits<float>::max();
         }
         else if (!tuning_result.status) {
           PrintResult(stdout, tuning_result, kMessageWarning);
@@ -439,7 +439,6 @@ void TunerImpl::ModelPrediction(const Model model_type, const float validation_f
   for (auto &kernel: kernels_) {
 
     // Retrieves the number of training samples and features
-    auto validation_fraction = 0.20f; // 20%
     auto validation_samples = static_cast<size_t>(tuning_results_.size()*validation_fraction);
     auto training_samples = tuning_results_.size() - validation_samples;
     auto features = tuning_results_[0].configuration.size();
@@ -514,9 +513,9 @@ void TunerImpl::ModelPrediction(const Model model_type, const float validation_f
     for (auto i=size_t{0}; i<test_top_x_configurations && i<model_results.size(); ++i) {
       auto result = model_results[i];
       printf("[ -------> ] The model predicted: %.3lf ms\n", std::get<1>(result));
-      auto p = std::get<0>(result);
+      auto pid = std::get<0>(result);
       auto permutations = kernel.configurations();
-      auto permutation = permutations[p];
+      auto permutation = permutations[pid];
 
       // Adds the parameters to the source-code string as defines
       auto source = std::string{};
@@ -529,16 +528,16 @@ void TunerImpl::ModelPrediction(const Model model_type, const float validation_f
       kernel.ComputeRanges(permutation);
 
       // Compiles and runs the kernel
-      auto tuning_result = RunKernel(source, kernel, p, test_top_x_configurations);
+      auto tuning_result = RunKernel(source, kernel, pid, test_top_x_configurations);
       tuning_result.status = VerifyOutput();
 
       // Stores the parameters and the timing-result
       tuning_result.configuration = permutation;
       tuning_results_.push_back(tuning_result);
-      if (tuning_result.time == std::numeric_limits<double>::max()) {
+      if (tuning_result.time == std::numeric_limits<float>::max()) {
         tuning_result.time = 0.0;
         PrintResult(stdout, tuning_result, kMessageFailure);
-        tuning_result.time = std::numeric_limits<double>::max();
+        tuning_result.time = std::numeric_limits<float>::max();
       }
       else if (!tuning_result.status) {
         PrintResult(stdout, tuning_result, kMessageWarning);
