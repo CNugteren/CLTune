@@ -1,4 +1,7 @@
 
+Version 1.7.1
+- Added additional device properties to JSON-output
+
 Version 1.7.0
 - Now using the Claduc C++11 interface to OpenCL
 - Added a method to print all tuning results in JSON-format to file

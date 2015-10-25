@@ -337,9 +337,11 @@ void Tuner::PrintJSON(const std::string &filename,
   for (auto &description: descriptions) {
     fprintf(file, "  \"%s\": \"%s\",\n", description.first.c_str(), description.second.c_str());
   }
-  fprintf(file, "  \"vendor\": \"%s\",\n", pimpl->device().Vendor().c_str());
-  fprintf(file, "  \"type\": \"%s\",\n", device_type.c_str());
   fprintf(file, "  \"device\": \"%s\",\n", pimpl->device().Name().c_str());
+  fprintf(file, "  \"device_vendor\": \"%s\",\n", pimpl->device().Vendor().c_str());
+  fprintf(file, "  \"device_type\": \"%s\",\n", device_type.c_str());
+  fprintf(file, "  \"device_core_clock\": \"%lu\",\n", pimpl->device().CoreClock());
+  fprintf(file, "  \"device_compute_units\": \"%lu\",\n", pimpl->device().ComputeUnits());
   fprintf(file, "  \"results\": [\n");
 
   // Loops over all the results
