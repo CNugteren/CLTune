@@ -49,7 +49,6 @@ class LinearRegression: public MLModel<T> {
   using MLModel<T>::Verify;
 
   // Variables from the base class
-  using MLModel<T>::theta_;
   using MLModel<T>::means_;
   using MLModel<T>::ranges_;
 
@@ -71,16 +70,19 @@ class LinearRegression: public MLModel<T> {
   virtual T PostProcessExecutionTime(T value) const override;
 
   // Initializes the weights
-  virtual void InitializeTheta() override;
+  virtual void InitializeTheta(const size_t n) override;
 
   // Hypothesis, cost and gradient functions
   virtual T Hypothesis(const std::vector<T> &x) const override;
   virtual T Cost(const size_t m, const size_t n, const T lambda,
                  const std::vector<std::vector<T>> &x, const std::vector<T> &y) const override;
-  virtual T Gradient(const size_t m, const size_t n, const T lambda,
-                     const std::vector<std::vector<T>> &x, const std::vector<T> &y,
-                     const size_t gradient_id) const override;
+  virtual void Gradient(const size_t m, const size_t n, const T lambda, const T alpha,
+                        const std::vector<std::vector<T>> &x, const std::vector<T> &y) override;
 
+  // The learned weights
+  std::vector<T> theta_;
+
+  // Settings
   size_t learning_iterations_;
   T learning_rate_;
   T lambda_; // Regularization parameter

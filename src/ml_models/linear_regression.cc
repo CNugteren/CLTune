@@ -5,7 +5,7 @@
 //
 // Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
 //
-// This file implements the base MLModel class (see the header for information about the class).
+// This file implements the LinearRegression class (see the header for information about the class).
 //
 // -------------------------------------------------------------------------------------------------
 //
@@ -113,7 +113,8 @@ T LinearRegression<T>::PostProcessExecutionTime(T value) const {
 
 // Initialization-function: sets the initial weights theta
 template <typename T>
-void LinearRegression<T>::InitializeTheta() {
+void LinearRegression<T>::InitializeTheta(const size_t n) {
+  theta_.resize(n);
   std::fill(theta_.begin(), theta_.end(), static_cast<T>(0));
 }
 
@@ -153,20 +154,34 @@ T LinearRegression<T>::Cost(const size_t m, const size_t n, const T lambda,
   return (cost + lambda*theta_squared_sum) / (static_cast<T>(2) * static_cast<T>(m));
 }
 
-// Gradient-function: computes the gradient of the cost-function with respect to a specific feature
+// Gradient-function: computes the gradient of the cost-function
 template <typename T>
-T LinearRegression<T>::Gradient(const size_t m, const size_t, const T lambda,
-                                const std::vector<std::vector<T>> &x, const std::vector<T> &y,
-                                const size_t gradient_id) const {
+void LinearRegression<T>::Gradient(const size_t m, const size_t n, const T lambda, const T alpha,
+                                   const std::vector<std::vector<T>> &x, const std::vector<T> &y) {
 
-  // Computes the gradient of the cost function
-  auto gradient = static_cast<T>(0);
-  for (auto mid=size_t{0}; mid<m; ++mid) {
-    gradient += (Hypothesis(x[mid]) - y[mid]) * x[mid][gradient_id];
+  // Temporary data storage
+  auto theta_temp = std::vector<T>(n, static_cast<T>(0));
+
+  // Loops over all features
+  for (auto nid=size_t{0}; nid<n; ++nid) {
+
+    // Computes the gradient of the cost function
+    auto gradient = static_cast<T>(0);
+    for (auto mid=size_t{0}; mid<m; ++mid) {
+      gradient += (Hypothesis(x[mid]) - y[mid]) * x[mid][nid];
+    }
+
+    // Computes the final gradient with regularization
+    gradient = (gradient / static_cast<T>(m)) + ((lambda * theta_[nid]) / static_cast<T>(m));
+
+    // Sets the newly learned theta (temporarily at first)
+    theta_temp[nid] = theta_[nid] - alpha * gradient;
   }
 
-  // Computes the final gradient with regularization
-  return (gradient / static_cast<T>(m)) + ((lambda * theta_[gradient_id]) / static_cast<T>(m));
+  // Sets the new final values for theta
+  for (auto nid=size_t{0}; nid<n; ++nid) {
+    theta_[nid] = theta_temp[nid];
+  }
 }
 
 // =================================================================================================

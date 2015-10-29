@@ -79,18 +79,14 @@ class MLModel {
   virtual T PostProcessExecutionTime(T value) const = 0;
 
   // Pure virtual function for weights initialization
-  virtual void InitializeTheta() = 0;
+  virtual void InitializeTheta(const size_t n) = 0;
 
   // Pure virtual hypothesis, cost and gradient functions: to be implemented by derived classes
   virtual T Hypothesis(const std::vector<T> &x) const = 0;
   virtual T Cost(const size_t m, const size_t n, const T lambda,
                  const std::vector<std::vector<T>> &x, const std::vector<T> &y) const = 0;
-  virtual T Gradient(const size_t m, const size_t n, const T lambda,
-                     const std::vector<std::vector<T>> &x, const std::vector<T> &y,
-                     const size_t gradient_id) const = 0;
-
-  // The learned weights
-  std::vector<T> theta_;
+  virtual void Gradient(const size_t m, const size_t n, const T lambda, const T alpha,
+                        const std::vector<std::vector<T>> &x, const std::vector<T> &y) = 0;
 
   // Information for normalization
   std::vector<T> ranges_;

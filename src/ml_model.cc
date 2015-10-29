@@ -121,12 +121,10 @@ void MLModel<T>::GradientDescent(const std::vector<std::vector<T>> &x, const std
   auto n = x[0].size();
 
   // Sets the initial theta values
-  theta_.resize(n);
-  InitializeTheta();
+  InitializeTheta(n);
 
   // Runs gradient descent
   for (auto iter=size_t{0}; iter<iterations; ++iter) {
-    auto theta_temp = std::vector<T>(n, static_cast<T>(0));
 
     // Computes the cost (to monitor convergence)
     auto cost = Cost(m, n, lambda, x, y);
@@ -136,15 +134,7 @@ void MLModel<T>::GradientDescent(const std::vector<std::vector<T>> &x, const std
     }
     
     // Computes the gradients and the updated parameters
-    for (auto nid=size_t{0}; nid<n; ++nid) {
-      auto gradient = Gradient(m, n, lambda, x, y, nid);
-      theta_temp[nid] = theta_[nid] - alpha * gradient;
-    }
-
-    // Sets the new values for theta
-    for (auto nid=size_t{0}; nid<n; ++nid) {
-      theta_[nid] = theta_temp[nid];
-    }
+    Gradient(m, n, lambda, alpha, x, y);
   }
 }
 

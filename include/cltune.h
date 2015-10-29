@@ -51,7 +51,7 @@ using LocalMemoryFunction = std::function<size_t(std::vector<size_t>)>;
 enum class SearchMethod{FullSearch, RandomSearch, Annealing, PSO};
 
 // Machine learning models
-enum class Model { kLinearRegression };
+enum class Model { kLinearRegression, kNeuralNetwork };
 
 // The tuner class and its public API
 class Tuner {
