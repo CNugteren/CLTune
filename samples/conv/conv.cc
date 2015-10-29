@@ -208,7 +208,7 @@ int main(int argc, char* argv[]) {
   if (method == 0) {
     auto validation_fraction = 0.20f; // 20%
     auto top_x = 10UL; // Tests the top-10 best found results from the model on actual hardware
-    tuner.ModelPrediction(cltune::Model::kLinearRegression, validation_fraction, top_x);
+    tuner.ModelPrediction(cltune::Model::kNeuralNetwork, validation_fraction, top_x);
   }
 
   // Prints the results to screen and to file

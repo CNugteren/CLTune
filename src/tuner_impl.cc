@@ -36,6 +36,7 @@
 
 // The machine learning models
 #include "internal/ml_models/linear_regression.h"
+#include "internal/ml_models/neural_network.h"
 
 #include <fstream> // std::ifstream, std::stringstream
 #include <iostream> // FILE
@@ -464,17 +465,38 @@ void TunerImpl::ModelPrediction(const Model model_type, const float validation_f
     // Pointer to one of the machine learning models
     std::unique_ptr<MLModel<float>> model;
 
-    // Sets the learning parameters
-    auto learning_iterations = 800UL; // For gradient descent
-    auto learning_rate = 0.05f; // For gradient descent
-    auto lambda = 0.5f; // Regularization parameter
-    auto debug_display = true; // Output learned data to stdout
-
     // Trains a linear regression model
     if (model_type == Model::kLinearRegression) {
       PrintHeader("Training a linear regression model");
+
+      // Sets the learning parameters
+      auto learning_iterations = 800UL; // For gradient descent
+      auto learning_rate = 0.05f; // For gradient descent
+      auto lambda = 0.2f; // Regularization parameter
+      auto debug_display = true; // Output learned data to stdout
+
+      // Trains and validates the model
       model = std::unique_ptr<MLModel<float>>(
         new LinearRegression<float>(learning_iterations, learning_rate, lambda, debug_display)
+      );
+      model->Train(x_train, y_train);
+      model->Validate(x_validation, y_validation);
+    }
+
+    // Trains a neural network model
+    else if (model_type == Model::kNeuralNetwork) {
+      PrintHeader("Training a neural network model");
+
+      // Sets the learning parameters
+      auto learning_iterations = 800UL; // For gradient descent
+      auto learning_rate = 0.1f; // For gradient descent
+      auto lambda = 0.005f; // Regularization parameter
+      auto debug_display = true; // Output learned data to stdout
+      auto layers = std::vector<size_t>{features, 20, 1};
+
+      // Trains and validates the model
+      model = std::unique_ptr<MLModel<float>>(
+        new NeuralNetwork<float>(learning_iterations, learning_rate, lambda, layers, debug_display)
       );
       model->Train(x_train, y_train);
       model->Validate(x_validation, y_validation);
