@@ -162,10 +162,10 @@ void Tuner::SetLocalMemoryUsage(const size_t id, LocalMemoryFunction amount,
 // vector of data. Then, upload it to the device and store the argument in a list.
 template <typename T>
 void Tuner::AddArgumentInput(const std::vector<T> &source) {
-  auto device_buffer = Buffer(pimpl->context(), source.size()*sizeof(T));
-  device_buffer.Write(pimpl->queue(), source.size()*sizeof(T), source);
+  auto device_buffer = Buffer<T>(pimpl->context(), BufferAccess::kNotOwned, source.size());
+  device_buffer.Write(pimpl->queue(), source.size(), source);
   auto argument = TunerImpl::MemArgument{pimpl->argument_counter_++, source.size(),
-                                         pimpl->GetType<T>(), device_buffer};
+                                         pimpl->GetType<T>(), device_buffer()};
   pimpl->arguments_input_.push_back(argument);
 }
 
@@ -181,9 +181,9 @@ template void Tuner::AddArgumentInput<double2>(const std::vector<double2>&);
 // sense that they will be checked in the verification process.
 template <typename T>
 void Tuner::AddArgumentOutput(const std::vector<T> &source) {
-  auto device_buffer = Buffer(pimpl->context(), source.size()*sizeof(T));
+  auto device_buffer = Buffer<T>(pimpl->context(), BufferAccess::kNotOwned, source.size());
   auto argument = TunerImpl::MemArgument{pimpl->argument_counter_++, source.size(),
-                                         pimpl->GetType<T>(), device_buffer};
+                                         pimpl->GetType<T>(), device_buffer()};
   pimpl->arguments_output_.push_back(argument);
 }
 

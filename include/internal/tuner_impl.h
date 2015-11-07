@@ -49,6 +49,9 @@ namespace cltune {
 using float2 = std::complex<float>; // cl_float2;
 using double2 = std::complex<double>; // cl_double2;
 
+// Raw device buffer
+using BufferRaw = cl_mem;
+
 // Enumeration of currently supported data-types by this class
 enum class MemType { kInt, kSizeT, kFloat, kDouble, kFloat2, kDouble2 };
 
@@ -77,7 +80,7 @@ class TunerImpl {
     size_t index;       // The OpenCL kernel-argument index
     size_t size;        // The number of elements (not bytes)
     MemType type;       // The data-type (e.g. float)
-    Buffer buffer;      // The OpenCL buffer on the device
+    BufferRaw buffer;   // The buffer on the device
   };
 
   // Helper structure to hold the results of a tuning run

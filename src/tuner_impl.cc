@@ -111,6 +111,12 @@ TunerImpl::~TunerImpl() {
   for (auto &reference_output: reference_outputs_) {
     delete[] static_cast<int*>(reference_output);
   }
+  for (auto &mem_argument: arguments_input_) {
+    CheckError(clReleaseMemObject(mem_argument.buffer));
+  }
+  for (auto &mem_argument: arguments_output_) {
+    CheckError(clReleaseMemObject(mem_argument.buffer));
+  }
   if (!suppress_output_) {
     fprintf(stdout, "\n%s End of the tuning process\n\n", kMessageFull.c_str());
   }
@@ -265,8 +271,8 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
     // Sets the kernel and its arguments
     auto tune_kernel = Kernel(program, kernel.name());
-    for (auto &i: arguments_input_) { tune_kernel.SetArgument(i.index, i.buffer()); }
-    for (auto &i: arguments_output_) { tune_kernel.SetArgument(i.index, i.buffer()); }
+    for (auto &i: arguments_input_) { tune_kernel.SetArgument(i.index, i.buffer); }
+    for (auto &i: arguments_output_) { tune_kernel.SetArgument(i.index, i.buffer); }
     for (auto &i: arguments_int_) { tune_kernel.SetArgument(i.first, i.second); }
     for (auto &i: arguments_size_t_) { tune_kernel.SetArgument(i.first, i.second); }
     for (auto &i: arguments_float_) { tune_kernel.SetArgument(i.first, i.second); }
@@ -334,8 +340,7 @@ void TunerImpl::ResetMemArgument(MemArgument &argument) {
   std::vector<T> buffer(argument.size, T{0});
 
   // Copy the new array to the OpenCL buffer on the device
-  auto bytes = sizeof(T)*argument.size;
-  argument.buffer.Write(queue_, bytes, buffer);
+  Buffer<T>(argument.buffer).Write(queue_, argument.size, buffer);
 }
 
 // =================================================================================================
@@ -358,8 +363,7 @@ void TunerImpl::StoreReferenceOutput() {
 }
 template <typename T> void TunerImpl::DownloadReference(MemArgument &device_buffer) {
   auto host_buffer = new T[device_buffer.size];
-  auto bytes = sizeof(T)*device_buffer.size;
-  device_buffer.buffer.Read(queue_, bytes, host_buffer);
+  Buffer<T>(device_buffer.buffer).Read(queue_, device_buffer.size, host_buffer);
   reference_outputs_.push_back(host_buffer);
 }
 
@@ -396,8 +400,7 @@ bool TunerImpl::DownloadAndCompare(MemArgument &device_buffer, const size_t i) {
 
   // Downloads the results to the host
   std::vector<T> host_buffer(device_buffer.size);
-  auto bytes = sizeof(T)*device_buffer.size;
-  device_buffer.buffer.Read(queue_, bytes, host_buffer);
+  Buffer<T>(device_buffer.buffer).Read(queue_, device_buffer.size, host_buffer);
 
   // Compares the results (L2 norm)
   T* reference_output = static_cast<T*>(reference_outputs_[i]);
