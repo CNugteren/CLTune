@@ -78,6 +78,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   set(FLAGS "${FLAGS} -Wno-missing-prototypes -Wno-float-equal -Wno-weak-vtables")
   set(FLAGS "${FLAGS} -Wno-exit-time-destructors -Wno-global-constructors -Wno-missing-prototypes")
   set(FLAGS "${FLAGS} -Wno-missing-noreturn -Wno-covered-switch-default")
+  set(FLAGS "${FLAGS} -Wno-non-virtual-dtor -Wno-weak-template-vtables")
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS}")
 
