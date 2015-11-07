@@ -147,7 +147,7 @@ class Device {
     auto num_devices = platform.NumDevices();
     if (num_devices == 0) { Error("no devices found"); }
     auto devices = std::vector<cl_device_id>(num_devices);
-    CheckError(clGetDeviceIDs(platform(), CL_DEVICE_TYPE_ALL, num_devices, devices.data(), nullptr));
+    CheckError(clGetDeviceIDs(platform(), CL_DEVICE_TYPE_ALL, static_cast<cl_uint>(num_devices), devices.data(), nullptr));
     if (device_id >= num_devices) { Error("invalid device ID "+std::to_string(device_id)); }
     device_ = devices[device_id];
   }

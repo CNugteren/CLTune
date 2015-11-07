@@ -264,6 +264,14 @@ void Tuner::Tune() {
 
 // =================================================================================================
 
+// Fits a machine learning model. See the TunerImpl's implemenation for details
+void Tuner::ModelPrediction(const Model model_type, const float validation_fraction,
+                            const size_t test_top_x_configurations) {
+  pimpl->ModelPrediction(model_type, validation_fraction, test_top_x_configurations);
+}
+
+// =================================================================================================
+
 // Iterates over all tuning results and prints each parameter configuration and the corresponding
 // timing-results. Printing is to stdout.
 double Tuner::PrintToScreen() const {
