@@ -13,9 +13,10 @@
 // Replaces the OpenCL keywords with CUDA equivalent
 #define __kernel __placeholder__
 #define __global 
-#define __placeholder__ __global__
+#define __placeholder__ extern "C" __global__
 #define __local __shared__
 #define restrict __restrict__
+#define __constant const
 
 // Replaces OpenCL synchronisation with CUDA synchronisation
 #define barrier(x) __syncthreads()
@@ -31,8 +32,12 @@ __device__ int get_global_id(int x) {
     return (x == 0) ? blockIdx.x*blockDim.x + threadIdx.x : blockIdx.y*blockDim.y + threadIdx.y;
 }
 
-// Adds the float8 data-type which is not available natively under CUDA
+// Adds the data-types which are not available natively under CUDA
 typedef struct { float s0; float s1; float s2; float s3;
                  float s4; float s5; float s6; float s7; } float8;
+typedef struct { float s0; float s1; float s2; float s3;
+                 float s4; float s5; float s6; float s7;
+                 float s8; float s9; float s10; float s11;
+                 float s12; float s13; float s14; float s15; } float16;
 
 // =================================================================================================
