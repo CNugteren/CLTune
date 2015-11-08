@@ -32,6 +32,7 @@
 #include <cmath>
 #include <random>
 #include <exception>
+#include <chrono>
 
 namespace cltune {
 // =================================================================================================
