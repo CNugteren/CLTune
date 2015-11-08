@@ -49,7 +49,7 @@ Tuner::~Tuner() {
 
 // =================================================================================================
 
-// Loads the OpenCL source-code from a file and calls the function-overload below.
+// Loads the kernel source-code from a file and calls the function-overload below.
 size_t Tuner::AddKernel(const std::vector<std::string> &filenames, const std::string &kernel_name,
                         const IntRange &global, const IntRange &local) {
   auto source = std::string{};
@@ -59,7 +59,7 @@ size_t Tuner::AddKernel(const std::vector<std::string> &filenames, const std::st
   return AddKernelFromString(source, kernel_name, global, local);
 }
 
-// Loads the OpenCL source-code from a string and creates a new variable of type KernelInfo to store
+// Loads the kernel source-code from a string and creates a new variable of type KernelInfo to store
 // all the kernel-information.
 size_t Tuner::AddKernelFromString(const std::string &source, const std::string &kernel_name,
                                   const IntRange &global, const IntRange &local) {

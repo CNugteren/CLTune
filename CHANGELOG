@@ -5,6 +5,7 @@ Development version (next release)
   tuning configurations and can be used to predict the remainder. Two models are supported:
   * Linear regression
   * A 3-layer neural network
+- Added experimental support for CUDA kernels
 - Various minor fixes
 
 Version 1.7.1

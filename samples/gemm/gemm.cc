@@ -60,6 +60,14 @@ constexpr auto kSizeK = size_t{2048};
 // matrix B is pre-transposed, alpha equals 1 and beta equals 0: C = A * B^T
 int main(int argc, char* argv[]) {
 
+  // Sets the filenames of the OpenCL kernels (optionally automatically translated to CUDA)
+  auto gemm_fast = std::vector<std::string>{"../samples/gemm/gemm.opencl"};
+  auto gemm_reference = std::vector<std::string>{"../samples/gemm/gemm_reference.opencl"};
+  #ifndef USE_OPENCL
+    gemm_fast.insert(gemm_fast.begin(), "../samples/cl_to_cuda.h");
+    gemm_reference.insert(gemm_reference.begin(), "../samples/cl_to_cuda.h");
+  #endif
+
   // Selects the device, the search method and its first parameter. These parameters are all
   // optional and are thus also given default values.
   auto device_id = kDefaultDevice;
@@ -111,7 +119,7 @@ int main(int argc, char* argv[]) {
 
   // Adds a heavily tuneable kernel and some example parameter values. Others can be added, but for
   // this example this already leads to plenty of kernels to test.
-  auto id = tuner.AddKernel({"../samples/gemm/gemm.opencl"}, "gemm_fast", {kSizeM, kSizeN}, {1, 1});
+  auto id = tuner.AddKernel(gemm_fast, "gemm_fast", {kSizeM, kSizeN}, {1, 1});
   tuner.AddParameter(id, "MWG", {16, 32, 64, 128});
   tuner.AddParameter(id, "NWG", {16, 32, 64, 128});
   tuner.AddParameter(id, "KWG", {16, 32});
@@ -170,7 +178,7 @@ int main(int argc, char* argv[]) {
   // Sets the tuner's golden reference function. This kernel contains the reference code to which
   // the output is compared. Supplying such a function is not required, but it is necessarily for
   // correctness checks to be enabled.
-  tuner.SetReference({"../samples/gemm/gemm_reference.opencl"}, "gemm_reference", {kSizeM, kSizeN}, {8,8});
+  tuner.SetReference(gemm_reference, "gemm_reference", {kSizeM, kSizeN}, {8,8});
 
   // Sets the function's arguments. Note that all kernels have to accept (but not necessarily use)
   // all input arguments.

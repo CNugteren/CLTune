@@ -33,7 +33,7 @@
 namespace cltune {
 // =================================================================================================
 
-// Initializes the name and OpenCL source-code, creates empty containers for all other member
+// Initializes the name and kernel source-code, creates empty containers for all other member
 // variables.
 KernelInfo::KernelInfo(const std::string name, const std::string source, const Device &device):
   name_(name),

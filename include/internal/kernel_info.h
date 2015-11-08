@@ -37,7 +37,12 @@
 #include <stdexcept>
 #include <memory>
 
-#include "internal/clpp11.h"
+// Uses either the OpenCL or CUDA back-end (CLCudaAPI C++11 headers)
+#if USE_OPENCL
+  #include "internal/clpp11.h"
+#else
+  #include "internal/cupp11.h"
+#endif
 
 #include "cltune.h"
 
@@ -94,7 +99,7 @@ class KernelInfo {
     Exception(const std::string &message): std::runtime_error(message) { }
   };
 
-  // Initializes the class with a given name and a string of OpenCL source-code
+  // Initializes the class with a given name and a string of kernel source-code
   explicit KernelInfo(const std::string name, const std::string source, const Device &device);
 
   // Accessors (getters)
@@ -159,7 +164,6 @@ class KernelInfo {
   std::vector<Constraint> constraints_;
   LocalMemory local_memory_;
 
-  // OpenCL device
   Device device_;
 
   // Global/local thread-sizes
