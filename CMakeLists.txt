@@ -2,7 +2,8 @@
 # ==================================================================================================
 # This file is part of the CLTune project.
 #
-# Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
+# Author(s):
+#   Cedric Nugteren <www.cedricnugteren.nl>
 #
 # -------------------------------------------------------------------------------------------------
 #
@@ -32,6 +33,15 @@ set(cltune_VERSION_PATCH 1)
 # Options
 option(SAMPLES "Enable compilation of sample programs" ON)
 option(TESTS "Enable compilation of the Google tests" OFF)
+
+# Select between OpenCL and CUDA back-end
+option(USE_OPENCL "Use OpenCL instead of CUDA" ON)
+if(USE_OPENCL)
+  message("-- Building with OpenCL")
+  add_definitions(-DUSE_OPENCL)
+else()
+  message("-- Building with CUDA")
+endif()
 
 # ==================================================================================================
 
@@ -74,10 +84,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(FLAGS "${FLAGS} -Wno-attributes")
   endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-  set(FLAGS "${FLAGS} -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded")
-  set(FLAGS "${FLAGS} -Wno-missing-prototypes -Wno-float-equal -Wno-weak-vtables")
-  set(FLAGS "${FLAGS} -Wno-exit-time-destructors -Wno-global-constructors -Wno-missing-prototypes")
-  set(FLAGS "${FLAGS} -Wno-missing-noreturn -Wno-covered-switch-default")
+  set(FLAGS "${FLAGS} -Wextra")
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS}")
 
@@ -86,13 +93,26 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS}")
 # Package scripts location
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-# Requires OpenCL (FindOpenCL is included as part of this project)
-find_package(OpenCL REQUIRED)
+# Requires CUDA or OpenCL. The latter is found through the included "FindOpenCL.cmake".
+if(USE_OPENCL)
+  find_package(OpenCL REQUIRED)
+  set(FRAMEWORK_INCLUDE_DIRS ${OPENCL_INCLUDE_DIRS})
+  set(FRAMEWORK_LIBRARY_DIRS )
+  set(FRAMEWORK_LIBRARIES ${OPENCL_LIBRARIES})
+else()
+  find_package(CUDA REQUIRED)
+  set(FRAMEWORK_INCLUDE_DIRS ${CUDA_INCLUDE_DIRS})
+  set(FRAMEWORK_LIBRARY_DIRS ${CUDA_TOOLKIT_ROOT_DIR}/lib64)
+  set(FRAMEWORK_LIBRARIES cuda nvrtc)
+endif()
 
 # ==================================================================================================
 
-# The includes
-include_directories(${cltune_SOURCE_DIR}/include ${OPENCL_INCLUDE_DIRS})
+# Include directories: CLTune headers and OpenCL/CUDA includes
+include_directories(${cltune_SOURCE_DIR}/include ${FRAMEWORK_INCLUDE_DIRS})
+
+# Link directories: CUDA toolkit
+link_directories(${FRAMEWORK_LIBRARY_DIRS})
 
 # Gathers all source-files
 set(TUNER
@@ -110,7 +130,7 @@ set(TUNER
 
 # Creates and links the library
 add_library(cltune SHARED ${TUNER})
-target_link_libraries(cltune ${OPENCL_LIBRARIES})
+target_link_libraries(cltune ${FRAMEWORK_LIBRARIES})
 
 # Installs the library
 install(TARGETS cltune DESTINATION lib)
@@ -124,9 +144,9 @@ if (SAMPLES)
   add_executable(sample_simple samples/simple/simple.cc)
   add_executable(sample_gemm samples/gemm/gemm.cc)
   add_executable(sample_conv samples/conv/conv.cc)
-  target_link_libraries(sample_simple cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
-  target_link_libraries(sample_gemm cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
-  target_link_libraries(sample_conv cltune ${OPENCL_LIBRARIES} ${OpenMP_LIBRARY})
+  target_link_libraries(sample_simple cltune ${FRAMEWORK_LIBRARIES} ${OpenMP_LIBRARY})
+  target_link_libraries(sample_gemm cltune ${FRAMEWORK_LIBRARIES} ${OpenMP_LIBRARY})
+  target_link_libraries(sample_conv cltune ${FRAMEWORK_LIBRARIES} ${OpenMP_LIBRARY})
 
   # Note: these are not installed because they depend on their separate OpenCL kernel files
 
@@ -145,7 +165,7 @@ if (TESTS)
 
   # Compiles the tests
   add_executable(unit_tests test/tuner.cc test/kernel_info.cc)
-  target_link_libraries(unit_tests gtest gtest_main cltune ${OPENCL_LIBRARIES})
+  target_link_libraries(unit_tests gtest gtest_main cltune ${FRAMEWORK_LIBRARIES})
 
   # Adds the tests
   add_test(name unit_tests command unit_tests)

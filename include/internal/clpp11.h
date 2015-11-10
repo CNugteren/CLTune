@@ -3,15 +3,15 @@
 // This file is part of the CLTune project, which loosely follows the Google C++ styleguide and uses
 // a tab-size of two spaces and a max-width of 100 characters per line.
 //
-// Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
+// Author(s):
+//   Cedric Nugteren <www.cedricnugteren.nl>
 //
 // This file implements a bunch of C++11 classes that act as wrappers around OpenCL objects and API
 // calls. The main benefits are increased abstraction, automatic memory management, and portability.
 // Portability here means that a similar header exists for CUDA with the same classes and
 // interfaces. In other words, moving from the OpenCL API to the CUDA API becomes a one-line change.
 //
-// This file is taken from the Claduc project <https://github.com/CNugteren/Claduc> and therefore
-// contains the following header copyright notice:
+// This is version 4.0 of CLCudaAPI <https://github.com/CNugteren/CLCudaAPI>.
 //
 // =================================================================================================
 //
@@ -30,9 +30,6 @@
 // limitations under the License.
 //
 // =================================================================================================
-
-// Difference with standard Claduc header: the Buffer class is not templated in this case, the size
-// has to be multiplied by sizeof(T) by the user of the class.
 
 #ifndef CLTUNE_CLPP11_H_
 #define CLTUNE_CLPP11_H_
@@ -77,7 +74,7 @@ class Event {
   explicit Event(const cl_event event): event_(event) { }
 
   // Regular constructor
-  explicit Event() { }
+  explicit Event(): event_(nullptr) { }
 
   // Retrieves the elapsed time of the last recorded event. Note that no error checking is done on
   // the 'clGetEventProfilingInfo' function, since there is a bug in Apple's OpenCL implementation:
@@ -124,7 +121,7 @@ class Platform {
   size_t NumDevices() const {
     auto result = cl_uint{0};
     CheckError(clGetDeviceIDs(platform_, CL_DEVICE_TYPE_ALL, 0, nullptr, &result));
-    return result;
+    return static_cast<size_t>(result);
   }
 
   // Accessor to the private data-member
@@ -147,7 +144,8 @@ class Device {
     auto num_devices = platform.NumDevices();
     if (num_devices == 0) { Error("no devices found"); }
     auto devices = std::vector<cl_device_id>(num_devices);
-    CheckError(clGetDeviceIDs(platform(), CL_DEVICE_TYPE_ALL, static_cast<cl_uint>(num_devices), devices.data(), nullptr));
+    CheckError(clGetDeviceIDs(platform(), CL_DEVICE_TYPE_ALL, static_cast<cl_uint>(num_devices),
+                              devices.data(), nullptr));
     if (device_id >= num_devices) { Error("invalid device ID "+std::to_string(device_id)); }
     device_ = devices[device_id];
   }
@@ -179,6 +177,7 @@ class Device {
   size_t CoreClock() const { return GetInfo(CL_DEVICE_MAX_CLOCK_FREQUENCY); }
   size_t ComputeUnits() const { return GetInfo(CL_DEVICE_MAX_COMPUTE_UNITS); }
   size_t MemorySize() const { return GetInfo(CL_DEVICE_GLOBAL_MEM_SIZE); }
+  size_t MaxAllocSize() const { return GetInfo(CL_DEVICE_MAX_MEM_ALLOC_SIZE); }
   size_t MemoryClock() const { return 0; } // Not exposed in OpenCL
   size_t MemoryBusWidth() const { return 0; } // Not exposed in OpenCL
 
@@ -349,7 +348,12 @@ class Queue {
       queue_(new cl_command_queue, [](cl_command_queue* s) { CheckError(clReleaseCommandQueue(*s));
                                                              delete s; }) {
     auto status = CL_SUCCESS;
-    *queue_ = clCreateCommandQueue(context(), device(), CL_QUEUE_PROFILING_ENABLE, &status);
+    #ifdef CL_VERSION_2_0
+      cl_queue_properties properties[] = {CL_QUEUE_PROPERTIES, CL_QUEUE_PROFILING_ENABLE, 0};
+      *queue_ = clCreateCommandQueueWithProperties(context(), device(), properties, &status);
+    #else
+      *queue_ = clCreateCommandQueue(context(), device(), CL_QUEUE_PROFILING_ENABLE, &status);
+    #endif
     CheckError(status);
   }
 
@@ -415,107 +419,117 @@ class BufferHost {
 // =================================================================================================
 
 // Enumeration of buffer access types
-enum class BufferAccess { kReadOnly, kWriteOnly, kReadWrite };
+enum class BufferAccess { kReadOnly, kWriteOnly, kReadWrite, kNotOwned };
 
 // C++11 version of 'cl_mem'
+template <typename T>
 class Buffer {
  public:
 
   // Constructor based on the regular OpenCL data-type: memory management is handled elsewhere
   explicit Buffer(const cl_mem buffer):
       buffer_(new cl_mem),
-      access_(BufferAccess::kReadWrite) {
+      access_(BufferAccess::kNotOwned) {
     *buffer_ = buffer;
   }
 
-  // Regular constructor with memory management
+  // Regular constructor with memory management. If this class does not own the buffer object, then
+  // the memory will not be freed automatically afterwards.
   explicit Buffer(const Context &context, const BufferAccess access, const size_t size):
-      buffer_(new cl_mem, [](cl_mem* m) { CheckError(clReleaseMemObject(*m)); delete m; }),
+      buffer_(new cl_mem, [access](cl_mem* m) {
+        if (access != BufferAccess::kNotOwned) { CheckError(clReleaseMemObject(*m)); }
+        delete m;
+      }),
       access_(access) {
     auto flags = cl_mem_flags{CL_MEM_READ_WRITE};
     if (access_ == BufferAccess::kReadOnly) { flags = CL_MEM_READ_ONLY; }
     if (access_ == BufferAccess::kWriteOnly) { flags = CL_MEM_WRITE_ONLY; }
     auto status = CL_SUCCESS;
-    *buffer_ = clCreateBuffer(context(), flags, size, nullptr, &status);
+    *buffer_ = clCreateBuffer(context(), flags, size*sizeof(T), nullptr, &status);
     CheckError(status);
   }
 
   // As above, but now with read/write access as a default
   explicit Buffer(const Context &context, const size_t size):
-    Buffer(context, BufferAccess::kReadWrite, size) {
+    Buffer<T>(context, BufferAccess::kReadWrite, size) {
+  }
+
+  // Constructs a new buffer based on an existing host-container
+  template <typename Iterator>
+  explicit Buffer(const Context &context, const Queue &queue, Iterator start, Iterator end):
+    Buffer(context, BufferAccess::kReadWrite, static_cast<size_t>(end - start)) {
+    auto size = static_cast<size_t>(end - start);
+    auto pointer = &*start;
+    CheckError(clEnqueueWriteBuffer(queue(), *buffer_, CL_FALSE, 0, size*sizeof(T), pointer, 0,
+                                    nullptr, nullptr));
+    queue.Finish();
   }
 
   // Copies from device to host: reading the device buffer a-synchronously
-  template <typename T>
-  void ReadAsync(const Queue &queue, const size_t size, T* host) {
+  void ReadAsync(const Queue &queue, const size_t size, T* host, const size_t offset = 0) {
     if (access_ == BufferAccess::kWriteOnly) { Error("reading from a write-only buffer"); }
-    CheckError(clEnqueueReadBuffer(queue(), *buffer_, CL_FALSE, 0, size, host, 0,
-                                   nullptr, nullptr));
+    CheckError(clEnqueueReadBuffer(queue(), *buffer_, CL_FALSE, offset*sizeof(T), size*sizeof(T),
+                                   host, 0, nullptr, nullptr));
   }
-  template <typename T>
-  void ReadAsync(const Queue &queue, const size_t size, std::vector<T> &host) {
-    if (host.size()*sizeof(T) < size) { Error("target host buffer is too small"); }
-    ReadAsync(queue, size, host.data());
+  void ReadAsync(const Queue &queue, const size_t size, std::vector<T> &host,
+                 const size_t offset = 0) {
+    if (host.size() < size) { Error("target host buffer is too small"); }
+    ReadAsync(queue, size, host.data(), offset);
   }
-  template <typename T>
-  void ReadAsync(const Queue &queue, const size_t size, BufferHost<T> &host) {
-    if (host.size()*sizeof(T) < size) { Error("target host buffer is too small"); }
-    ReadAsync(queue, size, host.data());
+  void ReadAsync(const Queue &queue, const size_t size, BufferHost<T> &host,
+                 const size_t offset = 0) {
+    if (host.size() < size) { Error("target host buffer is too small"); }
+    ReadAsync(queue, size, host.data(), offset);
   }
 
   // Copies from device to host: reading the device buffer
-  template <typename T>
-  void Read(const Queue &queue, const size_t size, T* host) {
-    ReadAsync(queue, size, host);
+  void Read(const Queue &queue, const size_t size, T* host, const size_t offset = 0) {
+    ReadAsync(queue, size, host, offset);
     queue.Finish();
   }
-  template <typename T>
-  void Read(const Queue &queue, const size_t size, std::vector<T> &host) {
-    Read(queue, size, host.data());
+  void Read(const Queue &queue, const size_t size, std::vector<T> &host, const size_t offset = 0) {
+    Read(queue, size, host.data(), offset);
   }
-  template <typename T>
-  void Read(const Queue &queue, const size_t size, BufferHost<T> &host) {
-    Read(queue, size, host.data());
+  void Read(const Queue &queue, const size_t size, BufferHost<T> &host, const size_t offset = 0) {
+    Read(queue, size, host.data(), offset);
   }
 
   // Copies from host to device: writing the device buffer a-synchronously
-  template <typename T>
-  void WriteAsync(const Queue &queue, const size_t size, const T* host) {
+  void WriteAsync(const Queue &queue, const size_t size, const T* host, const size_t offset = 0) {
     if (access_ == BufferAccess::kReadOnly) { Error("writing to a read-only buffer"); }
-    if (GetSize() < size) { Error("target device buffer is too small"); }
-    CheckError(clEnqueueWriteBuffer(queue(), *buffer_, CL_FALSE, 0, size, host, 0,
-                                    nullptr, nullptr));
+    if (GetSize() < (offset+size)*sizeof(T)) { Error("target device buffer is too small"); }
+    CheckError(clEnqueueWriteBuffer(queue(), *buffer_, CL_FALSE, offset*sizeof(T), size*sizeof(T),
+                                    host, 0, nullptr, nullptr));
   }
-  template <typename T>
-  void WriteAsync(const Queue &queue, const size_t size, const std::vector<T> &host) {
-    WriteAsync(queue, size, host.data());
+  void WriteAsync(const Queue &queue, const size_t size, const std::vector<T> &host,
+                  const size_t offset = 0) {
+    WriteAsync(queue, size, host.data(), offset);
   }
-  template <typename T>
-  void WriteAsync(const Queue &queue, const size_t size, const BufferHost<T> &host) {
-    WriteAsync(queue, size, host.data());
+  void WriteAsync(const Queue &queue, const size_t size, const BufferHost<T> &host,
+                  const size_t offset = 0) {
+    WriteAsync(queue, size, host.data(), offset);
   }
 
   // Copies from host to device: writing the device buffer
-  template <typename T>
-  void Write(const Queue &queue, const size_t size, const T* host) {
-    WriteAsync(queue, size, host);
+  void Write(const Queue &queue, const size_t size, const T* host, const size_t offset = 0) {
+    WriteAsync(queue, size, host, offset);
     queue.Finish();
   }
-  template <typename T>
-  void Write(const Queue &queue, const size_t size, const std::vector<T> &host) {
-    Write(queue, size, host.data());
+  void Write(const Queue &queue, const size_t size, const std::vector<T> &host,
+             const size_t offset = 0) {
+    Write(queue, size, host.data(), offset);
   }
-  template <typename T>
-  void Write(const Queue &queue, const size_t size, const BufferHost<T> &host) {
-    Write(queue, size, host.data());
+  void Write(const Queue &queue, const size_t size, const BufferHost<T> &host,
+             const size_t offset = 0) {
+    Write(queue, size, host.data(), offset);
   }
 
   // Copies the contents of this buffer into another device buffer
-  void CopyToAsync(const Queue &queue, const size_t size, const Buffer &destination) {
-    CheckError(clEnqueueCopyBuffer(queue(), *buffer_, destination(), 0, 0, size, 0,
+  void CopyToAsync(const Queue &queue, const size_t size, const Buffer<T> &destination) const {
+    CheckError(clEnqueueCopyBuffer(queue(), *buffer_, destination(), 0, 0, size*sizeof(T), 0,
                                    nullptr, nullptr));
   }
-  void CopyTo(const Queue &queue, const size_t size, const Buffer &destination) {
+  void CopyTo(const Queue &queue, const size_t size, const Buffer<T> &destination) const {
     CopyToAsync(queue, size, destination);
     queue.Finish();
   }
@@ -562,7 +576,7 @@ class Kernel {
     CheckError(clSetKernelArg(*kernel_, static_cast<cl_uint>(index), sizeof(T), &value));
   }
   template <typename T>
-  void SetArgument(const size_t index, Buffer &value) {
+  void SetArgument(const size_t index, Buffer<T> &value) {
     SetArgument(index, value());
   }
 
@@ -588,6 +602,13 @@ class Kernel {
               const std::vector<size_t> &local, Event &event) {
     CheckError(clEnqueueNDRangeKernel(queue(), *kernel_, static_cast<cl_uint>(global.size()),
                                       nullptr, global.data(), local.data(),
+                                      0, nullptr, &(event())));
+  }
+
+  // As above, but with the default local workgroup size
+  void Launch(const Queue &queue, const std::vector<size_t> &global, Event &event) {
+    CheckError(clEnqueueNDRangeKernel(queue(), *kernel_, static_cast<cl_uint>(global.size()),
+                                      nullptr, global.data(), nullptr,
                                       0, nullptr, &(event())));
   }
 

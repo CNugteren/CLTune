@@ -62,6 +62,14 @@ constexpr auto kSizeY = size_t{4096}; // Matrix dimension Y
 // Example showing how to tune an OpenCL 2D convolution kernel
 int main(int argc, char* argv[]) {
 
+  // Sets the filenames of the OpenCL kernels (optionally automatically translated to CUDA)
+  auto conv = std::vector<std::string>{"../samples/conv/conv.opencl"};
+  auto conv_reference = std::vector<std::string>{"../samples/conv/conv_reference.opencl"};
+  #ifndef USE_OPENCL
+    conv.insert(conv.begin(), "../samples/cl_to_cuda.h");
+    conv_reference.insert(conv_reference.begin(), "../samples/cl_to_cuda.h");
+  #endif
+
   // Selects the device, the search method and its first parameter. These parameters are all
   // optional and are thus also given default values.
   auto device_id = kDefaultDevice;
@@ -127,7 +135,7 @@ int main(int argc, char* argv[]) {
   // ===============================================================================================
 
   // Adds a heavily tuneable kernel and some example parameter values
-  auto id = tuner.AddKernel({"../samples/conv/conv.opencl"}, "conv", {kSizeX, kSizeY}, {1, 1});
+  auto id = tuner.AddKernel(conv, "conv", {kSizeX, kSizeY}, {1, 1});
   tuner.AddParameter(id, "TBX", {8, 16, 32, 64});
   tuner.AddParameter(id, "TBY", {8, 16, 32, 64});
   tuner.AddParameter(id, "LOCAL", {0, 1, 2});
@@ -189,7 +197,7 @@ int main(int argc, char* argv[]) {
   // Sets the tuner's golden reference function. This kernel contains the reference code to which
   // the output is compared. Supplying such a function is not required, but it is necessary for
   // correctness checks to be enabled.
-  tuner.SetReference({"../samples/conv/conv_reference.opencl"}, "conv_reference", {kSizeX, kSizeY}, {8,8});
+  tuner.SetReference(conv_reference, "conv_reference", {kSizeX, kSizeY}, {8,8});
 
   // Sets the function's arguments. Note that all kernels have to accept (but not necessarily use)
   // all input arguments.

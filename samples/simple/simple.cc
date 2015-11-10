@@ -39,6 +39,16 @@
 // local memory.
 int main() {
 
+  // Sets the filenames of the OpenCL kernels (optionally automatically translated to CUDA)
+  auto matvec_unroll = std::vector<std::string>{"../samples/simple/simple_unroll.opencl"};
+  auto matvec_tiled = std::vector<std::string>{"../samples/simple/simple_tiled.opencl"};
+  auto matvec_reference = std::vector<std::string>{"../samples/simple/simple_reference.opencl"};
+  #ifndef USE_OPENCL
+    matvec_unroll.insert(matvec_unroll.begin(), "../samples/cl_to_cuda.h");
+    matvec_tiled.insert(matvec_tiled.begin(), "../samples/cl_to_cuda.h");
+    matvec_reference.insert(matvec_reference.begin(), "../samples/cl_to_cuda.h");
+  #endif
+
   // Matrix size
   constexpr auto kSizeM = 2048;
   constexpr auto kSizeN = 4096;
@@ -64,20 +74,20 @@ int main() {
   // Adds a kernel which supports unrolling through the UNROLL parameter. Note that the kernel
   // itself needs to implement the UNROLL parameter and (in this case) only accepts a limited
   // amount of values.
-  auto id = tuner.AddKernel({"../samples/simple/simple_unroll.opencl"}, "matvec_unroll", {kSizeM}, {128});
+  auto id = tuner.AddKernel(matvec_unroll, "matvec_unroll", {kSizeM}, {128});
   tuner.AddParameter(id, "UNROLL", {1, 2, 4});
 
   // Adds another kernel and its parameters. This kernel caches the input vector X into local
   // memory to save global memory accesses. Note that the kernel's workgroup size is determined by
   // the tile size parameter TS.
-  id = tuner.AddKernel({"../samples/simple/simple_tiled.opencl"}, "matvec_tiled", {kSizeM}, {1});
+  id = tuner.AddKernel(matvec_tiled, "matvec_tiled", {kSizeM}, {1});
   tuner.AddParameter(id, "TS", {32, 64, 128, 256, 512});
   tuner.MulLocalSize(id, {"TS"});
 
   // Sets the tuner's golden reference function. This kernel contains the reference code to which
   // the output is compared. Supplying such a function is not required, but it is necessarily for
   // correctness checks to be enabled.
-  tuner.SetReference({"../samples/simple/simple_reference.opencl"}, "matvec_reference", {kSizeM}, {128});
+  tuner.SetReference(matvec_reference, "matvec_reference", {kSizeM}, {128});
 
   // Sets the function's arguments. Note that all kernels have to accept (but not necessarily use)
   // all input arguments.

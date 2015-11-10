@@ -75,7 +75,7 @@ TunerImpl::TunerImpl():
     search_args_(0),
     argument_counter_(0) {
   if (!suppress_output_) {
-    fprintf(stdout, "\n%s Initializing OpenCL on platform 0 device 0\n", kMessageFull.c_str());
+    fprintf(stdout, "\n%s Initializing on platform 0 device 0\n", kMessageFull.c_str());
     auto opencl_version = device_.Version();
     auto device_name = device_.Name();
     fprintf(stdout, "%s Device name: '%s' (%s)\n", kMessageFull.c_str(),
@@ -97,7 +97,7 @@ TunerImpl::TunerImpl(size_t platform_id, size_t device_id):
     search_args_(0),
     argument_counter_(0) {
   if (!suppress_output_) {
-    fprintf(stdout, "\n%s Initializing OpenCL on platform %lu device %lu\n",
+    fprintf(stdout, "\n%s Initializing on platform %lu device %lu\n",
             kMessageFull.c_str(), platform_id, device_id);
     auto opencl_version = device_.Version();
     auto device_name = device_.Name();
@@ -111,6 +111,18 @@ TunerImpl::~TunerImpl() {
   for (auto &reference_output: reference_outputs_) {
     delete[] static_cast<int*>(reference_output);
   }
+
+  // Frees the device buffers
+  auto free_buffers = [](MemArgument &mem_info) {
+    #ifdef USE_OPENCL
+      CheckError(clReleaseMemObject(mem_info.buffer));
+    #else
+      CheckError(cuMemFree(mem_info.buffer));
+    #endif
+  };
+  for (auto &mem_argument: arguments_input_) { free_buffers(mem_argument); }
+  for (auto &mem_argument: arguments_output_) { free_buffers(mem_argument); }
+
   if (!suppress_output_) {
     fprintf(stdout, "\n%s End of the tuning process\n\n", kMessageFull.c_str());
   }
@@ -218,7 +230,7 @@ void TunerImpl::Tune() {
 
 // =================================================================================================
 
-// Compiles the kernel and checks for OpenCL error messages, sets all output buffers to zero,
+// Compiles the kernel and checks for error messages, sets all output buffers to zero,
 // launches the kernel, and collects the timing information.
 TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const KernelInfo &kernel,
                                             const size_t configuration_id,
@@ -243,8 +255,8 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     auto build_status = program.Build(device_, options);
     if (build_status == BuildStatus::kError) {
       auto message = program.GetBuildInfo(device_);
-      fprintf(stdout, "OpenCL compiler error/warning: %s\n", message.c_str());
-      throw std::runtime_error("OpenCL compiler error/warning occurred ^^\n");
+      fprintf(stdout, "device compiler error/warning: %s\n", message.c_str());
+      throw std::runtime_error("device compiler error/warning occurred ^^\n");
     }
     if (build_status == BuildStatus::kInvalid) {
       throw std::runtime_error("Invalid program binary");
@@ -265,8 +277,8 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
     // Sets the kernel and its arguments
     auto tune_kernel = Kernel(program, kernel.name());
-    for (auto &i: arguments_input_) { tune_kernel.SetArgument(i.index, i.buffer()); }
-    for (auto &i: arguments_output_) { tune_kernel.SetArgument(i.index, i.buffer()); }
+    for (auto &i: arguments_input_) { tune_kernel.SetArgument(i.index, i.buffer); }
+    for (auto &i: arguments_output_) { tune_kernel.SetArgument(i.index, i.buffer); }
     for (auto &i: arguments_int_) { tune_kernel.SetArgument(i.first, i.second); }
     for (auto &i: arguments_size_t_) { tune_kernel.SetArgument(i.first, i.second); }
     for (auto &i: arguments_float_) { tune_kernel.SetArgument(i.first, i.second); }
@@ -326,21 +338,20 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
 // =================================================================================================
 
-// Creates a new array of zeroes and copies it to the target OpenCL buffer
+// Creates a new array of zeroes and copies it to the target device buffer
 template <typename T> 
 void TunerImpl::ResetMemArgument(MemArgument &argument) {
 
   // Create an array with zeroes
   std::vector<T> buffer(argument.size, T{0});
 
-  // Copy the new array to the OpenCL buffer on the device
-  auto bytes = sizeof(T)*argument.size;
-  argument.buffer.Write(queue_, bytes, buffer);
+  // Copy the new array to the device buffer on the device
+  Buffer<T>(argument.buffer).Write(queue_, argument.size, buffer);
 }
 
 // =================================================================================================
 
-// Loops over all reference outputs, creates per output a new host buffer and copies the OpenCL
+// Loops over all reference outputs, creates per output a new host buffer and copies the device
 // buffer from the device onto the host. This function is specialised for different data-types.
 void TunerImpl::StoreReferenceOutput() {
   reference_outputs_.clear();
@@ -358,15 +369,14 @@ void TunerImpl::StoreReferenceOutput() {
 }
 template <typename T> void TunerImpl::DownloadReference(MemArgument &device_buffer) {
   auto host_buffer = new T[device_buffer.size];
-  auto bytes = sizeof(T)*device_buffer.size;
-  device_buffer.buffer.Read(queue_, bytes, host_buffer);
+  Buffer<T>(device_buffer.buffer).Read(queue_, device_buffer.size, host_buffer);
   reference_outputs_.push_back(host_buffer);
 }
 
 // =================================================================================================
 
 // In case there is a reference kernel, this function loops over all outputs, creates per output a
-// new host buffer and copies the OpenCL buffer from the device onto the host. Following, it
+// new host buffer and copies the device buffer from the device onto the host. Following, it
 // compares the results to the reference output. This function is specialised for different
 // data-types. These functions return "true" if everything is OK, and "false" if there is a warning.
 bool TunerImpl::VerifyOutput() {
@@ -396,8 +406,7 @@ bool TunerImpl::DownloadAndCompare(MemArgument &device_buffer, const size_t i) {
 
   // Downloads the results to the host
   std::vector<T> host_buffer(device_buffer.size);
-  auto bytes = sizeof(T)*device_buffer.size;
-  device_buffer.buffer.Read(queue_, bytes, host_buffer);
+  Buffer<T>(device_buffer.buffer).Read(queue_, device_buffer.size, host_buffer);
 
   // Compares the results (L2 norm)
   T* reference_output = static_cast<T*>(reference_outputs_[i]);
