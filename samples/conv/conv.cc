@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) {
   for (auto x=size_t{0}; x<FS; ++x) {
     for (auto y=size_t{0}; y<FS; ++y) {
       auto exponent = -0.5f * (pow((x-mean)/sigma, 2.0f) + pow((y-mean)/sigma, 2.0f));
-      coeff[y*FS + x] = static_cast<float>(exp(exponent) / (2.0f * M_PI * sigma * sigma));
+      coeff[y*FS + x] = static_cast<float>(exp(exponent) / (2.0f * 3.14159265f * sigma * sigma));
       sum += coeff[y*FS + x];
     }
   }
@@ -125,7 +125,7 @@ int main(int argc, char* argv[]) {
   // 3) Full search
   auto fraction = 1/64.0f;
   if      (method == 0) { tuner.UseRandomSearch(fraction); }
-  else if (method == 1) { tuner.UseAnnealing(fraction, static_cast<size_t>(search_param_1)); }
+  else if (method == 1) { tuner.UseAnnealing(fraction, static_cast<double>(search_param_1)); }
   else if (method == 2) { tuner.UsePSO(fraction, static_cast<size_t>(search_param_1), 0.4, 0.0, 0.4); }
   else                  { tuner.UseFullSearch(); }
 
