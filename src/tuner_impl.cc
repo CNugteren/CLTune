@@ -97,7 +97,7 @@ TunerImpl::TunerImpl(size_t platform_id, size_t device_id):
     search_args_(0),
     argument_counter_(0) {
   if (!suppress_output_) {
-    fprintf(stdout, "\n%s Initializing on platform %lu device %lu\n",
+    fprintf(stdout, "\n%s Initializing on platform %zu device %zu\n",
             kMessageFull.c_str(), platform_id, device_id);
     auto opencl_version = device_.Version();
     auto device_name = device_.Name();
@@ -183,7 +183,7 @@ void TunerImpl::Tune() {
       }
 
       // Iterates over all possible configurations (the permutations of the tuning parameters)
-      for (auto p=0UL; p<search->NumConfigurations(); ++p) {
+      for (auto p=size_t{0}; p<search->NumConfigurations(); ++p) {
         auto permutation = search->GetConfiguration();
 
         // Adds the parameters to the source-code string as defines
@@ -316,7 +316,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     }
 
     // Prints diagnostic information
-    fprintf(stdout, "%s Completed %s (%.0lf ms) - %lu out of %lu\n",
+    fprintf(stdout, "%s Completed %s (%.0lf ms) - %zu out of %zu\n",
             kMessageOK.c_str(), kernel.name().c_str(), elapsed_time,
             configuration_id+1, num_configurations);
 
@@ -410,7 +410,7 @@ bool TunerImpl::DownloadAndCompare(MemArgument &device_buffer, const size_t i) {
 
   // Compares the results (L2 norm)
   T* reference_output = static_cast<T*>(reference_outputs_[i]);
-  for (auto j=0UL; j<device_buffer.size; ++j) {
+  for (auto j=size_t{0}; j<device_buffer.size; ++j) {
     l2_norm += AbsoluteDifference(reference_output[j], host_buffer[j]);
   }
 
@@ -479,7 +479,7 @@ void TunerImpl::ModelPrediction(const Model model_type, const float validation_f
       PrintHeader("Training a linear regression model");
 
       // Sets the learning parameters
-      auto learning_iterations = 800UL; // For gradient descent
+      auto learning_iterations = size_t{800}; // For gradient descent
       auto learning_rate = 0.05f; // For gradient descent
       auto lambda = 0.2f; // Regularization parameter
       auto debug_display = true; // Output learned data to stdout
@@ -497,7 +497,7 @@ void TunerImpl::ModelPrediction(const Model model_type, const float validation_f
       PrintHeader("Training a neural network model");
 
       // Sets the learning parameters
-      auto learning_iterations = 800UL; // For gradient descent
+      auto learning_iterations = size_t{800}; // For gradient descent
       auto learning_rate = 0.1f; // For gradient descent
       auto lambda = 0.005f; // Regularization parameter
       auto debug_display = true; // Output learned data to stdout

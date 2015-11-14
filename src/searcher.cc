@@ -53,7 +53,7 @@ void Searcher::PrintLog(FILE* fp) const {
   fprintf(fp, "step;index;time\n");
   auto step = 0;
   for (auto &explored_index: explored_indices_) {
-    fprintf(fp, "%d;%lu;%.3lf\n", step, explored_index, execution_times_[explored_index]);
+    fprintf(fp, "%d;%zu;%.3lf\n", step, explored_index, execution_times_[explored_index]);
     ++step;
   }
 }
