@@ -45,9 +45,9 @@ bool IsMultiple(size_t a, size_t b) {
 };
 
 // Constants
-constexpr auto kDefaultDevice = 0;
-constexpr auto kDefaultSearchMethod = 1;
-constexpr auto kDefaultSearchParameter1 = 4;
+constexpr auto kDefaultDevice = size_t{0};
+constexpr auto kDefaultSearchMethod = size_t{1};
+constexpr auto kDefaultSearchParameter1 = size_t{4};
 
 // Settings (synchronise these with "conv.cc", "conv.opencl" and "conv_reference.opencl")
 #define HFS (3)        // Half filter size
@@ -76,17 +76,17 @@ int main(int argc, char* argv[]) {
   auto method = kDefaultSearchMethod;
   auto search_param_1 = kDefaultSearchParameter1;
   if (argc >= 2) {
-    device_id = std::stoi(std::string{argv[1]});
+    device_id = static_cast<size_t>(std::stoi(std::string{argv[1]}));
     if (argc >= 3) {
-      method = std::stoi(std::string{argv[2]});
+      method = static_cast<size_t>(std::stoi(std::string{argv[2]}));
       if (argc >= 4) {
-        search_param_1 = std::stoi(std::string{argv[3]});
+        search_param_1 = static_cast<size_t>(std::stoi(std::string{argv[3]}));
       }
     }
   }
 
   // Creates data structures
-  constexpr auto kExtraSize = FS*8;
+  constexpr auto kExtraSize = size_t{FS*8};
   auto mat_a = std::vector<float>((kExtraSize+kSizeX)*(kExtraSize+kSizeY));
   auto mat_b = std::vector<float>(kSizeX*kSizeY);
   auto coeff = std::vector<float>(FS*FS);
@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
 
   // Populates input data structures
   for (auto &item: mat_a) { item = distribution(generator); }
-  for (auto &item: mat_b) { item = 0.0; }
+  for (auto &item: mat_b) { item = 0.0f; }
 
   // Creates the filter coefficients (gaussian blur)
   auto sigma = 1.0f;
@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) {
   for (auto x=size_t{0}; x<FS; ++x) {
     for (auto y=size_t{0}; y<FS; ++y) {
       auto exponent = -0.5f * (pow((x-mean)/sigma, 2.0f) + pow((y-mean)/sigma, 2.0f));
-      coeff[y*FS + x] = static_cast<float>(exp(exponent) / (2.0f * M_PI * sigma * sigma));
+      coeff[y*FS + x] = static_cast<float>(exp(exponent) / (2.0f * 3.14159265f * sigma * sigma));
       sum += coeff[y*FS + x];
     }
   }
@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) {
   // ===============================================================================================
 
   // Initializes the tuner (platform 0, device 'device_id')
-  cltune::Tuner tuner(0, static_cast<size_t>(device_id));
+  cltune::Tuner tuner(size_t{0}, static_cast<size_t>(device_id));
 
   // Sets one of the following search methods:
   // 0) Random search
@@ -125,7 +125,7 @@ int main(int argc, char* argv[]) {
   // 3) Full search
   auto fraction = 1/64.0f;
   if      (method == 0) { tuner.UseRandomSearch(fraction); }
-  else if (method == 1) { tuner.UseAnnealing(fraction, static_cast<size_t>(search_param_1)); }
+  else if (method == 1) { tuner.UseAnnealing(fraction, static_cast<double>(search_param_1)); }
   else if (method == 2) { tuner.UsePSO(fraction, static_cast<size_t>(search_param_1), 0.4, 0.0, 0.4); }
   else                  { tuner.UseFullSearch(); }
 
@@ -182,7 +182,7 @@ int main(int argc, char* argv[]) {
   // Sets the constraints for local memory size limitations
   auto LocalMemorySize = [] (std::vector<size_t> v) {
     if (v[0] != 0) { return ((v[3]*v[4] + 2*HFS) * (v[1]*v[2] + 2*HFS + v[5]))*sizeof(float); }
-    else           { return 0UL; }
+    else           { return size_t{0}; }
   };
   tuner.SetLocalMemoryUsage(id, LocalMemorySize, {"LOCAL", "TBX", "WPTX", "TBY", "WPTY", "PADDING"});
 
@@ -215,7 +215,7 @@ int main(int argc, char* argv[]) {
   // the search space.
   if (method == 0) {
     auto validation_fraction = 0.20f; // 20%
-    auto top_x = 10UL; // Tests the top-10 best found results from the model on actual hardware
+    auto top_x = size_t{10}; // Tests the top-10 best found results from the model on actual hardware
     tuner.ModelPrediction(cltune::Model::kNeuralNetwork, validation_fraction, top_x);
   }
 

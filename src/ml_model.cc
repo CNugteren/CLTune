@@ -92,7 +92,7 @@ void MLModel<T>::AddPolynomialFeatures(std::vector<std::vector<T>> &x,
     for (auto &order: orders) {
       if (order > 1) {
         x[mid].reserve(x[mid].size() + static_cast<size_t>(pow(n, order)));
-        AddPolynomialRecursive(x[mid], order, 1UL, n);
+        AddPolynomialRecursive(x[mid], order, size_t{1}, n);
       }
     }
   }
@@ -129,7 +129,7 @@ void MLModel<T>::GradientDescent(const std::vector<std::vector<T>> &x, const std
     // Computes the cost (to monitor convergence)
     auto cost = Cost(m, n, lambda, x, y);
     if ((iter+1) % (iterations/kGradientDescentCostReportAmount) == 0) {
-      printf("%s Gradient descent %lu/%lu: cost %.2e\n",
+      printf("%s Gradient descent %zu/%zu: cost %.2e\n",
              TunerImpl::kMessageInfo.c_str(), iter+1, iterations, cost);
     }
     

@@ -50,8 +50,8 @@ int main() {
   #endif
 
   // Matrix size
-  constexpr auto kSizeM = 2048;
-  constexpr auto kSizeN = 4096;
+  constexpr auto kSizeM = size_t{2048};
+  constexpr auto kSizeN = size_t{4096};
 
   // Creates data structures
   std::vector<float> mat_a(kSizeN*kSizeM); // Assumes matrix A is transposed
@@ -66,10 +66,10 @@ int main() {
   // Populates input data structures
   for (auto &item: mat_a) { item = distribution(generator); }
   for (auto &item: vec_x) { item = distribution(generator); }
-  for (auto &item: vec_y) { item = 0.0; }
+  for (auto &item: vec_y) { item = 0.0f; }
 
   // Initializes the tuner (platform 0, device 0)
-  cltune::Tuner tuner(0, 0);
+  cltune::Tuner tuner(size_t{0}, size_t{0});
 
   // Adds a kernel which supports unrolling through the UNROLL parameter. Note that the kernel
   // itself needs to implement the UNROLL parameter and (in this case) only accepts a limited
@@ -91,8 +91,8 @@ int main() {
 
   // Sets the function's arguments. Note that all kernels have to accept (but not necessarily use)
   // all input arguments.
-  tuner.AddArgumentScalar(kSizeM);
-  tuner.AddArgumentScalar(kSizeN);
+  tuner.AddArgumentScalar(static_cast<int>(kSizeM));
+  tuner.AddArgumentScalar(static_cast<int>(kSizeN));
   tuner.AddArgumentInput(mat_a);
   tuner.AddArgumentInput(vec_x);
   tuner.AddArgumentOutput(vec_y);
