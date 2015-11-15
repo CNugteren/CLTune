@@ -90,6 +90,7 @@ else ()
     set(FLAGS "${FLAGS} -Wextra")
   endif()
 endif()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS}")
 
 # ==================================================================================================
 
@@ -140,6 +141,7 @@ install(TARGETS cltune DESTINATION lib)
 install(FILES include/cltune.h DESTINATION include)
 
 # ==================================================================================================
+
 # Optional: Enables compilation of sample programs
 if (SAMPLES)
 
@@ -152,25 +154,17 @@ if (SAMPLES)
   target_link_libraries(sample_conv cltune ${FRAMEWORK_LIBRARIES} ${OpenMP_LIBRARY})
 
   # Note: these are not installed because they depend on their separate OpenCL kernel files
-
 endif()
+
 # ==================================================================================================
-# Optional: Enables compilation of the Google tests
+
+# Optional: Enable inclusion of the test-suite
 if (TESTS)
-
-  # The tests use specific flags to reduce the amount of warnings from GTest.
-  set(CMAKE_CXX_FLAGS "-O3 -std=c++11")
-
-  # Enables Google Test tests (source-code is shipped with the project)
-  add_subdirectory(external/gtest-1.7.0)
   enable_testing()
-  include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
-
-  # Compiles the tests
-  add_executable(unit_tests test/tuner.cc test/kernel_info.cc)
-  target_link_libraries(unit_tests gtest gtest_main cltune ${FRAMEWORK_LIBRARIES})
-
-  # Adds the tests
-  add_test(name unit_tests command unit_tests)
+  include_directories(${cltune_SOURCE_DIR}/test ${cltune_SOURCE_DIR}/include ${FRAMEWORK_INCLUDE_DIRS})
+  add_executable(unit_tests test/main.cc test/clcudaapi.cc)
+  target_link_libraries(unit_tests cltune ${FRAMEWORK_LIBRARIES})
+  add_test(unit_tests unit_tests)
 endif()
+
 # ==================================================================================================
