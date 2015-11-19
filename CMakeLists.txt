@@ -162,7 +162,10 @@ endif()
 if (TESTS)
   enable_testing()
   include_directories(${cltune_SOURCE_DIR}/test ${cltune_SOURCE_DIR}/include ${FRAMEWORK_INCLUDE_DIRS})
-  add_executable(unit_tests test/main.cc test/clcudaapi.cc)
+  add_executable(unit_tests
+                 test/main.cc
+                 test/clcudaapi.cc
+                 test/tuner.cc)
   target_link_libraries(unit_tests cltune ${FRAMEWORK_LIBRARIES})
   add_test(unit_tests unit_tests)
 endif()
