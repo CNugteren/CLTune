@@ -4,7 +4,7 @@ CLTune: Automatic OpenCL kernel tuning
 
 [![Build Status](https://travis-ci.org/CNugteren/CLTune.svg?branch=master)](https://travis-ci.org/CNugteren/CLTune)
 
-CLTune is a C++ library which can be used to automatically tune your OpenCL kernels. The only thing you'll need to provide is a tuneable kernel and a list of allowed parameters and values.
+CLTune is a C++ library which can be used to automatically tune your OpenCL and CUDA kernels. The only thing you'll need to provide is a tuneable kernel and a list of allowed parameters and values.
 
 For example, if you would perform loop unrolling or local memory tiling through a pre-processor define, just remove the define from your kernel code, pass the kernel to CLTune and tell it what the name of your parameter(s) are and what values you want to try. CLTune will take care of the rest: it will iterate over all possible permutations, test them, and report the best combination.
 
@@ -38,7 +38,7 @@ A custom installation folder can be specified when calling CMake:
 
     cmake -DCMAKE_INSTALL_PREFIX=/path/to/install/directory ..
 
-You can then link your own programs against the CLTune library. An example for a Linux-system:
+You can then link your own programs against the CLTune library. An example for a Linux-system with OpenCL:
 
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/libcltune.so
     g++ example.cc -o example -L/path/to/libcltune.so -lcltune -lOpenCL
@@ -51,7 +51,7 @@ Before we start using the tuner, we'll have to create one. The constructor takes
 
     cltune::Tuner my_tuner(0, 1); // Tuner on device 1 of OpenCL platform 0
 
-Now that we have a tuner, we can add a tuning kernel. This is done by providing a list of paths to OpenCL kernel files (first argument), the name of the kernel (second argument), a list of global thread dimensions (third argument), and a list of local thread or workgroup dimensions (fourth argument). Here is an example:
+Now that we have a tuner, we can add a tuning kernel. This is done by providing a list of paths to kernel files (first argument), the name of the kernel (second argument), a list of global thread dimensions (third argument), and a list of local thread or workgroup dimensions (fourth argument). Here is an example:
 
     size_t id = my_tuner.AddKernel({"path/to/kernel.opencl"}, "my_kernel", {1024,512}, {16,8});
 
@@ -64,7 +64,7 @@ Now that we've added a kernel and its parameters, we can add another one if we w
 
     my_tuner.SetReference({"path/to/reference.opencl"}, "my_reference", {8192}, {128});
 
-The tuner also needs to know which arguments the kernels take. Scalar arguments can be provided as-is and are passed-by-value, whereas arrays have to be provided as C++ `std::vector`s. That's right, we won't have to create OpenCL buffers, CLTune will handle that for us! Here is an example:
+The tuner also needs to know which arguments the kernels take. Scalar arguments can be provided as-is and are passed-by-value, whereas arrays have to be provided as C++ `std::vector`s. That's right, we won't have to create device buffers, CLTune will handle that for us! Here is an example:
 
     int my_variable = 900;
     std::vector<float> input_vector(8192);
@@ -83,28 +83,33 @@ Now that we've configured the tuner, it is time to start it and ask it to report
 Other examples
 -------------
 
-Examples are included as part of the CLTune distribution. They illustrate some more advanced features, such as modifying the thread dimensions based on the parameters and adding user-defined parameter constraints. The examples are compiled when providing `-ENABLE_SAMPLES=ON` to CMake (default option). The included examples are:
+Examples are included as part of the CLTune distribution. They illustrate some more advanced features, such as modifying the thread dimensions based on the parameters and adding user-defined parameter constraints. The examples are compiled when setting `ENABLE_SAMPLES` to `ON` to CMake (default option). The included examples are:
 
 * `simple.cc` providing a basic example of matrix-vector multiplication
-* `gemm.cc` providing an advanced and heavily tuned implementation of matrix-matrix
-  multiplication (GEMM)
+* `gemm.cc` providing an advanced and heavily tuned implementation of matrix-matrix multiplication (GEMM)
 * `conv.cc` providing an advanced and heavily tuned implementation of 2D convolution
 
 The latter two take optionally command-line arguments. The first argument is an integer for the device to run on, the second argument is an integer to select a search strategy (0=random, 1=annealing, 2=PSO, 3=fullsearch), and the third an optional search-strategy parameter.
 
 
+Experimental CUDA support
+-------------
+
+CLTune was originally developed for OpenCL kernels, but since it uses the high-level C++ API `CLCudaAPI`, it can also work with CUDA kernels. To compile CLTune with CUDA as a back-end, set the `USE_OPENCL` CMake flag to `OFF`, for example as follows:
+
+    cmake -DUSE_OPENCL=OFF ..
+
+The samples ship with a basic header to convert the included OpenCL samples to CUDA (`cl_to_cuda.h`). This header file is automatically included when CLTune is built with CUDA as a back-end. It has been tested with the `simple` example.
+
+
 Development and tests
 -------------
 
-The CLTune project follows the Google C++ styleguide (with some exceptions) and uses a tab-size of
-two spaces and a max-width of 100 characters per line. It is furthermore based on practises from the
-third edition of Effective C++ and the first edition of Effective Modern C++. The project is
-licensed under the APACHE 2.0 license by SURFsara, (c) 2014. The contributing authors so far are:
+The CLTune project follows the Google C++ styleguide (with some exceptions) and uses a tab-size of two spaces and a max-width of 100 characters per line. It is furthermore based on practises from the third edition of Effective C++ and the first edition of Effective Modern C++. The project is licensed under the APACHE 2.0 license by SURFsara, (c) 2014. The contributing authors so far are:
 
 * Cedric Nugteren
 
-CLTune is packaged with Google Test 1.7.0 and a custom test suite. The tests will be compiled when
-providing the `-TESTS=ON` option to CMake. Running the tests goes as follows:
+CLTune is packaged with Catch 1.2.1 and a custom test suite. No external dependencies are needed. The tests will be compiled when providing the `TESTS=ON` option to CMake. Running the tests goes as follows:
 
     ./unit_tests
 
