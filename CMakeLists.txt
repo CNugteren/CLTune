@@ -165,7 +165,8 @@ if (TESTS)
   add_executable(unit_tests
                  test/main.cc
                  test/clcudaapi.cc
-                 test/tuner.cc)
+                 test/tuner.cc
+                 test/kernel_info.cc)
   target_link_libraries(unit_tests cltune ${FRAMEWORK_LIBRARIES})
   add_test(unit_tests unit_tests)
 endif()
