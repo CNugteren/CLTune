@@ -7,6 +7,7 @@ Development version (next release)
 - Now using version 4.0 of the CLCudaAPI header (previously known as Claduc)
 - Added experimental support for CUDA kernels
 - Added support for MSVC (Visual Studio) 2015
+- Using Catch instead of GTest for unit-testing
 - Various minor fixes
 
 Version 1.7.1
