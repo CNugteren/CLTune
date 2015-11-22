@@ -1,4 +1,7 @@
 
+Development version (next release)
+-
+
 Version 2.0.0
 - Added support for machine learning models. These models can be trained on a small fraction of the
   tuning configurations and can be used to predict the remainder. Two models are supported:
