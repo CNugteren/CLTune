@@ -78,7 +78,7 @@ void PSO::CalculateNextIndex() {
   auto new_index = index_;
   do {
     auto next_configuration = configurations_[index_];
-    for (auto i=0UL; i<next_configuration.size(); ++i) {
+    for (auto i=size_t{0}; i<next_configuration.size(); ++i) {
       //printf("%s = %d\n", next_configuration[i].name.c_str(), next_configuration[i].value);
 
       // Move towards best known globally (swarm)
@@ -133,10 +133,10 @@ void PSO::PushExecutionTime(const double execution_time) {
 // Searches all configuration to find which configuration is the 'target' (argument to this
 // function). The target's index in the total configuration vector is returned.
 size_t PSO::IndexFromConfiguration(const KernelInfo::Configuration target) const {
-  auto config_index = 0UL;
+  auto config_index = size_t{0};
   for (auto &configuration: configurations_) {
-    auto num_matches = 0UL;
-    for (auto i=0UL; i<configuration.size(); ++i) {
+    auto num_matches = size_t{0};
+    for (auto i=size_t{0}; i<configuration.size(); ++i) {
       if (configuration[i].value == target[i].value) { num_matches++; }
     }
     if (num_matches == configuration.size()) { return config_index; }

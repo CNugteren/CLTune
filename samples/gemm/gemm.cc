@@ -45,9 +45,9 @@ bool IsMultiple(size_t a, size_t b) {
 };
 
 // Constants
-constexpr auto kDefaultDevice = 0;
-constexpr auto kDefaultSearchMethod = 1;
-constexpr auto kDefaultSearchParameter1 = 4;
+constexpr auto kDefaultDevice = size_t{0};
+constexpr auto kDefaultSearchMethod = size_t{1};
+constexpr auto kDefaultSearchParameter1 = size_t{4};
 
 // Settings (sizes)
 constexpr auto kSizeM = size_t{2048};
@@ -60,17 +60,25 @@ constexpr auto kSizeK = size_t{2048};
 // matrix B is pre-transposed, alpha equals 1 and beta equals 0: C = A * B^T
 int main(int argc, char* argv[]) {
 
+  // Sets the filenames of the OpenCL kernels (optionally automatically translated to CUDA)
+  auto gemm_fast = std::vector<std::string>{"../samples/gemm/gemm.opencl"};
+  auto gemm_reference = std::vector<std::string>{"../samples/gemm/gemm_reference.opencl"};
+  #ifndef USE_OPENCL
+    gemm_fast.insert(gemm_fast.begin(), "../samples/cl_to_cuda.h");
+    gemm_reference.insert(gemm_reference.begin(), "../samples/cl_to_cuda.h");
+  #endif
+
   // Selects the device, the search method and its first parameter. These parameters are all
   // optional and are thus also given default values.
   auto device_id = kDefaultDevice;
   auto method = kDefaultSearchMethod;
   auto search_param_1 = kDefaultSearchParameter1;
   if (argc >= 2) {
-    device_id = std::stoi(std::string{argv[1]});
+    device_id = static_cast<size_t>(std::stoi(std::string{argv[1]}));
     if (argc >= 3) {
-      method = std::stoi(std::string{argv[2]});
+      method = static_cast<size_t>(std::stoi(std::string{argv[2]}));
       if (argc >= 4) {
-        search_param_1 = std::stoi(std::string{argv[3]});
+        search_param_1 = static_cast<size_t>(std::stoi(std::string{argv[3]}));
       }
     }
   }
@@ -88,17 +96,17 @@ int main(int argc, char* argv[]) {
   // Populates input data structures
   for (auto &item: mat_a) { item = distribution(generator); }
   for (auto &item: mat_b) { item = distribution(generator); }
-  for (auto &item: mat_c) { item = 0.0; }
+  for (auto &item: mat_c) { item = 0.0f; }
 
   // Initializes the tuner (platform 0, device 'device_id')
-  cltune::Tuner tuner(0, static_cast<size_t>(device_id));
+  cltune::Tuner tuner(size_t{0}, static_cast<size_t>(device_id));
 
   // Sets one of the following search methods:
   // 0) Random search
   // 1) Simulated annealing
   // 2) Particle swarm optimisation (PSO)
   // 3) Full search
-  auto fraction = 1/2048.0f;
+  auto fraction = 1.0f/2048.0f;
   if      (method == 0) { tuner.UseRandomSearch(fraction); }
   else if (method == 1) { tuner.UseAnnealing(fraction, static_cast<size_t>(search_param_1)); }
   else if (method == 2) { tuner.UsePSO(fraction, static_cast<size_t>(search_param_1), 0.4, 0.0, 0.4); }
@@ -111,7 +119,7 @@ int main(int argc, char* argv[]) {
 
   // Adds a heavily tuneable kernel and some example parameter values. Others can be added, but for
   // this example this already leads to plenty of kernels to test.
-  auto id = tuner.AddKernel({"../samples/gemm/gemm.opencl"}, "gemm_fast", {kSizeM, kSizeN}, {1, 1});
+  auto id = tuner.AddKernel(gemm_fast, "gemm_fast", {kSizeM, kSizeN}, {1, 1});
   tuner.AddParameter(id, "MWG", {16, 32, 64, 128});
   tuner.AddParameter(id, "NWG", {16, 32, 64, 128});
   tuner.AddParameter(id, "KWG", {16, 32});
@@ -170,7 +178,7 @@ int main(int argc, char* argv[]) {
   // Sets the tuner's golden reference function. This kernel contains the reference code to which
   // the output is compared. Supplying such a function is not required, but it is necessarily for
   // correctness checks to be enabled.
-  tuner.SetReference({"../samples/gemm/gemm_reference.opencl"}, "gemm_reference", {kSizeM, kSizeN}, {8,8});
+  tuner.SetReference(gemm_reference, "gemm_reference", {kSizeM, kSizeN}, {8,8});
 
   // Sets the function's arguments. Note that all kernels have to accept (but not necessarily use)
   // all input arguments.

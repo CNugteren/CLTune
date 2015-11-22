@@ -34,10 +34,16 @@
 #include "internal/searchers/annealing.h"
 #include "internal/searchers/pso.h"
 
+// The machine learning models
+#include "internal/ml_models/linear_regression.h"
+#include "internal/ml_models/neural_network.h"
+
 #include <fstream> // std::ifstream, std::stringstream
 #include <iostream> // FILE
 #include <limits> // std::numeric_limits
 #include <algorithm> // std::min
+#include <memory> // std::unique_ptr
+#include <tuple> // std::tuple
 
 namespace cltune {
 // =================================================================================================
@@ -69,7 +75,7 @@ TunerImpl::TunerImpl():
     search_args_(0),
     argument_counter_(0) {
   if (!suppress_output_) {
-    fprintf(stdout, "\n%s Initializing OpenCL on platform 0 device 0\n", kMessageFull.c_str());
+    fprintf(stdout, "\n%s Initializing on platform 0 device 0\n", kMessageFull.c_str());
     auto opencl_version = device_.Version();
     auto device_name = device_.Name();
     fprintf(stdout, "%s Device name: '%s' (%s)\n", kMessageFull.c_str(),
@@ -91,7 +97,7 @@ TunerImpl::TunerImpl(size_t platform_id, size_t device_id):
     search_args_(0),
     argument_counter_(0) {
   if (!suppress_output_) {
-    fprintf(stdout, "\n%s Initializing OpenCL on platform %lu device %lu\n",
+    fprintf(stdout, "\n%s Initializing on platform %zu device %zu\n",
             kMessageFull.c_str(), platform_id, device_id);
     auto opencl_version = device_.Version();
     auto device_name = device_.Name();
@@ -105,6 +111,18 @@ TunerImpl::~TunerImpl() {
   for (auto &reference_output: reference_outputs_) {
     delete[] static_cast<int*>(reference_output);
   }
+
+  // Frees the device buffers
+  auto free_buffers = [](MemArgument &mem_info) {
+    #ifdef USE_OPENCL
+      CheckError(clReleaseMemObject(mem_info.buffer));
+    #else
+      CheckError(cuMemFree(mem_info.buffer));
+    #endif
+  };
+  for (auto &mem_argument: arguments_input_) { free_buffers(mem_argument); }
+  for (auto &mem_argument: arguments_output_) { free_buffers(mem_argument); }
+
   if (!suppress_output_) {
     fprintf(stdout, "\n%s End of the tuning process\n\n", kMessageFull.c_str());
   }
@@ -165,7 +183,7 @@ void TunerImpl::Tune() {
       }
 
       // Iterates over all possible configurations (the permutations of the tuning parameters)
-      for (auto p=0UL; p<search->NumConfigurations(); ++p) {
+      for (auto p=size_t{0}; p<search->NumConfigurations(); ++p) {
         auto permutation = search->GetConfiguration();
 
         // Adds the parameters to the source-code string as defines
@@ -182,17 +200,17 @@ void TunerImpl::Tune() {
         auto tuning_result = RunKernel(source, kernel, p, search->NumConfigurations());
         tuning_result.status = VerifyOutput();
 
-        // Gives timing feedback to the search algorithm and calculate the next index
+        // Gives timing feedback to the search algorithm and calculates the next index
         search->PushExecutionTime(tuning_result.time);
         search->CalculateNextIndex();
 
         // Stores the parameters and the timing-result
         tuning_result.configuration = permutation;
         tuning_results_.push_back(tuning_result);
-        if (tuning_result.time == std::numeric_limits<double>::max()) {
+        if (tuning_result.time == std::numeric_limits<float>::max()) {
           tuning_result.time = 0.0;
           PrintResult(stdout, tuning_result, kMessageFailure);
-          tuning_result.time = std::numeric_limits<double>::max();
+          tuning_result.time = std::numeric_limits<float>::max();
         }
         else if (!tuning_result.status) {
           PrintResult(stdout, tuning_result, kMessageWarning);
@@ -212,7 +230,7 @@ void TunerImpl::Tune() {
 
 // =================================================================================================
 
-// Compiles the kernel and checks for OpenCL error messages, sets all output buffers to zero,
+// Compiles the kernel and checks for error messages, sets all output buffers to zero,
 // launches the kernel, and collects the timing information.
 TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const KernelInfo &kernel,
                                             const size_t configuration_id,
@@ -237,8 +255,8 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     auto build_status = program.Build(device_, options);
     if (build_status == BuildStatus::kError) {
       auto message = program.GetBuildInfo(device_);
-      fprintf(stdout, "OpenCL compiler error/warning: %s\n", message.c_str());
-      throw std::runtime_error("OpenCL compiler error/warning occurred ^^\n");
+      fprintf(stdout, "device compiler error/warning: %s\n", message.c_str());
+      throw std::runtime_error("device compiler error/warning occurred ^^\n");
     }
     if (build_status == BuildStatus::kInvalid) {
       throw std::runtime_error("Invalid program binary");
@@ -259,8 +277,8 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
     // Sets the kernel and its arguments
     auto tune_kernel = Kernel(program, kernel.name());
-    for (auto &i: arguments_input_) { tune_kernel.SetArgument(i.index, i.buffer()); }
-    for (auto &i: arguments_output_) { tune_kernel.SetArgument(i.index, i.buffer()); }
+    for (auto &i: arguments_input_) { tune_kernel.SetArgument(i.index, i.buffer); }
+    for (auto &i: arguments_output_) { tune_kernel.SetArgument(i.index, i.buffer); }
     for (auto &i: arguments_int_) { tune_kernel.SetArgument(i.first, i.second); }
     for (auto &i: arguments_size_t_) { tune_kernel.SetArgument(i.first, i.second); }
     for (auto &i: arguments_float_) { tune_kernel.SetArgument(i.first, i.second); }
@@ -298,7 +316,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     }
 
     // Prints diagnostic information
-    fprintf(stdout, "%s Completed %s (%.0lf ms) - %lu out of %lu\n",
+    fprintf(stdout, "%s Completed %s (%.0lf ms) - %zu out of %zu\n",
             kMessageOK.c_str(), kernel.name().c_str(), elapsed_time,
             configuration_id+1, num_configurations);
 
@@ -320,21 +338,20 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
 // =================================================================================================
 
-// Creates a new array of zeroes and copies it to the target OpenCL buffer
+// Creates a new array of zeroes and copies it to the target device buffer
 template <typename T> 
 void TunerImpl::ResetMemArgument(MemArgument &argument) {
 
   // Create an array with zeroes
   std::vector<T> buffer(argument.size, T{0});
 
-  // Copy the new array to the OpenCL buffer on the device
-  auto bytes = sizeof(T)*argument.size;
-  argument.buffer.Write(queue_, bytes, buffer);
+  // Copy the new array to the device buffer on the device
+  Buffer<T>(argument.buffer).Write(queue_, argument.size, buffer);
 }
 
 // =================================================================================================
 
-// Loops over all reference outputs, creates per output a new host buffer and copies the OpenCL
+// Loops over all reference outputs, creates per output a new host buffer and copies the device
 // buffer from the device onto the host. This function is specialised for different data-types.
 void TunerImpl::StoreReferenceOutput() {
   reference_outputs_.clear();
@@ -352,15 +369,14 @@ void TunerImpl::StoreReferenceOutput() {
 }
 template <typename T> void TunerImpl::DownloadReference(MemArgument &device_buffer) {
   auto host_buffer = new T[device_buffer.size];
-  auto bytes = sizeof(T)*device_buffer.size;
-  device_buffer.buffer.Read(queue_, bytes, host_buffer);
+  Buffer<T>(device_buffer.buffer).Read(queue_, device_buffer.size, host_buffer);
   reference_outputs_.push_back(host_buffer);
 }
 
 // =================================================================================================
 
 // In case there is a reference kernel, this function loops over all outputs, creates per output a
-// new host buffer and copies the OpenCL buffer from the device onto the host. Following, it
+// new host buffer and copies the device buffer from the device onto the host. Following, it
 // compares the results to the reference output. This function is specialised for different
 // data-types. These functions return "true" if everything is OK, and "false" if there is a warning.
 bool TunerImpl::VerifyOutput() {
@@ -390,12 +406,11 @@ bool TunerImpl::DownloadAndCompare(MemArgument &device_buffer, const size_t i) {
 
   // Downloads the results to the host
   std::vector<T> host_buffer(device_buffer.size);
-  auto bytes = sizeof(T)*device_buffer.size;
-  device_buffer.buffer.Read(queue_, bytes, host_buffer);
+  Buffer<T>(device_buffer.buffer).Read(queue_, device_buffer.size, host_buffer);
 
   // Compares the results (L2 norm)
   T* reference_output = static_cast<T*>(reference_outputs_[i]);
-  for (auto j=0UL; j<device_buffer.size; ++j) {
+  for (auto j=size_t{0}; j<device_buffer.size; ++j) {
     l2_norm += AbsoluteDifference(reference_output[j], host_buffer[j]);
   }
 
@@ -422,6 +437,144 @@ template <> double TunerImpl::AbsoluteDifference(const double2 reference, const 
   auto real = fabs(reference.real() - result.real());
   auto imag = fabs(reference.imag() - result.imag());
   return real + imag;
+}
+
+// =================================================================================================
+
+// Trains a model and predicts all remaining configurations
+void TunerImpl::ModelPrediction(const Model model_type, const float validation_fraction,
+                                const size_t test_top_x_configurations) {
+
+  // Iterates over all tunable kernels
+  for (auto &kernel: kernels_) {
+
+    // Retrieves the number of training samples and features
+    auto validation_samples = static_cast<size_t>(tuning_results_.size()*validation_fraction);
+    auto training_samples = tuning_results_.size() - validation_samples;
+    auto features = tuning_results_[0].configuration.size();
+
+    // Sets the raw training and validation data
+    auto x_train = std::vector<std::vector<float>>(training_samples, std::vector<float>(features));
+    auto y_train = std::vector<float>(training_samples);
+    for (auto s=size_t{0}; s<training_samples; ++s) {
+      y_train[s] = tuning_results_[s].time;
+      for (auto f=size_t{0}; f<features; ++f) {
+        x_train[s][f] = static_cast<float>(tuning_results_[s].configuration[f].value);
+      }
+    }
+    auto x_validation = std::vector<std::vector<float>>(validation_samples, std::vector<float>(features));
+    auto y_validation = std::vector<float>(validation_samples);
+    for (auto s=size_t{0}; s<validation_samples; ++s) {
+      y_validation[s] = tuning_results_[s+training_samples].time;
+      for (auto f=size_t{0}; f<features; ++f) {
+        x_validation[s][f] = static_cast<float>(tuning_results_[s + training_samples].configuration[f].value);
+      }
+    }
+
+    // Pointer to one of the machine learning models
+    std::unique_ptr<MLModel<float>> model;
+
+    // Trains a linear regression model
+    if (model_type == Model::kLinearRegression) {
+      PrintHeader("Training a linear regression model");
+
+      // Sets the learning parameters
+      auto learning_iterations = size_t{800}; // For gradient descent
+      auto learning_rate = 0.05f; // For gradient descent
+      auto lambda = 0.2f; // Regularization parameter
+      auto debug_display = true; // Output learned data to stdout
+
+      // Trains and validates the model
+      model = std::unique_ptr<MLModel<float>>(
+        new LinearRegression<float>(learning_iterations, learning_rate, lambda, debug_display)
+      );
+      model->Train(x_train, y_train);
+      model->Validate(x_validation, y_validation);
+    }
+
+    // Trains a neural network model
+    else if (model_type == Model::kNeuralNetwork) {
+      PrintHeader("Training a neural network model");
+
+      // Sets the learning parameters
+      auto learning_iterations = size_t{800}; // For gradient descent
+      auto learning_rate = 0.1f; // For gradient descent
+      auto lambda = 0.005f; // Regularization parameter
+      auto debug_display = true; // Output learned data to stdout
+      auto layers = std::vector<size_t>{features, 20, 1};
+
+      // Trains and validates the model
+      model = std::unique_ptr<MLModel<float>>(
+        new NeuralNetwork<float>(learning_iterations, learning_rate, lambda, layers, debug_display)
+      );
+      model->Train(x_train, y_train);
+      model->Validate(x_validation, y_validation);
+    }
+
+    // Unknown model
+    else {
+      throw std::runtime_error("Unknown machine learning model");
+    }
+
+    // Iterates over all configurations (the permutations of the tuning parameters)
+    PrintHeader("Predicting the remaining configurations using the model");
+    auto model_results = std::vector<std::tuple<size_t,float>>();
+    auto p = size_t{0};
+    for (auto &permutation: kernel.configurations()) {
+
+      // Runs the trained model to predicts the result
+      auto x_test = std::vector<float>();
+      for (auto &setting: permutation) {
+        x_test.push_back(static_cast<float>(setting.value));
+      }
+      auto predicted_time = model->Predict(x_test);
+      model_results.push_back(std::make_tuple(p, predicted_time));
+      ++p;
+    }
+
+    // Sorts the modelled results by performance
+    std::sort(begin(model_results), end(model_results),
+      [](const std::tuple<size_t,float> &t1, const std::tuple<size_t,float> &t2) {
+        return std::get<1>(t1) < std::get<1>(t2);
+      }
+    );
+
+    // Tests the best configurations on the device to verify the results
+    PrintHeader("Testing the best-found configurations");
+    for (auto i=size_t{0}; i<test_top_x_configurations && i<model_results.size(); ++i) {
+      auto result = model_results[i];
+      printf("[ -------> ] The model predicted: %.3lf ms\n", std::get<1>(result));
+      auto pid = std::get<0>(result);
+      auto permutations = kernel.configurations();
+      auto permutation = permutations[pid];
+
+      // Adds the parameters to the source-code string as defines
+      auto source = std::string{};
+      for (auto &config: permutation) {
+        source += config.GetDefine();
+      }
+      source += kernel.source();
+
+      // Updates the local range with the parameter values
+      kernel.ComputeRanges(permutation);
+
+      // Compiles and runs the kernel
+      auto tuning_result = RunKernel(source, kernel, pid, test_top_x_configurations);
+      tuning_result.status = VerifyOutput();
+
+      // Stores the parameters and the timing-result
+      tuning_result.configuration = permutation;
+      tuning_results_.push_back(tuning_result);
+      if (tuning_result.time == std::numeric_limits<float>::max()) {
+        tuning_result.time = 0.0;
+        PrintResult(stdout, tuning_result, kMessageFailure);
+        tuning_result.time = std::numeric_limits<float>::max();
+      }
+      else if (!tuning_result.status) {
+        PrintResult(stdout, tuning_result, kMessageWarning);
+      }
+    }
+  }
 }
 
 // =================================================================================================

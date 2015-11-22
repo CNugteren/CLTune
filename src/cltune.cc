@@ -49,7 +49,7 @@ Tuner::~Tuner() {
 
 // =================================================================================================
 
-// Loads the OpenCL source-code from a file and calls the function-overload below.
+// Loads the kernel source-code from a file and calls the function-overload below.
 size_t Tuner::AddKernel(const std::vector<std::string> &filenames, const std::string &kernel_name,
                         const IntRange &global, const IntRange &local) {
   auto source = std::string{};
@@ -59,7 +59,7 @@ size_t Tuner::AddKernel(const std::vector<std::string> &filenames, const std::st
   return AddKernelFromString(source, kernel_name, global, local);
 }
 
-// Loads the OpenCL source-code from a string and creates a new variable of type KernelInfo to store
+// Loads the kernel source-code from a string and creates a new variable of type KernelInfo to store
 // all the kernel-information.
 size_t Tuner::AddKernelFromString(const std::string &source, const std::string &kernel_name,
                                   const IntRange &global, const IntRange &local) {
@@ -162,10 +162,10 @@ void Tuner::SetLocalMemoryUsage(const size_t id, LocalMemoryFunction amount,
 // vector of data. Then, upload it to the device and store the argument in a list.
 template <typename T>
 void Tuner::AddArgumentInput(const std::vector<T> &source) {
-  auto device_buffer = Buffer(pimpl->context(), source.size()*sizeof(T));
-  device_buffer.Write(pimpl->queue(), source.size()*sizeof(T), source);
+  auto device_buffer = Buffer<T>(pimpl->context(), BufferAccess::kNotOwned, source.size());
+  device_buffer.Write(pimpl->queue(), source.size(), source);
   auto argument = TunerImpl::MemArgument{pimpl->argument_counter_++, source.size(),
-                                         pimpl->GetType<T>(), device_buffer};
+                                         pimpl->GetType<T>(), device_buffer()};
   pimpl->arguments_input_.push_back(argument);
 }
 
@@ -181,9 +181,9 @@ template void Tuner::AddArgumentInput<double2>(const std::vector<double2>&);
 // sense that they will be checked in the verification process.
 template <typename T>
 void Tuner::AddArgumentOutput(const std::vector<T> &source) {
-  auto device_buffer = Buffer(pimpl->context(), source.size()*sizeof(T));
+  auto device_buffer = Buffer<T>(pimpl->context(), BufferAccess::kNotOwned, source.size());
   auto argument = TunerImpl::MemArgument{pimpl->argument_counter_++, source.size(),
-                                         pimpl->GetType<T>(), device_buffer};
+                                         pimpl->GetType<T>(), device_buffer()};
   pimpl->arguments_output_.push_back(argument);
 }
 
@@ -264,6 +264,14 @@ void Tuner::Tune() {
 
 // =================================================================================================
 
+// Fits a machine learning model. See the TunerImpl's implemenation for details
+void Tuner::ModelPrediction(const Model model_type, const float validation_fraction,
+                            const size_t test_top_x_configurations) {
+  pimpl->ModelPrediction(model_type, validation_fraction, test_top_x_configurations);
+}
+
+// =================================================================================================
+
 // Iterates over all tuning results and prints each parameter configuration and the corresponding
 // timing-results. Printing is to stdout.
 double Tuner::PrintToScreen() const {
@@ -340,8 +348,8 @@ void Tuner::PrintJSON(const std::string &filename,
   fprintf(file, "  \"device\": \"%s\",\n", pimpl->device().Name().c_str());
   fprintf(file, "  \"device_vendor\": \"%s\",\n", pimpl->device().Vendor().c_str());
   fprintf(file, "  \"device_type\": \"%s\",\n", device_type.c_str());
-  fprintf(file, "  \"device_core_clock\": \"%lu\",\n", pimpl->device().CoreClock());
-  fprintf(file, "  \"device_compute_units\": \"%lu\",\n", pimpl->device().ComputeUnits());
+  fprintf(file, "  \"device_core_clock\": \"%zu\",\n", pimpl->device().CoreClock());
+  fprintf(file, "  \"device_compute_units\": \"%zu\",\n", pimpl->device().ComputeUnits());
   fprintf(file, "  \"results\": [\n");
 
   // Loops over all the results
@@ -357,7 +365,7 @@ void Tuner::PrintJSON(const std::string &filename,
     auto num_configs = result.configuration.size();
     for (auto p=size_t{0}; p<num_configs; ++p) {
       auto config = result.configuration[p];
-      fprintf(file, "\"%s\": %lu", config.name.c_str(), config.value);
+      fprintf(file, "\"%s\": %zu", config.name.c_str(), config.value);
       if (p < num_configs-1) { fprintf(file, ","); }
     }
     fprintf(file, "}\n");
@@ -399,9 +407,9 @@ void Tuner::PrintToFile(const std::string &filename) const {
       // Prints an entry to file
       fprintf(file, "%s;", tuning_result.kernel_name.c_str());
       fprintf(file, "%.2lf;", tuning_result.time);
-      fprintf(file, "%lu;", tuning_result.threads);
+      fprintf(file, "%zu;", tuning_result.threads);
       for (auto &setting: tuning_result.configuration) {
-        fprintf(file, "%lu;", setting.value);
+        fprintf(file, "%zu;", setting.value);
       }
       fprintf(file, "\n");
     }
