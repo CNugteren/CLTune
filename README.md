@@ -23,7 +23,7 @@ CLTune can be compiled as a shared library using CMake. The pre-requisites are:
   - MSVC (Visual Studio) 2015 or newer
 * An OpenCL library. CLTune has been tested with:
   - Apple OpenCL
-  - NVIDIA CUDA SDK
+  - NVIDIA CUDA SDK (requires version 7.5 or newer for the CUDA back-end)
   - AMD APP SDK
 
 An example of an out-of-source build (starting from the root of the CLTune folder):
@@ -51,20 +51,20 @@ Before we start using the tuner, we'll have to create one. The constructor takes
 
     cltune::Tuner my_tuner(0, 1); // Tuner on device 1 of OpenCL platform 0
 
-Now that we have a tuner, we can add a tuning kernel. This is done by providing a list of paths to kernel files (first argument), the name of the kernel (second argument), a list of global thread dimensions (third argument), and a list of local thread or workgroup dimensions (fourth argument). Here is an example:
+For the CUDA back-end use 0 as the platform ID. Now that we have a tuner, we can add a tuning kernel. This is done by providing a list of paths to kernel files (first argument), the name of the kernel (second argument), a list of global thread dimensions (third argument), and a list of local thread or workgroup dimensions (fourth argument). Note that the thread configuration can be dynamic as well, see the included samples. Here is an example of a more basic usage using a static configuration:
 
     size_t id = my_tuner.AddKernel({"path/to/kernel.opencl"}, "my_kernel", {1024,512}, {16,8});
 
-Notice that the AddKernel function returns an integer: it is the ID of the added kernel. We'll need this ID when we want to add tuning parameters to this kernel. Let's say that our kernel has two pre-processor parameters named `PARAM_1` and `PARAM_2`:
+Notice that the AddKernel function returns an integer: it is the ID of the added kernel. We'll need this ID when we want to add tuning parameters to this kernel. Let's say that our kernel has two pre-processor parameters named `PARAM_1` with allowed values 16 and 24 and `PARAM_2` with allowed values 0 through 4:
 
     my_tuner.AddParameter(id, "PARAM_1", {16, 24});
     my_tuner.AddParameter(id, "PARAM_2", {0, 1, 2, 3, 4});
 
-Now that we've added a kernel and its parameters, we can add another one if we wish. When we're done, there are a couple of things left to be done. Let's start with adding an reference kernel. This reference kernel can provide the tuner with the ground-truth and is optional - only when it is provided will the tuner perform verification checks to ensure correctness.
+Now that we've added a kernel and its parameters, we can add another one if we wish. When we're satisfied with the kernels and their parameters, there are a couple of things left to be done. Let's start by adding a reference kernel. This reference kernel can provide the tuner with the ground-truth and is optional - the tuner will only perform verification checks to ensure correctness when it is provided.
 
     my_tuner.SetReference({"path/to/reference.opencl"}, "my_reference", {8192}, {128});
 
-The tuner also needs to know which arguments the kernels take. Scalar arguments can be provided as-is and are passed-by-value, whereas arrays have to be provided as C++ `std::vector`s. That's right, we won't have to create device buffers, CLTune will handle that for us! Here is an example:
+The tuner also needs to know which arguments the kernels take. Scalar arguments can be provided as-is and are passed-by-value, whereas arrays have to be provided as C++ `std::vector`s. That's right, you don't have to create device buffers yourself, CLTune will handle that! Here is an example:
 
     int my_variable = 900;
     std::vector<float> input_vector(8192);
@@ -83,13 +83,31 @@ Now that we've configured the tuner, it is time to start it and ask it to report
 Other examples
 -------------
 
-Examples are included as part of the CLTune distribution. They illustrate some more advanced features, such as modifying the thread dimensions based on the parameters and adding user-defined parameter constraints. The examples are compiled when setting `ENABLE_SAMPLES` to `ON` to CMake (default option). The included examples are:
+Several examples are included as part of the CLTune distribution. They illustrate some more advanced features, such as modifying the thread dimensions based on the parameters and adding user-defined parameter constraints. The examples are compiled when setting `ENABLE_SAMPLES` to `ON` in CMake (default option). The included examples are:
 
 * `simple.cc` providing a basic example of matrix-vector multiplication
-* `gemm.cc` providing an advanced and heavily tuned implementation of matrix-matrix multiplication (GEMM)
-* `conv.cc` providing an advanced and heavily tuned implementation of 2D convolution
+* `gemm.cc` providing an advanced and heavily tunable implementation of matrix-matrix multiplication (GEMM)
+* `conv.cc` providing an advanced and heavily tunable implementation of 2D convolution
 
-The latter two take optionally command-line arguments. The first argument is an integer for the device to run on, the second argument is an integer to select a search strategy (0=random, 1=annealing, 2=PSO, 3=fullsearch), and the third an optional search-strategy parameter.
+The latter two optionally take command-line arguments. The first argument is an integer for the device to run on, the second argument is an integer to select a search strategy (0=random, 1=annealing, 2=PSO, 3=fullsearch), and the third an optional search-strategy parameter.
+
+
+Search strategies and machine-learning
+-------------
+
+The GEMM and 2D convolution examples are additionally configured to use one of the four supported search strategies. More details can be found in the corresponding CLTune paper (see below). These search-strategies can be used for any example as follows:
+
+  tuner.UseFullSearch(); // Default
+  tuner.UseRandomSearch(double fraction);
+  tuner.UseAnnealing(double fraction, double max_temperature);
+  tuner.UsePSO(double fraction, size_t swarm_size, double influence_global, double influence_local, double influence_random);
+
+The 2D convolution example is additionally configured to use machine-learning to predict the quality of parameters based on a limited set of 'training' data. The supported models are linear regression and a 3-layer neural network. These machine-learning models are still experimental, but can be used as follows:
+
+  // Trains a machine learning model based on the search space explored so far. Then, all the
+  // missing data-points are estimated based on this model. This is only useful if a fraction of
+  // the search space is explored, as is the case when doing random-search.
+  tuner.ModelPrediction(Model model_type, float validation_fraction, size_t test_top_x_configurations);
 
 
 Experimental CUDA support
@@ -99,7 +117,7 @@ CLTune was originally developed for OpenCL kernels, but since it uses the high-l
 
     cmake -DUSE_OPENCL=OFF ..
 
-The samples ship with a basic header to convert the included OpenCL samples to CUDA (`cl_to_cuda.h`). This header file is automatically included when CLTune is built with CUDA as a back-end. It has been tested with the `simple` example.
+The samples ship with a basic header to convert the included OpenCL samples to CUDA (`cl_to_cuda.h`). This header file is automatically included when CLTune is built with CUDA as a back-end. It has been tested with the `simple` example, but doesn't work with the more advanced kernels. Nevertheless, CLTune should work with any proper CUDA kernel.
 
 
 Development and tests
