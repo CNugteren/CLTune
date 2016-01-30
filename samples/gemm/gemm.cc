@@ -76,9 +76,9 @@ int main(int argc, char* argv[]) {
   auto method = kDefaultSearchMethod;
   auto search_param_1 = kDefaultSearchParameter1;
   if (argc >= 2) {
-    device_id = static_cast<size_t>(std::stoi(std::string{argv[1]}));
+    platform_id = static_cast<size_t>(std::stoi(std::string{argv[1]}));
 	if (argc >= 3) {
-	  platform_id = static_cast<size_t>(std::stoi(std::string{argv[2]}));
+      device_id = static_cast<size_t>(std::stoi(std::string{argv[2]}));
       if (argc >= 4) {
         method = static_cast<size_t>(std::stoi(std::string{argv[3]}));
         if (argc >= 5) {
