@@ -113,7 +113,7 @@ int main(int argc, char* argv[]) {
   // 3) Full search
   auto fraction = 1.0f/2048.0f;
   if      (method == 0) { tuner.UseRandomSearch(fraction); }
-  else if (method == 1) { tuner.UseAnnealing(fraction, static_cast<size_t>(search_param_1)); }
+  else if (method == 1) { tuner.UseAnnealing(fraction, static_cast<double>(search_param_1)); }
   else if (method == 2) { tuner.UsePSO(fraction, static_cast<size_t>(search_param_1), 0.4, 0.0, 0.4); }
   else                  { tuner.UseFullSearch(); }
 
