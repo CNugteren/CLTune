@@ -152,7 +152,7 @@ void Tuner::SetLocalMemoryUsage(const size_t id, LocalMemoryFunction amount,
       throw std::runtime_error("Invalid parameter");
     }
   }
- pimpl->kernels_[id].SetLocalMemoryUsage(amount, parameters);
+  pimpl->kernels_[id].SetLocalMemoryUsage(amount, parameters);
 }
 
 
@@ -170,12 +170,12 @@ void Tuner::AddArgumentInput(const std::vector<T> &source) {
 }
 
 // Compiles the function for various data-types
-template void Tuner::AddArgumentInput<int>(const std::vector<int>&);
-template void Tuner::AddArgumentInput<size_t>(const std::vector<size_t>&);
-template void Tuner::AddArgumentInput<float>(const std::vector<float>&);
-template void Tuner::AddArgumentInput<double>(const std::vector<double>&);
-template void Tuner::AddArgumentInput<float2>(const std::vector<float2>&);
-template void Tuner::AddArgumentInput<double2>(const std::vector<double2>&);
+template void PUBLIC_API Tuner::AddArgumentInput<int>(const std::vector<int>&);
+template void PUBLIC_API Tuner::AddArgumentInput<size_t>(const std::vector<size_t>&);
+template void PUBLIC_API Tuner::AddArgumentInput<float>(const std::vector<float>&);
+template void PUBLIC_API Tuner::AddArgumentInput<double>(const std::vector<double>&);
+template void PUBLIC_API Tuner::AddArgumentInput<float2>(const std::vector<float2>&);
+template void PUBLIC_API Tuner::AddArgumentInput<double2>(const std::vector<double2>&);
 
 // Similar to the above function, but now marked as output buffer. Output buffers are special in the
 // sense that they will be checked in the verification process.
@@ -188,32 +188,32 @@ void Tuner::AddArgumentOutput(const std::vector<T> &source) {
 }
 
 // Compiles the function for various data-types
-template void Tuner::AddArgumentOutput<int>(const std::vector<int>&);
-template void Tuner::AddArgumentOutput<size_t>(const std::vector<size_t>&);
-template void Tuner::AddArgumentOutput<float>(const std::vector<float>&);
-template void Tuner::AddArgumentOutput<double>(const std::vector<double>&);
-template void Tuner::AddArgumentOutput<float2>(const std::vector<float2>&);
-template void Tuner::AddArgumentOutput<double2>(const std::vector<double2>&);
+template void PUBLIC_API Tuner::AddArgumentOutput<int>(const std::vector<int>&);
+template void PUBLIC_API Tuner::AddArgumentOutput<size_t>(const std::vector<size_t>&);
+template void PUBLIC_API Tuner::AddArgumentOutput<float>(const std::vector<float>&);
+template void PUBLIC_API Tuner::AddArgumentOutput<double>(const std::vector<double>&);
+template void PUBLIC_API Tuner::AddArgumentOutput<float2>(const std::vector<float2>&);
+template void PUBLIC_API Tuner::AddArgumentOutput<double2>(const std::vector<double2>&);
 
 // Sets a scalar value as an argument to the kernel. Since a vector of scalars of any type doesn't
 // exist, there is no general implemenation. Instead, each data-type has its specialised version in
 // which it stores to a specific vector.
-template <> void Tuner::AddArgumentScalar<int>(const int argument) {
+template <> void PUBLIC_API Tuner::AddArgumentScalar<int>(const int argument) {
   pimpl->arguments_int_.push_back({pimpl->argument_counter_++, argument});
 }
-template <> void Tuner::AddArgumentScalar<size_t>(const size_t argument) {
+template <> void PUBLIC_API Tuner::AddArgumentScalar<size_t>(const size_t argument) {
   pimpl->arguments_size_t_.push_back({pimpl->argument_counter_++, argument});
 }
-template <> void Tuner::AddArgumentScalar<float>(const float argument) {
+template <> void PUBLIC_API Tuner::AddArgumentScalar<float>(const float argument) {
   pimpl->arguments_float_.push_back({pimpl->argument_counter_++, argument});
 }
-template <> void Tuner::AddArgumentScalar<double>(const double argument) {
+template <> void PUBLIC_API Tuner::AddArgumentScalar<double>(const double argument) {
   pimpl->arguments_double_.push_back({pimpl->argument_counter_++, argument});
 }
-template <> void Tuner::AddArgumentScalar<float2>(const float2 argument) {
+template <> void PUBLIC_API Tuner::AddArgumentScalar<float2>(const float2 argument) {
   pimpl->arguments_float2_.push_back({pimpl->argument_counter_++, argument});
 }
-template <> void Tuner::AddArgumentScalar<double2>(const double2 argument) {
+template <> void PUBLIC_API Tuner::AddArgumentScalar<double2>(const double2 argument) {
   pimpl->arguments_double2_.push_back({pimpl->argument_counter_++, argument});
 }
 
