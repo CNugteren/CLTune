@@ -91,6 +91,8 @@ Several examples are included as part of the CLTune distribution. They illustrat
 
 The latter two optionally take command-line arguments. The first argument is an integer to select the platform (NVIDIA, AMD, etc.), the second argument is an integer for the device to run on, the third argument is an integer to select a search strategy (0=random, 1=annealing, 2=PSO, 3=fullsearch), and the fourth an optional search-strategy parameter.
 
+Other examples are found in the [CLTuneDemos repository](https://github.com/williamjshipman/CLTuneDemos). CLTune is also used in the [CLBlast library](https://github.com/CNugteren/CLBlast).
+
 
 Search strategies and machine-learning
 -------------
@@ -123,9 +125,7 @@ The samples ship with a basic header to convert the included OpenCL samples to C
 Development and tests
 -------------
 
-The CLTune project follows the Google C++ styleguide (with some exceptions) and uses a tab-size of two spaces and a max-width of 100 characters per line. It is furthermore based on practises from the third edition of Effective C++ and the first edition of Effective Modern C++. The project is licensed under the APACHE 2.0 license by SURFsara, (c) 2014. The contributing authors so far are:
-
-* Cedric Nugteren
+The CLTune project follows the Google C++ styleguide (with some exceptions) and uses a tab-size of two spaces and a max-width of 100 characters per line. It is furthermore based on practises from the third edition of Effective C++ and the first edition of Effective Modern C++. The project is licensed under the APACHE 2.0 license by SURFsara, (c) 2014.
 
 CLTune is packaged with Catch 1.2.1 and a custom test suite. No external dependencies are needed. The tests will be compiled when providing the `TESTS=ON` option to CMake. Running the tests goes as follows:
 
@@ -137,9 +137,11 @@ However, the more useful tests are the provided examples, since they include a v
     ./sample_gemm X Y
 
 
-Citation
+More information
 -------------
 
-If you refer to this work in a scientific publication, please cite the corresponding CLTune paper published in MCSoC '15:
+A how-to-use CLTune tutorial written by William J Shipman is available on [his blog](https://williamjshipman.wordpress.com/2016/01/31/autotuning-opencl-kernels-cltune-on-windows-7/).
+
+More in-depth information and experimental results are also available in a scientific paper. If you refer to this work in a scientific publication, please cite the corresponding CLTune paper published in MCSoC '15:
 
 > Cedric Nugteren and Valeriu Codreanu. CLTune: A Generic Auto-Tuner for OpenCL Kernels. In: MCSoC: 9th International Symposium on Embedded Multicore/Many-core Systems-on-Chip. IEEE, 2015.
