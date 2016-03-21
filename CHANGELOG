@@ -1,6 +1,7 @@
 
 Development version (next release)
--
+- Added exports to be able to create a DLL on Windows (thanks to Marco Hutter)
+- Added command-line OpenCL platform selection in the examples (thanks to William J Shipman)
 
 Version 2.0.0
 - Added support for machine learning models. These models can be trained on a small fraction of the

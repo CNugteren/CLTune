@@ -89,7 +89,7 @@ Several examples are included as part of the CLTune distribution. They illustrat
 * `gemm.cc` providing an advanced and heavily tunable implementation of matrix-matrix multiplication (GEMM)
 * `conv.cc` providing an advanced and heavily tunable implementation of 2D convolution
 
-The latter two optionally take command-line arguments. The first argument is an integer for the device to run on, the second argument is an integer to select a search strategy (0=random, 1=annealing, 2=PSO, 3=fullsearch), and the third an optional search-strategy parameter.
+The latter two optionally take command-line arguments. The first argument is an integer to select the platform (NVIDIA, AMD, etc.), the second argument is an integer for the device to run on, the third argument is an integer to select a search strategy (0=random, 1=annealing, 2=PSO, 3=fullsearch), and the fourth an optional search-strategy parameter.
 
 
 Search strategies and machine-learning

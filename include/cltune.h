@@ -35,6 +35,14 @@
 #include <functional> // std::function
 #include <utility> // std::pair
 
+// Exports library functions under Windows when building a DLL. See also:
+// https://msdn.microsoft.com/en-us/library/a90k134d.aspx
+#ifdef _WIN32
+  #define PUBLIC_API __declspec(dllexport)
+#else
+  #define PUBLIC_API
+#endif
+
 namespace cltune {
 // =================================================================================================
 
@@ -58,52 +66,52 @@ class Tuner {
  public:
 
   // Initializes the tuner either with platform 0 and device 0 or with a custom platform/device
-  explicit Tuner();
-  explicit Tuner(size_t platform_id, size_t device_id);
-  ~Tuner();
+  explicit PUBLIC_API Tuner();
+  explicit PUBLIC_API Tuner(size_t platform_id, size_t device_id);
+  PUBLIC_API ~Tuner();
 
   // Adds a new kernel to the list of tuning-kernels and returns a unique ID (to be used when
   // adding tuning parameters). Either loads the source from filenames or from string.
-  size_t AddKernel(const std::vector<std::string> &filenames, const std::string &kernel_name,
-                   const IntRange &global, const IntRange &local);
-  size_t AddKernelFromString(const std::string &source, const std::string &kernel_name,
-                             const IntRange &global, const IntRange &local);
+  size_t PUBLIC_API AddKernel(const std::vector<std::string> &filenames, const std::string &kernel_name,
+                              const IntRange &global, const IntRange &local);
+  size_t PUBLIC_API AddKernelFromString(const std::string &source, const std::string &kernel_name,
+                                        const IntRange &global, const IntRange &local);
 
   // Sets the reference kernel. Same as the AddKernel function, but in this case there is only one
   // reference kernel. Calling this function again will overwrite the previous reference kernel.
-  void SetReference(const std::vector<std::string> &filenames,
-                    const std::string &kernel_name,
-                    const IntRange &global, const IntRange &local);
-  void SetReferenceFromString(const std::string &source,
-                              const std::string &kernel_name,
-                              const IntRange &global, const IntRange &local);
+  void PUBLIC_API SetReference(const std::vector<std::string> &filenames,
+                               const std::string &kernel_name,
+                               const IntRange &global, const IntRange &local);
+  void PUBLIC_API SetReferenceFromString(const std::string &source,
+                                         const std::string &kernel_name,
+                                         const IntRange &global, const IntRange &local);
 
   // Adds a new tuning parameter for a kernel with a specific ID. The parameter has a name, the
   // number of values, and a list of values.
-  void AddParameter(const size_t id, const std::string &parameter_name,
-                    const std::initializer_list<size_t> &values);
+  void PUBLIC_API AddParameter(const size_t id, const std::string &parameter_name,
+                               const std::initializer_list<size_t> &values);
 
   // As above, but now adds a single valued parameter to the reference
-  void AddParameterReference(const std::string &parameter_name, const size_t value);
+  void PUBLIC_API AddParameterReference(const std::string &parameter_name, const size_t value);
 
   // Modifies the global or local thread-size (integers) by one of the parameters (strings). The
   // modifier can be multiplication or division.
-  void MulGlobalSize(const size_t id, const StringRange range);
-  void DivGlobalSize(const size_t id, const StringRange range);
-  void MulLocalSize(const size_t id, const StringRange range);
-  void DivLocalSize(const size_t id, const StringRange range);
+  void PUBLIC_API MulGlobalSize(const size_t id, const StringRange range);
+  void PUBLIC_API DivGlobalSize(const size_t id, const StringRange range);
+  void PUBLIC_API MulLocalSize(const size_t id, const StringRange range);
+  void PUBLIC_API DivLocalSize(const size_t id, const StringRange range);
 
   // Adds a new constraint to the set of parameters (e.g. must be equal or larger than). The
   // constraints come in the form of a function object which takes a number of tuning parameters,
   // given as a vector of strings (parameter names). Their names are later substituted by actual
   // values.
-  void AddConstraint(const size_t id, ConstraintFunction valid_if,
-                     const std::vector<std::string> &parameters);
+  void PUBLIC_API AddConstraint(const size_t id, ConstraintFunction valid_if,
+                                const std::vector<std::string> &parameters);
 
   // As above, but for local memory usage. If this function is not called, it is assumed that the
   // local memory usage is 0: no configurations will be excluded because of too much local memory.
-  void SetLocalMemoryUsage(const size_t id, LocalMemoryFunction amount,
-                           const std::vector<std::string> &parameters);
+  void PUBLIC_API SetLocalMemoryUsage(const size_t id, LocalMemoryFunction amount,
+                                      const std::vector<std::string> &parameters);
 
   // Functions to add kernel-arguments for input buffers, output buffers, and scalars. Make sure to
   // call these in the order in which the arguments appear in the kernel.
@@ -113,35 +121,35 @@ class Tuner {
 
   // Configures a specific search method. The default search method is "FullSearch". These are
   // implemented as separate functions since they each take a different number of arguments.
-  void UseFullSearch();
-  void UseRandomSearch(const double fraction);
-  void UseAnnealing(const double fraction, const double max_temperature);
-  void UsePSO(const double fraction, const size_t swarm_size, const double influence_global,
-              const double influence_local, const double influence_random);
+  void PUBLIC_API UseFullSearch();
+  void PUBLIC_API UseRandomSearch(const double fraction);
+  void PUBLIC_API UseAnnealing(const double fraction, const double max_temperature);
+  void PUBLIC_API UsePSO(const double fraction, const size_t swarm_size, const double influence_global,
+                         const double influence_local, const double influence_random);
 
   // Outputs the search process to a file
-  void OutputSearchLog(const std::string &filename);
+  void PUBLIC_API OutputSearchLog(const std::string &filename);
 
   // Starts the tuning process: compile all kernels and run them for each permutation of the tuning-
   // parameters. Note that this might take a while.
-  void Tune();
+  void PUBLIC_API Tune();
 
   // Trains a machine learning model based on the search space explored so far. Then, all the
   // missing data-points are estimated based on this model. This is only useful if a fraction of
   // the search space is explored, as is the case when doing random-search.
-  void ModelPrediction(const Model model_type, const float validation_fraction,
-                       const size_t test_top_x_configurations);
+  void PUBLIC_API ModelPrediction(const Model model_type, const float validation_fraction,
+                                  const size_t test_top_x_configurations);
 
   // Prints the results of the tuning either to screen (stdout) or to a specific output-file.
   // Returns the execution time in miliseconds.
-  double PrintToScreen() const;
-  void PrintFormatted() const;
-  void PrintJSON(const std::string &filename,
-                 const std::vector<std::pair<std::string,std::string>> &descriptions) const;
-  void PrintToFile(const std::string &filename) const;
+  double PUBLIC_API PrintToScreen() const;
+  void PUBLIC_API PrintFormatted() const;
+  void PUBLIC_API PrintJSON(const std::string &filename,
+                            const std::vector<std::pair<std::string,std::string>> &descriptions) const;
+  void PUBLIC_API PrintToFile(const std::string &filename) const;
 
   // Disables all further printing to stdout
-  void SuppressOutput();
+  void PUBLIC_API SuppressOutput();
 
  private:
 
