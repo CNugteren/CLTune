@@ -349,8 +349,18 @@ class Queue {
                                                              delete s; }) {
     auto status = CL_SUCCESS;
     #ifdef CL_VERSION_2_0
-      cl_queue_properties properties[] = {CL_QUEUE_PROPERTIES, CL_QUEUE_PROFILING_ENABLE, 0};
-      *queue_ = clCreateCommandQueueWithProperties(context(), device(), properties, &status);
+      std::string ocl_version_string = device.Version().substr(7);
+      size_t major_minor_separator = ocl_version_string.find('.');
+      int ocl_major_version = std::stoi(ocl_version_string.substr(0, major_minor_separator));
+      if (ocl_major_version == 2)
+      {
+        cl_queue_properties properties[] = {CL_QUEUE_PROPERTIES, CL_QUEUE_PROFILING_ENABLE, 0};
+        *queue_ = clCreateCommandQueueWithProperties(context(), device(), properties, &status);
+      }
+      else
+      {
+        *queue_ = clCreateCommandQueue(context(), device(), CL_QUEUE_PROFILING_ENABLE, &status);
+      }
     #else
       *queue_ = clCreateCommandQueue(context(), device(), CL_QUEUE_PROFILING_ENABLE, &status);
     #endif
