@@ -27,7 +27,7 @@
 cmake_minimum_required(VERSION 2.8.10)
 project("cltune" CXX)
 set(cltune_VERSION_MAJOR 2)
-set(cltune_VERSION_MINOR 0)
+set(cltune_VERSION_MINOR 1)
 set(cltune_VERSION_PATCH 0)
 
 # Options
@@ -78,7 +78,7 @@ endif()
 
 # C++ compiler settings
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  set(FLAGS "/Ox")
+  set(FLAGS "/Ox /wd4715 /wd4996")
 else ()
   set(FLAGS "-O3 -std=c++11")
   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")

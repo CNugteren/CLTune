@@ -46,6 +46,7 @@ bool IsMultiple(size_t a, size_t b) {
 
 // Constants
 constexpr auto kDefaultDevice = size_t{0};
+constexpr auto kDefaultPlatform = size_t{0};
 constexpr auto kDefaultSearchMethod = size_t{1};
 constexpr auto kDefaultSearchParameter1 = size_t{4};
 
@@ -73,16 +74,20 @@ int main(int argc, char* argv[]) {
   // Selects the device, the search method and its first parameter. These parameters are all
   // optional and are thus also given default values.
   auto device_id = kDefaultDevice;
+  auto platform_id = kDefaultPlatform;
   auto method = kDefaultSearchMethod;
   auto search_param_1 = kDefaultSearchParameter1;
   if (argc >= 2) {
-    device_id = static_cast<size_t>(std::stoi(std::string{argv[1]}));
-    if (argc >= 3) {
-      method = static_cast<size_t>(std::stoi(std::string{argv[2]}));
+    platform_id = static_cast<size_t>(std::stoi(std::string{argv[1]}));
+	if (argc >= 3) {
+	  device_id = static_cast<size_t>(std::stoi(std::string{argv[2]}));
       if (argc >= 4) {
-        search_param_1 = static_cast<size_t>(std::stoi(std::string{argv[3]}));
+        method = static_cast<size_t>(std::stoi(std::string{argv[3]}));
+        if (argc >= 5) {
+          search_param_1 = static_cast<size_t>(std::stoi(std::string{argv[4]}));
+        }
       }
-    }
+	}
   }
 
   // Creates data structures
@@ -115,8 +120,8 @@ int main(int argc, char* argv[]) {
 
   // ===============================================================================================
 
-  // Initializes the tuner (platform 0, device 'device_id')
-  cltune::Tuner tuner(size_t{0}, static_cast<size_t>(device_id));
+  // Initializes the tuner (platform 'platform_id', device 'device_id')
+  cltune::Tuner tuner(static_cast<size_t>(platform_id), static_cast<size_t>(device_id));
 
   // Sets one of the following search methods:
   // 0) Random search
