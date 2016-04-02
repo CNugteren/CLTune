@@ -1,5 +1,8 @@
 
 Development version (next release)
+-
+
+Version 2.1.0
 - Added exports to be able to create a DLL on Windows (thanks to Marco Hutter)
 - Added command-line OpenCL platform selection in the examples (thanks to William J Shipman)
 
