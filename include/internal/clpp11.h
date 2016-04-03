@@ -152,6 +152,15 @@ class Device {
 
   // Methods to retrieve device information
   std::string Version() const { return GetInfoString(CL_DEVICE_VERSION); }
+  size_t VersionNumber() const
+  {
+    std::string version_string = Version().substr(7);
+    // Space separates the end of the OpenCL version number from the beginning of the
+    // vendor-specific information.
+    size_t next_whitespace = version_string.find(' ');
+    size_t version = (size_t) (100.0 * std::stod(version_string.substr(0, next_whitespace)));
+    return version;
+  }
   std::string Vendor() const { return GetInfoString(CL_DEVICE_VENDOR); }
   std::string Name() const { return GetInfoString(CL_DEVICE_NAME); }
   std::string Type() const {
@@ -349,8 +358,16 @@ class Queue {
                                                              delete s; }) {
     auto status = CL_SUCCESS;
     #ifdef CL_VERSION_2_0
-      cl_queue_properties properties[] = {CL_QUEUE_PROPERTIES, CL_QUEUE_PROFILING_ENABLE, 0};
-      *queue_ = clCreateCommandQueueWithProperties(context(), device(), properties, &status);
+      size_t ocl_version = device.VersionNumber();
+      if (ocl_version >= 200)
+      {
+        cl_queue_properties properties[] = {CL_QUEUE_PROPERTIES, CL_QUEUE_PROFILING_ENABLE, 0};
+        *queue_ = clCreateCommandQueueWithProperties(context(), device(), properties, &status);
+      }
+      else
+      {
+        *queue_ = clCreateCommandQueue(context(), device(), CL_QUEUE_PROFILING_ENABLE, &status);
+      }
     #else
       *queue_ = clCreateCommandQueue(context(), device(), CL_QUEUE_PROFILING_ENABLE, &status);
     #endif
