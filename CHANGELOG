@@ -1,6 +1,7 @@
 
 Development version (next release)
--
+- Updated the general documentation
+- Now using version 5.0 of the CLCudaAPI header
 
 Version 2.1.0
 - Added exports to be able to create a DLL on Windows (thanks to Marco Hutter)

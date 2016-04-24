@@ -25,6 +25,8 @@ CLTune can be compiled as a shared library using CMake. The pre-requisites are:
   - Apple OpenCL
   - NVIDIA CUDA SDK (requires version 7.5 or newer for the CUDA back-end)
   - AMD APP SDK
+  - Intel OpenCL
+  - Beignet
 
 An example of an out-of-source build (starting from the root of the CLTune folder):
 
@@ -99,17 +101,17 @@ Search strategies and machine-learning
 
 The GEMM and 2D convolution examples are additionally configured to use one of the four supported search strategies. More details can be found in the corresponding CLTune paper (see below). These search-strategies can be used for any example as follows:
 
-  tuner.UseFullSearch(); // Default
-  tuner.UseRandomSearch(double fraction);
-  tuner.UseAnnealing(double fraction, double max_temperature);
-  tuner.UsePSO(double fraction, size_t swarm_size, double influence_global, double influence_local, double influence_random);
+    tuner.UseFullSearch(); // Default
+    tuner.UseRandomSearch(double fraction);
+    tuner.UseAnnealing(double fraction, double max_temperature);
+    tuner.UsePSO(double fraction, size_t swarm_size, double influence_global, double influence_local, double influence_random);
 
 The 2D convolution example is additionally configured to use machine-learning to predict the quality of parameters based on a limited set of 'training' data. The supported models are linear regression and a 3-layer neural network. These machine-learning models are still experimental, but can be used as follows:
 
-  // Trains a machine learning model based on the search space explored so far. Then, all the
-  // missing data-points are estimated based on this model. This is only useful if a fraction of
-  // the search space is explored, as is the case when doing random-search.
-  tuner.ModelPrediction(Model model_type, float validation_fraction, size_t test_top_x_configurations);
+    // Trains a machine learning model based on the search space explored so far. Then, all the
+    // missing data-points are estimated based on this model. This is only useful if a fraction of
+    // the search space is explored, as is the case when doing random-search.
+    tuner.ModelPrediction(Model model_type, float validation_fraction, size_t test_top_x_configurations);
 
 
 Experimental CUDA support
@@ -140,8 +142,18 @@ However, the more useful tests are the provided examples, since they include a v
 More information
 -------------
 
-A how-to-use CLTune tutorial written by William J Shipman is available on [his blog](https://williamjshipman.wordpress.com/2016/01/31/autotuning-opencl-kernels-cltune-on-windows-7/).
+Further information on CLTune is available elsewhere:
 
-More in-depth information and experimental results are also available in a scientific paper. If you refer to this work in a scientific publication, please cite the corresponding CLTune paper published in MCSoC '15:
+* A 19-minute presentation of CLTune was given at the GPU Technology Conference in April 2016. A recording is available on [the GTC on-demand website](http://on-demand.gputechconf.com/gtc/2016/video/S6206.html) and a full slideset is [also available as PDF](http://www.cedricnugteren.nl/downloads/handouts2016a.pdf).
+
+* A how-to-use CLTune tutorial written by William J Shipman is available on [his blog](https://williamjshipman.wordpress.com/2016/01/31/autotuning-opencl-kernels-cltune-on-windows-7/).
+
+* More in-depth information and experimental results are also available in a scientific paper. If you refer to this work in a scientific publication, please cite the corresponding CLTune paper published in MCSoC '15:
 
 > Cedric Nugteren and Valeriu Codreanu. CLTune: A Generic Auto-Tuner for OpenCL Kernels. In: MCSoC: 9th International Symposium on Embedded Multicore/Many-core Systems-on-Chip. IEEE, 2015.
+
+
+Related projects
+-------------
+
+A simpler but perhaps easier-to-use Python-based OpenCL auto-tuner was made by Ben van Werkhoven and is [also available on GitHub](https://github.com/benvanwerkhoven/kernel_tuner).
