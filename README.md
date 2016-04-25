@@ -85,11 +85,13 @@ Now that we've configured the tuner, it is time to start it and ask it to report
 Other examples
 -------------
 
-Several examples are included as part of the CLTune distribution. They illustrate some more advanced features, such as modifying the thread dimensions based on the parameters and adding user-defined parameter constraints. The examples are compiled when setting `ENABLE_SAMPLES` to `ON` in CMake (default option). The included examples are:
+Several examples are included as part of the CLTune distribution. They illustrate based and more advanced features, such as modifying the thread dimensions based on the parameters and adding user-defined parameter constraints. The examples are compiled when setting `ENABLE_SAMPLES` to `ON` in CMake (default option). All examples have both CUDA and OpenCL kernels. The included examples are:
 
-* `simple.cc` providing a basic example of matrix-vector multiplication
-* `gemm.cc` providing an advanced and heavily tunable implementation of matrix-matrix multiplication (GEMM)
-* `conv.cc` providing an advanced and heavily tunable implementation of 2D convolution
+* `simple.cc` The simplest possible example: tuning the work-group/thread-block size of a vector-addition kernel.
+* `conv_simple.cc` A simple example of a 2D convolution kernel.
+* `multiple_kernels.cc` A simple example with two different matrix-vector multiplication kernels, also showing the verification of output data.
+* `gemm.cc` An advanced and heavily tunable implementation of matrix-matrix multiplication (GEMM).
+* `conv.cc` An advanced and heavily tunable implementation of 2D convolution. This also demonstrates advanced search strategies including machine learning models.
 
 The latter two optionally take command-line arguments. The first argument is an integer to select the platform (NVIDIA, AMD, etc.), the second argument is an integer for the device to run on, the third argument is an integer to select a search strategy (0=random, 1=annealing, 2=PSO, 3=fullsearch), and the fourth an optional search-strategy parameter.
 

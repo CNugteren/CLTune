@@ -1,5 +1,6 @@
 
 Development version (next release)
+- Added two new simpler samples of using the tuner (vector-add and convolution)
 - Updated the general documentation
 - Now using version 5.0 of the CLCudaAPI header
 

@@ -3,109 +3,59 @@
 // This file is part of the CLTune project, which loosely follows the Google C++ styleguide and uses
 // a tab-size of two spaces and a max-width of 100 characters per line.
 //
-// Author: cedric.nugteren@surfsara.nl (Cedric Nugteren)
+// Author(s):
+//   Cedric Nugteren <www.cedricnugteren.nl>
 //
-// This file demonstrates the usage of CLTune with a simple matrix-vector multiplication example.
-//
-// -------------------------------------------------------------------------------------------------
-//
-// Copyright 2014 SURFsara
-// 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-// 
-//  http://www.apache.org/licenses/LICENSE-2.0
-// 
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// This file demonstrates the usage of CLTune with a simple vector-add example. The tuning parameter
+// for this example is the work-group/thread-block size.
 //
 // =================================================================================================
 
 #include <vector>
-#include <chrono>
-#include <random>
 
-// Includes the OpenCL tuner library
+// Includes the tuner library
 #include "cltune.h"
 
 // =================================================================================================
 
-// Basic example showing how to tune OpenCL kernels. We take a matrix-vector multiplication as an
-// example. Provided is reference code, a version with manual unrolling, and one with tiling in the
-// local memory.
 int main() {
 
-  // Sets the filenames of the OpenCL kernels (optionally automatically translated to CUDA)
-  auto matvec_unroll = std::vector<std::string>{"../samples/simple/simple_unroll.opencl"};
-  auto matvec_tiled = std::vector<std::string>{"../samples/simple/simple_tiled.opencl"};
-  auto matvec_reference = std::vector<std::string>{"../samples/simple/simple_reference.opencl"};
-  #ifndef USE_OPENCL
-    matvec_unroll.insert(matvec_unroll.begin(), "../samples/cl_to_cuda.h");
-    matvec_tiled.insert(matvec_tiled.begin(), "../samples/cl_to_cuda.h");
-    matvec_reference.insert(matvec_reference.begin(), "../samples/cl_to_cuda.h");
+  // Sets the filenames of the kernel (either OpenCL or CUDA)
+  #ifdef USE_OPENCL
+    auto kernel_file = std::vector<std::string>{"../samples/simple/simple_kernel.opencl"};
+  #else
+    auto kernel_file = std::vector<std::string>{"../samples/simple/simple_kernel.cu"};
   #endif
 
-  // Matrix size
-  constexpr auto kSizeM = size_t{2048};
-  constexpr auto kSizeN = size_t{4096};
+  // Vector dimension
+  constexpr auto kVectorSize = size_t{16*1024*1024};
 
-  // Creates data structures
-  std::vector<float> mat_a(kSizeN*kSizeM); // Assumes matrix A is transposed
-  std::vector<float> vec_x(kSizeN);
-  std::vector<float> vec_y(kSizeM);
-
-  // Create a random number generator
-  const auto random_seed = std::chrono::system_clock::now().time_since_epoch().count();
-  std::default_random_engine generator(static_cast<unsigned int>(random_seed));
-  std::uniform_real_distribution<float> distribution(-2.0f, 2.0f);
-
-  // Populates input data structures
-  for (auto &item: mat_a) { item = distribution(generator); }
-  for (auto &item: vec_x) { item = distribution(generator); }
-  for (auto &item: vec_y) { item = 0.0f; }
+  // Creates the vectors and fills them with some example data
+  std::vector<float> vec_a(kVectorSize, 1.0f);
+  std::vector<float> vec_b(kVectorSize, 2.0f);
+  std::vector<float> vec_c(kVectorSize, 0.0f);
 
   // Initializes the tuner (platform 0, device 0)
   cltune::Tuner tuner(size_t{0}, size_t{0});
 
-  // Adds a kernel which supports unrolling through the UNROLL parameter. Note that the kernel
-  // itself needs to implement the UNROLL parameter and (in this case) only accepts a limited
-  // amount of values.
-  auto id = tuner.AddKernel(matvec_unroll, "matvec_unroll", {kSizeM}, {128});
-  tuner.AddParameter(id, "UNROLL", {1, 2, 4});
+  // Adds the kernel. The total number of threads (the global size) is equal to 'kVectorSize', and
+  // the base number of threads per work-group/thread-block (the local size) is 1. This number is
+  // then multiplied by the 'GROUP_SIZE' parameter, which can take any of the specified values.
+  const auto id = tuner.AddKernel(kernel_file, "vector_add", {kVectorSize}, {1});
+  tuner.AddParameter(id, "GROUP_SIZE", {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048});
+  tuner.MulLocalSize(id, {"GROUP_SIZE"});
 
-  // Adds another kernel and its parameters. This kernel caches the input vector X into local
-  // memory to save global memory accesses. Note that the kernel's workgroup size is determined by
-  // the tile size parameter TS.
-  id = tuner.AddKernel(matvec_tiled, "matvec_tiled", {kSizeM}, {1});
-  tuner.AddParameter(id, "TS", {32, 64, 128, 256, 512});
-  tuner.MulLocalSize(id, {"TS"});
-
-  // Sets the tuner's golden reference function. This kernel contains the reference code to which
-  // the output is compared. Supplying such a function is not required, but it is necessarily for
-  // correctness checks to be enabled.
-  tuner.SetReference(matvec_reference, "matvec_reference", {kSizeM}, {128});
-
-  // Sets the function's arguments. Note that all kernels have to accept (but not necessarily use)
-  // all input arguments.
-  tuner.AddArgumentScalar(static_cast<int>(kSizeM));
-  tuner.AddArgumentScalar(static_cast<int>(kSizeN));
-  tuner.AddArgumentInput(mat_a);
-  tuner.AddArgumentInput(vec_x);
-  tuner.AddArgumentOutput(vec_y);
+  // Sets the function's arguments
+  tuner.AddArgumentScalar(static_cast<int>(kVectorSize));
+  tuner.AddArgumentInput(vec_a);
+  tuner.AddArgumentInput(vec_b);
+  tuner.AddArgumentOutput(vec_c);
 
   // Starts the tuner
   tuner.Tune();
 
   // Prints the results to screen
   tuner.PrintToScreen();
-
-  // Outputs all tuning results to JSON for later analysis. The argument provided here is an extra
-  // JSON entry: the name of this 'sample' is set to 'simple'.
-  tuner.PrintJSON("output.json", {{"sample","simple"}});
   return 0;
 }
 
