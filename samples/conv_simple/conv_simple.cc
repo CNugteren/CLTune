@@ -20,9 +20,6 @@
 // Includes the tuner library
 #include "cltune.h"
 
-// Helper function to perform an integer division + ceiling (round-up)
-size_t CeilDiv(size_t a, size_t b) { return (a + b - 1)/b; }
-
 // Helper function to determine whether or not 'a' is a multiple of 'b'
 bool IsMultiple(size_t a, size_t b) {
   return ((a/b)*b == a) ? true : false;
@@ -86,7 +83,7 @@ int main() {
   tuner.Tune();
 
   // Prints the results to screen and to file
-  auto time_ms = tuner.PrintToScreen();
+  tuner.PrintToScreen();
   tuner.PrintToFile("output.csv");
 
   // End of the tuner example
