@@ -1,5 +1,5 @@
 
-Development version (next release)
+Version 2.2.0
 - Added two new simpler samples of using the tuner (vector-add and convolution)
 - Updated the general documentation
 - Added API documentation
