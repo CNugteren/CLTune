@@ -27,10 +27,10 @@
 // =================================================================================================
 
 // Tuneable implementation of the 2D convolution example
-__global__ void conv(const int sizeX, const int sizeY,
-                     const float* src,
-                     float* coeff,
-                     floatvec* dest) {
+extern "C" __global__ void conv(const int sizeX, const int sizeY,
+                                const float* src,
+                                float* coeff,
+                                floatvec* dest) {
 
   // Thread identifiers
   const int gid_x = blockIdx.x * TBX + threadIdx.x; // From 0 to sizeX/WPTX-1

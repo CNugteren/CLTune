@@ -10,7 +10,7 @@
 //
 // =================================================================================================
 
-__global__ void vector_add(const int n, float *a, float *b, float *c) {
+extern "C" __global__ void vector_add(const int n, float *a, float *b, float *c) {
   const int i = blockIdx.x * GROUP_SIZE + threadIdx.x;
   if (i < n) {
     c[i] = a[i] + b[i];
