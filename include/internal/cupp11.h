@@ -93,6 +93,9 @@ class Event {
     CheckError(cuEventCreate(end_.get(), CU_EVENT_DEFAULT));
   }
 
+  // Waits for completion of this event (not implemented for CUDA)
+  void WaitForCompletion() const { }
+
   // Retrieves the elapsed time of the last recorded event
   float GetElapsedTime() const {
     auto result = 0.0f;
@@ -107,6 +110,9 @@ class Event {
   std::shared_ptr<CUevent> start_;
   std::shared_ptr<CUevent> end_;
 };
+
+// Pointer to a CUDA event
+using EventPointer = CUevent*;
 
 // =================================================================================================
 
@@ -415,30 +421,32 @@ class Buffer {
   }
 
   // Copies from device to host: reading the device buffer a-synchronously
-  void ReadAsync(const Queue &queue, const size_t size, T* host, const size_t offset = 0) {
+  void ReadAsync(const Queue &queue, const size_t size, T* host, const size_t offset = 0) const {
     if (access_ == BufferAccess::kWriteOnly) { Error("reading from a write-only buffer"); }
     CheckError(cuMemcpyDtoHAsync(host, *buffer_ + offset*sizeof(T), size*sizeof(T), queue()));
   }
   void ReadAsync(const Queue &queue, const size_t size, std::vector<T> &host,
-                 const size_t offset = 0) {
+                 const size_t offset = 0) const {
     if (host.size() < size) { Error("target host buffer is too small"); }
     ReadAsync(queue, size, host.data(), offset);
   }
   void ReadAsync(const Queue &queue, const size_t size, BufferHost<T> &host,
-                 const size_t offset = 0) {
+                 const size_t offset = 0) const {
     if (host.size() < size) { Error("target host buffer is too small"); }
     ReadAsync(queue, size, host.data(), offset);
   }
 
   // Copies from device to host: reading the device buffer
-  void Read(const Queue &queue, const size_t size, T* host, const size_t offset = 0) {
+  void Read(const Queue &queue, const size_t size, T* host, const size_t offset = 0) const {
     ReadAsync(queue, size, host, offset);
     queue.Finish();
   }
-  void Read(const Queue &queue, const size_t size, std::vector<T> &host, const size_t offset = 0) {
+  void Read(const Queue &queue, const size_t size, std::vector<T> &host,
+            const size_t offset = 0) const {
     Read(queue, size, host.data(), offset);
   }
-  void Read(const Queue &queue, const size_t size, BufferHost<T> &host, const size_t offset = 0) {
+  void Read(const Queue &queue, const size_t size, BufferHost<T> &host,
+            const size_t offset = 0) const {
     Read(queue, size, host.data(), offset);
   }
 
@@ -567,6 +575,15 @@ class Kernel {
     CheckError(cuLaunchKernel(kernel_, grid[0], grid[1], grid[2], block[0], block[1], block[2],
                               0, queue(), pointers.data(), nullptr));
     CheckError(cuEventRecord(event.end(), queue()));
+  }
+
+  // As above, but with an event waiting list
+  // TODO: Implement this function
+  void Launch(const Queue &queue, const std::vector<size_t> &global,
+              const std::vector<size_t> &local, Event &event,
+              std::vector<Event>& waitForEvents) {
+    if (waitForEvents.size() == 0) { return Launch(queue, global, local, event); }
+    Error("launching with an event waiting list is not implemented for the CUDA back-end");
   }
 
   // As above, but with the default local workgroup size

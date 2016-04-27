@@ -27,7 +27,7 @@
 cmake_minimum_required(VERSION 2.8.10)
 project("cltune" CXX)
 set(cltune_VERSION_MAJOR 2)
-set(cltune_VERSION_MINOR 1)
+set(cltune_VERSION_MINOR 2)
 set(cltune_VERSION_PATCH 0)
 
 # Options
@@ -147,9 +147,13 @@ if (SAMPLES)
 
   # Adds sample programs
   add_executable(sample_simple samples/simple/simple.cc)
+  add_executable(sample_conv_simple samples/conv_simple/conv_simple.cc)
+  add_executable(sample_multiple_kernels samples/multiple_kernels/multiple_kernels.cc)
   add_executable(sample_gemm samples/gemm/gemm.cc)
   add_executable(sample_conv samples/conv/conv.cc)
   target_link_libraries(sample_simple cltune ${FRAMEWORK_LIBRARIES} ${OpenMP_LIBRARY})
+  target_link_libraries(sample_conv_simple cltune ${FRAMEWORK_LIBRARIES} ${OpenMP_LIBRARY})
+  target_link_libraries(sample_multiple_kernels cltune ${FRAMEWORK_LIBRARIES} ${OpenMP_LIBRARY})
   target_link_libraries(sample_gemm cltune ${FRAMEWORK_LIBRARIES} ${OpenMP_LIBRARY})
   target_link_libraries(sample_conv cltune ${FRAMEWORK_LIBRARIES} ${OpenMP_LIBRARY})
 

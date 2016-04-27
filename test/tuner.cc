@@ -43,8 +43,8 @@ SCENARIO("kernels can be added", "[Tuner]") {
     const auto kConfigGlobal = cltune::IntRange(128, 256);
     const auto kConfigLocal = cltune::IntRange(8, 1);
     const std::vector<std::pair<std::string,std::string>> kExampleKernels = {
-      {"../samples/simple/simple_reference.opencl","matvec_reference"},
-      {"../samples/simple/simple_unroll.opencl","matvec_unroll"}
+      {"../samples/multiple_kernels/multiple_kernels_reference.opencl","matvec_reference"},
+      {"../samples/multiple_kernels/multiple_kernels_unroll.opencl","matvec_unroll"}
     };
     const auto kExampleParameter = std::string{"TEST_PARAM"};
     const auto kExampleParameterValues = std::initializer_list<size_t>{6, 9, 1003};

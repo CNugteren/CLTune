@@ -79,15 +79,15 @@ int main(int argc, char* argv[]) {
   auto search_param_1 = kDefaultSearchParameter1;
   if (argc >= 2) {
     platform_id = static_cast<size_t>(std::stoi(std::string{argv[1]}));
-	if (argc >= 3) {
-	  device_id = static_cast<size_t>(std::stoi(std::string{argv[2]}));
+    if (argc >= 3) {
+      device_id = static_cast<size_t>(std::stoi(std::string{argv[2]}));
       if (argc >= 4) {
         method = static_cast<size_t>(std::stoi(std::string{argv[3]}));
         if (argc >= 5) {
           search_param_1 = static_cast<size_t>(std::stoi(std::string{argv[4]}));
         }
       }
-	}
+    }
   }
 
   // Creates data structures

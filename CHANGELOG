@@ -1,4 +1,10 @@
 
+Version 2.2.0
+- Added two new simpler samples of using the tuner (vector-add and convolution)
+- Updated the general documentation
+- Added API documentation
+- Now using version 5.0 of the CLCudaAPI header
+
 Version 2.1.0
 - Added exports to be able to create a DLL on Windows (thanks to Marco Hutter)
 - Added command-line OpenCL platform selection in the examples (thanks to William J Shipman)
