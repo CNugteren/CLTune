@@ -1,4 +1,4 @@
-CLCudaAPI: API reference
+CLTune: API reference
 ================
 
 This file describes the API of the CLTune auto-tuner for OpenCL and CUDA kernels. Everything is in the `cltune` namespace.
