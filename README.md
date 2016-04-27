@@ -144,7 +144,9 @@ However, the more useful tests are the provided examples, since they include a v
 More information
 -------------
 
-Further information on CLTune is available elsewhere:
+Further information on CLTune is available below:
+
+* The full [CLTune API reference](doc/api.md) is available in the current repository.
 
 * A 19-minute presentation of CLTune was given at the GPU Technology Conference in April 2016. A recording is available on [the GTC on-demand website](http://on-demand.gputechconf.com/gtc/2016/video/S6206.html) and a full slideset is [also available as PDF](http://www.cedricnugteren.nl/downloads/handouts2016a.pdf).
 
