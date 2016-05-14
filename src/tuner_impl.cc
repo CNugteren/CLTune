@@ -265,8 +265,10 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     // Sets the output buffer(s) to zero
     for (auto &output: arguments_output_) {
       switch (output.type) {
+        case MemType::kShort: ResetMemArgument<short>(output); break;
         case MemType::kInt: ResetMemArgument<int>(output); break;
         case MemType::kSizeT: ResetMemArgument<size_t>(output); break;
+        case MemType::kHalf: ResetMemArgument<half>(output); break;
         case MemType::kFloat: ResetMemArgument<float>(output); break;
         case MemType::kDouble: ResetMemArgument<double>(output); break;
         case MemType::kFloat2: ResetMemArgument<float2>(output); break;
@@ -357,8 +359,10 @@ void TunerImpl::StoreReferenceOutput() {
   reference_outputs_.clear();
   for (auto &output_buffer: arguments_output_) {
     switch (output_buffer.type) {
+      case MemType::kShort: DownloadReference<short>(output_buffer); break;
       case MemType::kInt: DownloadReference<int>(output_buffer); break;
       case MemType::kSizeT: DownloadReference<size_t>(output_buffer); break;
+      case MemType::kHalf: DownloadReference<half>(output_buffer); break;
       case MemType::kFloat: DownloadReference<float>(output_buffer); break;
       case MemType::kDouble: DownloadReference<double>(output_buffer); break;
       case MemType::kFloat2: DownloadReference<float2>(output_buffer); break;
@@ -385,8 +389,10 @@ bool TunerImpl::VerifyOutput() {
     auto i = size_t{0};
     for (auto &output_buffer: arguments_output_) {
       switch (output_buffer.type) {
+        case MemType::kShort: status &= DownloadAndCompare<short>(output_buffer, i); break;
         case MemType::kInt: status &= DownloadAndCompare<int>(output_buffer, i); break;
         case MemType::kSizeT: status &= DownloadAndCompare<size_t>(output_buffer, i); break;
+        case MemType::kHalf: status &= DownloadAndCompare<half>(output_buffer, i); break;
         case MemType::kFloat: status &= DownloadAndCompare<float>(output_buffer, i); break;
         case MemType::kDouble: status &= DownloadAndCompare<double>(output_buffer, i); break;
         case MemType::kFloat2: status &= DownloadAndCompare<float2>(output_buffer, i); break;
@@ -612,8 +618,10 @@ void TunerImpl::PrintHeader(const std::string &header_name) const {
 // =================================================================================================
 
 // Get the MemType based on a template argument
+template <> MemType TunerImpl::GetType<short>() { return MemType::kShort; }
 template <> MemType TunerImpl::GetType<int>() { return MemType::kInt; }
 template <> MemType TunerImpl::GetType<size_t>() { return MemType::kSizeT; }
+template <> MemType TunerImpl::GetType<half>() { return MemType::kHalf; }
 template <> MemType TunerImpl::GetType<float>() { return MemType::kFloat; }
 template <> MemType TunerImpl::GetType<double>() { return MemType::kDouble; }
 template <> MemType TunerImpl::GetType<float2>() { return MemType::kFloat2; }
