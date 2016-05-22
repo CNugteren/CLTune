@@ -170,8 +170,10 @@ void Tuner::AddArgumentInput(const std::vector<T> &source) {
 }
 
 // Compiles the function for various data-types
+template void PUBLIC_API Tuner::AddArgumentInput<short>(const std::vector<short>&);
 template void PUBLIC_API Tuner::AddArgumentInput<int>(const std::vector<int>&);
 template void PUBLIC_API Tuner::AddArgumentInput<size_t>(const std::vector<size_t>&);
+template void PUBLIC_API Tuner::AddArgumentInput<half>(const std::vector<half>&);
 template void PUBLIC_API Tuner::AddArgumentInput<float>(const std::vector<float>&);
 template void PUBLIC_API Tuner::AddArgumentInput<double>(const std::vector<double>&);
 template void PUBLIC_API Tuner::AddArgumentInput<float2>(const std::vector<float2>&);
@@ -188,8 +190,10 @@ void Tuner::AddArgumentOutput(const std::vector<T> &source) {
 }
 
 // Compiles the function for various data-types
+template void PUBLIC_API Tuner::AddArgumentOutput<short>(const std::vector<short>&);
 template void PUBLIC_API Tuner::AddArgumentOutput<int>(const std::vector<int>&);
 template void PUBLIC_API Tuner::AddArgumentOutput<size_t>(const std::vector<size_t>&);
+template void PUBLIC_API Tuner::AddArgumentOutput<half>(const std::vector<half>&);
 template void PUBLIC_API Tuner::AddArgumentOutput<float>(const std::vector<float>&);
 template void PUBLIC_API Tuner::AddArgumentOutput<double>(const std::vector<double>&);
 template void PUBLIC_API Tuner::AddArgumentOutput<float2>(const std::vector<float2>&);
@@ -198,11 +202,17 @@ template void PUBLIC_API Tuner::AddArgumentOutput<double2>(const std::vector<dou
 // Sets a scalar value as an argument to the kernel. Since a vector of scalars of any type doesn't
 // exist, there is no general implemenation. Instead, each data-type has its specialised version in
 // which it stores to a specific vector.
+template <> void PUBLIC_API Tuner::AddArgumentScalar<short>(const short argument) {
+  pimpl->arguments_int_.push_back({pimpl->argument_counter_++, argument});
+}
 template <> void PUBLIC_API Tuner::AddArgumentScalar<int>(const int argument) {
   pimpl->arguments_int_.push_back({pimpl->argument_counter_++, argument});
 }
 template <> void PUBLIC_API Tuner::AddArgumentScalar<size_t>(const size_t argument) {
   pimpl->arguments_size_t_.push_back({pimpl->argument_counter_++, argument});
+}
+template <> void PUBLIC_API Tuner::AddArgumentScalar<half>(const half argument) {
+  pimpl->arguments_float_.push_back({pimpl->argument_counter_++, argument});
 }
 template <> void PUBLIC_API Tuner::AddArgumentScalar<float>(const float argument) {
   pimpl->arguments_float_.push_back({pimpl->argument_counter_++, argument});
@@ -352,10 +362,18 @@ void Tuner::PrintJSON(const std::string &filename,
   fprintf(file, "  \"device_compute_units\": \"%zu\",\n", pimpl->device().ComputeUnits());
   fprintf(file, "  \"results\": [\n");
 
+  // Filters failed configurations
+  auto results = std::vector<TunerImpl::TunerResult>();
+  for (const auto &tuning_result: pimpl->tuning_results_) {
+    if (tuning_result.status && tuning_result.time != std::numeric_limits<double>::max()) {
+      results.push_back(tuning_result);
+    }
+  }
+
   // Loops over all the results
-  auto num_results = pimpl->tuning_results_.size();
+  auto num_results = results.size();
   for (auto r=size_t{0}; r<num_results; ++r) {
-    auto result = pimpl->tuning_results_[r];
+    auto result = results[r];
     fprintf(file, "    {\n");
     fprintf(file, "      \"kernel\": \"%s\",\n", result.kernel_name.c_str());
     fprintf(file, "      \"time\": %.3lf,\n", result.time);

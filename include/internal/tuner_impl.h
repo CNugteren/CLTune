@@ -50,6 +50,13 @@
 namespace cltune {
 // =================================================================================================
 
+// Host data-type for half-precision floating-point (16-bit)
+#if USE_OPENCL
+  using half = cl_half;
+#else
+  using half = short unsigned int;
+#endif
+
 // Shorthands for complex data-types
 using float2 = std::complex<float>; // cl_float2;
 using double2 = std::complex<double>; // cl_double2;
@@ -62,7 +69,7 @@ using double2 = std::complex<double>; // cl_double2;
 #endif
 
 // Enumeration of currently supported data-types by this class
-enum class MemType { kInt, kSizeT, kFloat, kDouble, kFloat2, kDouble2 };
+enum class MemType { kShort, kInt, kSizeT, kHalf, kFloat, kDouble, kFloat2, kDouble2 };
 
 // See comment at top of file for a description of the class
 class TunerImpl {

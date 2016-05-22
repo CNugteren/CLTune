@@ -1,4 +1,9 @@
 
+Version 2.3.0
+- Added support for 'short' and 'cl_half' data-types as kernel buffer and scalar arguments
+- Fixed a bug where failed results would still show up in the tuning results
+- Made MSVC link the run-time libraries statically
+
 Version 2.2.0
 - Added two new simpler samples of using the tuner (vector-add and convolution)
 - Updated the general documentation
