@@ -362,10 +362,18 @@ void Tuner::PrintJSON(const std::string &filename,
   fprintf(file, "  \"device_compute_units\": \"%zu\",\n", pimpl->device().ComputeUnits());
   fprintf(file, "  \"results\": [\n");
 
+  // Filters failed configurations
+  auto results = std::vector<TunerImpl::TunerResult>();
+  for (const auto &tuning_result: pimpl->tuning_results_) {
+    if (tuning_result.status && tuning_result.time != std::numeric_limits<double>::max()) {
+      results.push_back(tuning_result);
+    }
+  }
+
   // Loops over all the results
-  auto num_results = pimpl->tuning_results_.size();
+  auto num_results = results.size();
   for (auto r=size_t{0}; r<num_results; ++r) {
-    auto result = pimpl->tuning_results_[r];
+    auto result = results[r];
     fprintf(file, "    {\n");
     fprintf(file, "      \"kernel\": \"%s\",\n", result.kernel_name.c_str());
     fprintf(file, "      \"time\": %.3lf,\n", result.time);
