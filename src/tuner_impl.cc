@@ -457,6 +457,11 @@ template <> double TunerImpl::AbsoluteDifference(const double2 reference, const 
   auto imag = fabs(reference.imag() - result.imag());
   return real + imag;
 }
+template <> double TunerImpl::AbsoluteDifference(const half reference, const half result) {
+  const auto reference_float = HalfToFloat(reference);
+  const auto result_float = HalfToFloat(result);
+  return fabs(static_cast<double>(reference_float) - static_cast<double>(result_float));
+}
 
 // =================================================================================================
 

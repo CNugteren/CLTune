@@ -1,6 +1,7 @@
 
 Development version (next version)
-- Fixed bug where an output buffer could not be used as input at the same time
+- Fixed a bug where an output buffer could not be used as input at the same time
+- Fixed computing the validation error for half-precision fp16 data-types
 
 Version 2.3.0
 - Added support for 'short' and 'cl_half' data-types as kernel buffer and scalar arguments

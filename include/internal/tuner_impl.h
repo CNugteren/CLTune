@@ -41,6 +41,9 @@
 
 #include "internal/kernel_info.h"
 
+// Host data-type for half-precision floating-point (16-bit)
+#include "internal/half.h"
+
 #include <string> // std::string
 #include <vector> // std::vector
 #include <memory> // std::shared_ptr
@@ -49,13 +52,6 @@
 
 namespace cltune {
 // =================================================================================================
-
-// Host data-type for half-precision floating-point (16-bit)
-#if USE_OPENCL
-  using half = cl_half;
-#else
-  using half = short unsigned int;
-#endif
 
 // Shorthands for complex data-types
 using float2 = std::complex<float>; // cl_float2;
