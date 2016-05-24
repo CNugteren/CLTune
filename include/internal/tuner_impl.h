@@ -120,8 +120,8 @@ class TunerImpl {
   TunerResult RunKernel(const std::string &source, const KernelInfo &kernel,
                         const size_t configuration_id, const size_t num_configurations);
 
-  // Sets a device buffer to zero
-  template <typename T> void ResetMemArgument(MemArgument &argument);
+  // Copies an output buffer
+  template <typename T> MemArgument CopyOutputBuffer(MemArgument &argument);
 
   // Stores the output of the reference run into the host memory
   void StoreReferenceOutput();
@@ -174,7 +174,8 @@ class TunerImpl {
   size_t argument_counter_;
   std::vector<KernelInfo> kernels_;
   std::vector<MemArgument> arguments_input_;
-  std::vector<MemArgument> arguments_output_;
+  std::vector<MemArgument> arguments_output_; // these remain constant
+  std::vector<MemArgument> arguments_output_copy_; // these may be modified by the kernel
   std::vector<std::pair<size_t,int>> arguments_int_;
   std::vector<std::pair<size_t,size_t>> arguments_size_t_;
   std::vector<std::pair<size_t,float>> arguments_float_;
