@@ -122,6 +122,7 @@ TunerImpl::~TunerImpl() {
   };
   for (auto &mem_argument: arguments_input_) { free_buffers(mem_argument); }
   for (auto &mem_argument: arguments_output_) { free_buffers(mem_argument); }
+  for (auto &mem_argument: arguments_output_copy_) { free_buffers(mem_argument); }
 
   if (!suppress_output_) {
     fprintf(stdout, "\n%s End of the tuning process\n\n", kMessageFull.c_str());
@@ -263,17 +264,27 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
       throw std::runtime_error("Invalid program binary");
     }
 
-    // Sets the output buffer(s) to zero
+    // Clears all previous copies of output buffer(s)
+    for (auto &mem_info: arguments_output_copy_) {
+      #ifdef USE_OPENCL
+        CheckError(clReleaseMemObject(mem_info.buffer));
+      #else
+        CheckError(cuMemFree(mem_info.buffer));
+      #endif
+    }
+    arguments_output_copy_.clear();
+
+    // Creates a copy of the output buffer(s)
     for (auto &output: arguments_output_) {
       switch (output.type) {
-        case MemType::kShort: ResetMemArgument<short>(output); break;
-        case MemType::kInt: ResetMemArgument<int>(output); break;
-        case MemType::kSizeT: ResetMemArgument<size_t>(output); break;
-        case MemType::kHalf: ResetMemArgument<half>(output); break;
-        case MemType::kFloat: ResetMemArgument<float>(output); break;
-        case MemType::kDouble: ResetMemArgument<double>(output); break;
-        case MemType::kFloat2: ResetMemArgument<float2>(output); break;
-        case MemType::kDouble2: ResetMemArgument<double2>(output); break;
+        case MemType::kShort: arguments_output_copy_.push_back(CopyOutputBuffer<short>(output)); break;
+        case MemType::kInt: arguments_output_copy_.push_back(CopyOutputBuffer<int>(output)); break;
+        case MemType::kSizeT: arguments_output_copy_.push_back(CopyOutputBuffer<size_t>(output)); break;
+        case MemType::kHalf: arguments_output_copy_.push_back(CopyOutputBuffer<half>(output)); break;
+        case MemType::kFloat: arguments_output_copy_.push_back(CopyOutputBuffer<float>(output)); break;
+        case MemType::kDouble: arguments_output_copy_.push_back(CopyOutputBuffer<double>(output)); break;
+        case MemType::kFloat2: arguments_output_copy_.push_back(CopyOutputBuffer<float2>(output)); break;
+        case MemType::kDouble2: arguments_output_copy_.push_back(CopyOutputBuffer<double2>(output)); break;
         default: throw std::runtime_error("Unsupported reference output data-type");
       }
     }
@@ -281,7 +292,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     // Sets the kernel and its arguments
     auto tune_kernel = Kernel(program, kernel.name());
     for (auto &i: arguments_input_) { tune_kernel.SetArgument(i.index, i.buffer); }
-    for (auto &i: arguments_output_) { tune_kernel.SetArgument(i.index, i.buffer); }
+    for (auto &i: arguments_output_copy_) { tune_kernel.SetArgument(i.index, i.buffer); }
     for (auto &i: arguments_int_) { tune_kernel.SetArgument(i.first, i.second); }
     for (auto &i: arguments_size_t_) { tune_kernel.SetArgument(i.first, i.second); }
     for (auto &i: arguments_float_) { tune_kernel.SetArgument(i.first, i.second); }
@@ -341,15 +352,16 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
 // =================================================================================================
 
-// Creates a new array of zeroes and copies it to the target device buffer
-template <typename T> 
-void TunerImpl::ResetMemArgument(MemArgument &argument) {
-
-  // Create an array with zeroes
-  std::vector<T> buffer(argument.size, T{0});
-
-  // Copy the new array to the device buffer on the device
-  Buffer<T>(argument.buffer).Write(queue_, argument.size, buffer);
+// Uploads a copy of the output vector to the device. This is done because the output might as well
+// be an input buffer at the same time. Every kernel might override it, so it needs to be updated
+// before each run.
+template <typename T>
+TunerImpl::MemArgument TunerImpl::CopyOutputBuffer(MemArgument &argument) {
+  auto buffer_copy = Buffer<T>(context_, BufferAccess::kNotOwned, argument.size);
+  auto buffer_source = Buffer<T>(argument.buffer);
+  buffer_source.CopyTo(queue_, argument.size, buffer_copy);
+  auto result = MemArgument{argument.index, argument.size, argument.type, buffer_copy()};
+  return result;
 }
 
 // =================================================================================================
@@ -358,7 +370,7 @@ void TunerImpl::ResetMemArgument(MemArgument &argument) {
 // buffer from the device onto the host. This function is specialised for different data-types.
 void TunerImpl::StoreReferenceOutput() {
   reference_outputs_.clear();
-  for (auto &output_buffer: arguments_output_) {
+  for (auto &output_buffer: arguments_output_copy_) {
     switch (output_buffer.type) {
       case MemType::kShort: DownloadReference<short>(output_buffer); break;
       case MemType::kInt: DownloadReference<int>(output_buffer); break;
@@ -388,7 +400,7 @@ bool TunerImpl::VerifyOutput() {
   auto status = true;
   if (has_reference_) {
     auto i = size_t{0};
-    for (auto &output_buffer: arguments_output_) {
+    for (auto &output_buffer: arguments_output_copy_) {
       switch (output_buffer.type) {
         case MemType::kShort: status &= DownloadAndCompare<short>(output_buffer, i); break;
         case MemType::kInt: status &= DownloadAndCompare<int>(output_buffer, i); break;
@@ -444,6 +456,11 @@ template <> double TunerImpl::AbsoluteDifference(const double2 reference, const 
   auto real = fabs(reference.real() - result.real());
   auto imag = fabs(reference.imag() - result.imag());
   return real + imag;
+}
+template <> double TunerImpl::AbsoluteDifference(const half reference, const half result) {
+  const auto reference_float = HalfToFloat(reference);
+  const auto result_float = HalfToFloat(result);
+  return fabs(static_cast<double>(reference_float) - static_cast<double>(result_float));
 }
 
 // =================================================================================================

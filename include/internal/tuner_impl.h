@@ -41,6 +41,9 @@
 
 #include "internal/kernel_info.h"
 
+// Host data-type for half-precision floating-point (16-bit)
+#include "internal/half.h"
+
 #include <string> // std::string
 #include <vector> // std::vector
 #include <memory> // std::shared_ptr
@@ -49,13 +52,6 @@
 
 namespace cltune {
 // =================================================================================================
-
-// Host data-type for half-precision floating-point (16-bit)
-#if USE_OPENCL
-  using half = cl_half;
-#else
-  using half = short unsigned int;
-#endif
 
 // Shorthands for complex data-types
 using float2 = std::complex<float>; // cl_float2;
@@ -120,8 +116,8 @@ class TunerImpl {
   TunerResult RunKernel(const std::string &source, const KernelInfo &kernel,
                         const size_t configuration_id, const size_t num_configurations);
 
-  // Sets a device buffer to zero
-  template <typename T> void ResetMemArgument(MemArgument &argument);
+  // Copies an output buffer
+  template <typename T> MemArgument CopyOutputBuffer(MemArgument &argument);
 
   // Stores the output of the reference run into the host memory
   void StoreReferenceOutput();
@@ -174,7 +170,8 @@ class TunerImpl {
   size_t argument_counter_;
   std::vector<KernelInfo> kernels_;
   std::vector<MemArgument> arguments_input_;
-  std::vector<MemArgument> arguments_output_;
+  std::vector<MemArgument> arguments_output_; // these remain constant
+  std::vector<MemArgument> arguments_output_copy_; // these may be modified by the kernel
   std::vector<std::pair<size_t,int>> arguments_int_;
   std::vector<std::pair<size_t,size_t>> arguments_size_t_;
   std::vector<std::pair<size_t,float>> arguments_float_;

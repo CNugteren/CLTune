@@ -33,7 +33,7 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cxx_fla
 project("cltune" CXX)
 set(cltune_VERSION_MAJOR 2)
 set(cltune_VERSION_MINOR 3)
-set(cltune_VERSION_PATCH 0)
+set(cltune_VERSION_PATCH 1)
 
 # Options
 option(SAMPLES "Enable compilation of sample programs" ON)

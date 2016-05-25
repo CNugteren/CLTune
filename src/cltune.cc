@@ -184,6 +184,7 @@ template void PUBLIC_API Tuner::AddArgumentInput<double2>(const std::vector<doub
 template <typename T>
 void Tuner::AddArgumentOutput(const std::vector<T> &source) {
   auto device_buffer = Buffer<T>(pimpl->context(), BufferAccess::kNotOwned, source.size());
+  device_buffer.Write(pimpl->queue(), source.size(), source);
   auto argument = TunerImpl::MemArgument{pimpl->argument_counter_++, source.size(),
                                          pimpl->GetType<T>(), device_buffer()};
   pimpl->arguments_output_.push_back(argument);
