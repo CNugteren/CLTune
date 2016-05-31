@@ -20,6 +20,23 @@ const size_t kDeviceID = 0;
 const size_t kInvalidPlatformID = 99;
 const size_t kInvalidDeviceID = 99;
 
+// Example kernels
+const auto kernel1 = R"(
+__kernel void small_kernel(__global float* array) {
+  array[get_global_id(0)] = result;
+})";
+const auto kernel2 = R"(
+__kernel void matvec_reference(const int kSizeM, const int kSizeN,
+                               const __global float* mat_a,
+                               const __global float* vec_x,
+                               __global float* vec_y) {
+  float result = 0.0f;
+  for (int j=0; j<kSizeN; ++j) {
+    result += mat_a[j*kSizeM + get_global_id(0)] * vec_x[j];
+  }
+  vec_y[get_global_id(0)] = result;
+})";
+
 // =================================================================================================
 
 SCENARIO("tuners can be created", "[Tuner]") {
@@ -43,8 +60,8 @@ SCENARIO("kernels can be added", "[Tuner]") {
     const auto kConfigGlobal = cltune::IntRange(128, 256);
     const auto kConfigLocal = cltune::IntRange(8, 1);
     const std::vector<std::pair<std::string,std::string>> kExampleKernels = {
-      {"../samples/multiple_kernels/multiple_kernels_reference.opencl","matvec_reference"},
-      {"../samples/multiple_kernels/multiple_kernels_unroll.opencl","matvec_unroll"}
+      {kernel1,"small_kernel"},
+      {kernel2,"matvec_reference"}
     };
     const auto kExampleParameter = std::string{"TEST_PARAM"};
     const auto kExampleParameterValues = std::initializer_list<size_t>{6, 9, 1003};
@@ -55,8 +72,8 @@ SCENARIO("kernels can be added", "[Tuner]") {
 
       for (; counter<kExampleKernels.size(); ++counter) {
         auto example_kernel = kExampleKernels[counter];
-        auto id = tuner.AddKernel({example_kernel.first}, example_kernel.second,
-                                  kConfigGlobal, kConfigLocal);
+        auto id = tuner.AddKernelFromString(example_kernel.first, example_kernel.second,
+                                            kConfigGlobal, kConfigLocal);
 
         THEN("their IDs are monotonously increasing #" + std::to_string(counter)) {
           REQUIRE(counter == id);
