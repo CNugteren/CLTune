@@ -48,6 +48,13 @@ else()
   message("-- Building with CUDA")
 endif()
 
+# Compile in verbose mode with additional diagnostic messages
+option(VERBOSE "Compile in verbose mode for additional diagnostic messages" OFF)
+if(VERBOSE)
+  message("-- Building in verbose mode")
+  add_definitions(-DVERBOSE)
+endif()
+
 # ==================================================================================================
 
 # RPATH settings

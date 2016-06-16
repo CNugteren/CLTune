@@ -81,6 +81,7 @@ class TunerImpl {
   static const std::string kMessageHead;
   static const std::string kMessageRun;
   static const std::string kMessageInfo;
+  static const std::string kMessageVerbose;
   static const std::string kMessageOK;
   static const std::string kMessageWarning;
   static const std::string kMessageFailure;

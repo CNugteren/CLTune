@@ -53,6 +53,7 @@ const std::string TunerImpl::kMessageFull    = "\x1b[32m[==========]\x1b[0m";
 const std::string TunerImpl::kMessageHead    = "\x1b[32m[----------]\x1b[0m";
 const std::string TunerImpl::kMessageRun     = "\x1b[32m[ RUN      ]\x1b[0m";
 const std::string TunerImpl::kMessageInfo    = "\x1b[32m[   INFO   ]\x1b[0m";
+const std::string TunerImpl::kMessageVerbose = "\x1b[39m[ VERBOSE  ]\x1b[0m";
 const std::string TunerImpl::kMessageOK      = "\x1b[32m[       OK ]\x1b[0m";
 const std::string TunerImpl::kMessageWarning = "\x1b[33m[  WARNING ]\x1b[0m";
 const std::string TunerImpl::kMessageFailure = "\x1b[31m[   FAILED ]\x1b[0m";
@@ -162,6 +163,9 @@ void TunerImpl::Tune() {
     } else {
 
       // Computes the permutations of all parameters and pass them to a (smart) search algorithm
+      #ifdef VERBOSE
+        fprintf(stdout, "%s Computing the permutations of all parameters\n", kMessageVerbose.c_str());
+      #endif
       kernel.SetConfigurations();
 
       // Creates the selected search algorithm
@@ -185,6 +189,10 @@ void TunerImpl::Tune() {
 
       // Iterates over all possible configurations (the permutations of the tuning parameters)
       for (auto p=size_t{0}; p<search->NumConfigurations(); ++p) {
+        #ifdef VERBOSE
+          fprintf(stdout, "%s Exploring configuration (%zu out of %zu)\n", kMessageVerbose.c_str(),
+                  p + 1, search->NumConfigurations());
+        #endif
         auto permutation = search->GetConfiguration();
 
         // Adds the parameters to the source-code string as defines
@@ -238,21 +246,14 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
                                             const size_t configuration_id,
                                             const size_t num_configurations) {
 
-  // Note: the following code is disabled because of GCC 4.8.0 compatibility
-  auto processed_source = source;
-  /*
-  // Removes the use of C++11 string literals (if any) from the kernel source code
-  auto string_literal_start = std::regex{"R\"\\("};
-  auto string_literal_end = std::regex{"\\)\";"};
-  auto processed_source = std::regex_replace(source, string_literal_start, "");
-  processed_source = std::regex_replace(processed_source, string_literal_end, "");
-  */
-
   // In case of an exception, skip this run
   try {
 
     // Compiles the kernel and prints the compiler errors/warnings
-    auto program = Program(context_, processed_source);
+    #ifdef VERBOSE
+      fprintf(stdout, "%s Starting compilation\n", kMessageVerbose.c_str());
+    #endif
+    auto program = Program(context_, source);
     auto options = std::vector<std::string>{};
     auto build_status = program.Build(device_, options);
     if (build_status == BuildStatus::kError) {
@@ -263,6 +264,9 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     if (build_status == BuildStatus::kInvalid) {
       throw std::runtime_error("Invalid program binary");
     }
+    #ifdef VERBOSE
+      fprintf(stdout, "%s Finished compilation\n", kMessageVerbose.c_str());
+    #endif
 
     // Clears all previous copies of output buffer(s)
     for (auto &mem_info: arguments_output_copy_) {
@@ -275,6 +279,9 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     arguments_output_copy_.clear();
 
     // Creates a copy of the output buffer(s)
+    #ifdef VERBOSE
+      fprintf(stdout, "%s Creating a copy of the output buffer\n", kMessageVerbose.c_str());
+    #endif
     for (auto &output: arguments_output_) {
       switch (output.type) {
         case MemType::kShort: arguments_output_copy_.push_back(CopyOutputBuffer<short>(output)); break;
@@ -290,6 +297,9 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     }
 
     // Sets the kernel and its arguments
+    #ifdef VERBOSE
+      fprintf(stdout, "%s Setting kernel arguments\n", kMessageVerbose.c_str());
+    #endif
     auto tune_kernel = Kernel(program, kernel.name());
     for (auto &i: arguments_input_) { tune_kernel.SetArgument(i.index, i.buffer); }
     for (auto &i: arguments_output_copy_) { tune_kernel.SetArgument(i.index, i.buffer); }
@@ -317,6 +327,10 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     fprintf(stdout, "%s Running %s\n", kMessageRun.c_str(), kernel.name().c_str());
     auto events = std::vector<Event>(kNumRuns);
     for (auto t=size_t{0}; t<kNumRuns; ++t) {
+      #ifdef VERBOSE
+        fprintf(stdout, "%s Launching kernel (%zu out of %zu for averaging)\n", kMessageVerbose.c_str(),
+                t + 1, kNumRuns);
+      #endif
       tune_kernel.Launch(queue_, global, local, events[t]);
       queue_.Finish(events[t]);
     }
