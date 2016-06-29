@@ -331,7 +331,7 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
         fprintf(stdout, "%s Launching kernel (%zu out of %zu for averaging)\n", kMessageVerbose.c_str(),
                 t + 1, kNumRuns);
       #endif
-      tune_kernel.Launch(queue_, global, local, events[t]);
+      tune_kernel.Launch(queue_, global, local, events[t].pointer());
       queue_.Finish(events[t]);
     }
     queue_.Finish();
