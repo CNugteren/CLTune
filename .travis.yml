@@ -2,6 +2,10 @@ language: cpp
 sudo: required
 dist: trusty
 
+os:
+  - linux
+  - osx
+
 compiler:
   - gcc
   - clang
@@ -16,7 +20,7 @@ addons:
 
 env:
   global:
-    - CLTUNE_ROOT=${TRAVIS_BUILD_DIR}/bin/make/release
+    - CLTUNE_ROOT=${TRAVIS_BUILD_DIR}/bin/cltune
     - OPENCL_REGISTRY=https://www.khronos.org/registry/cl
     - OPENCL_ROOT=${TRAVIS_BUILD_DIR}/bin/opencl
 
@@ -55,7 +59,7 @@ install:
 before_script:
   - mkdir -p ${CLTUNE_ROOT}
   - pushd ${CLTUNE_ROOT}
-  - cmake -DSAMPLES=ON -DTESTS=ON -DOPENCL_ROOT=${OPENCL_ROOT} ${TRAVIS_BUILD_DIR}
+  - cmake -DOPENCL_ROOT=${OPENCL_ROOT} -DSAMPLES=ON -DTESTS=ON ${TRAVIS_BUILD_DIR}
 
 script:
   - make
