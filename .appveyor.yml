@@ -48,7 +48,7 @@ before_build:
   - ps: mkdir $env:CLTUNE_ROOT
   - ps: pushd $env:CLTUNE_ROOT
   - ps: mkdir install_dir
-  - cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=install_dir -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DSAMPLES=ON -DTESTS=ON %APPVEYOR_BUILD_FOLDER%
+  - cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX=install_dir -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DSAMPLES=ON %APPVEYOR_BUILD_FOLDER%
 
 build_script:
   - nmake
