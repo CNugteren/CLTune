@@ -1,5 +1,5 @@
 
-Development version (next release)
+Version 2.4.0
 - Made it possible to run the unit-tests independently of the provided OpenCL kernel samples
 - Added an option to compile in verbose mode for additional diagnostic messages (-DVERBOSE=ON)
 - Now using version 6.0 of the CLCudaAPI header
