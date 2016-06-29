@@ -1,4 +1,11 @@
 
+Version 2.4.0
+- Made it possible to run the unit-tests independently of the provided OpenCL kernel samples
+- Added an option to compile in verbose mode for additional diagnostic messages (-DVERBOSE=ON)
+- Now using version 6.0 of the CLCudaAPI header
+- Fixed the RPATH settings on OSX
+- Added Appveyor continuous integration and increased coverage of the Travis builds
+
 Version 2.3.1
 - Fixed a bug where an output buffer could not be used as input at the same time
 - Fixed computing the validation error for half-precision fp16 data-types

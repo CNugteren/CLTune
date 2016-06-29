@@ -32,8 +32,8 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cxx_fla
 # CMake project details
 project("cltune" CXX)
 set(cltune_VERSION_MAJOR 2)
-set(cltune_VERSION_MINOR 3)
-set(cltune_VERSION_PATCH 1)
+set(cltune_VERSION_MINOR 4)
+set(cltune_VERSION_PATCH 0)
 
 # Options
 option(SAMPLES "Enable compilation of sample programs" ON)
@@ -48,13 +48,17 @@ else()
   message("-- Building with CUDA")
 endif()
 
+# Compile in verbose mode with additional diagnostic messages
+option(VERBOSE "Compile in verbose mode for additional diagnostic messages" OFF)
+if(VERBOSE)
+  message("-- Building in verbose mode")
+  add_definitions(-DVERBOSE)
+endif()
+
 # ==================================================================================================
 
 # RPATH settings
-set(CMAKE_SKIP_BUILD_RPATH false) # Use, i.e. don't skip the full RPATH for the build tree
-set(CMAKE_BUILD_WITH_INSTALL_RPATH false) # When building, don't use the install RPATH already
-set(CMAKE_INSTALL_RPATH "") # The RPATH to be used when installing
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH false) # Don't add the automatically determined parts
+set(CMAKE_MACOSX_RPATH 1)
 
 # ==================================================================================================
 

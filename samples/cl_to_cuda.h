@@ -17,6 +17,7 @@
 #define __local __shared__
 #define restrict __restrict__
 #define __constant const
+#define inline __device__ inline // assumes all device functions are annotated with inline in OpenCL
 
 // Replaces OpenCL synchronisation with CUDA synchronisation
 #define barrier(x) __syncthreads()

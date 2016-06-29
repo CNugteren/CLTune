@@ -11,7 +11,7 @@
 // Portability here means that a similar header exists for OpenCL with the same classes and
 // interfaces. In other words, moving from the CUDA API to the OpenCL API becomes a one-line change.
 //
-// This is version 4.0 of CLCudaAPI <https://github.com/CNugteren/CLCudaAPI>.
+// This is version 6.0 of CLCudaAPI <https://github.com/CNugteren/CLCudaAPI>.
 //
 // =================================================================================================
 //
@@ -106,13 +106,14 @@ class Event {
   // Accessors to the private data-members
   const CUevent& start() const { return *start_; }
   const CUevent& end() const { return *end_; }
+  Event* pointer() { return this; }
  private:
   std::shared_ptr<CUevent> start_;
   std::shared_ptr<CUevent> end_;
 };
 
 // Pointer to a CUDA event
-using EventPointer = CUevent*;
+using EventPointer = Event*;
 
 // =================================================================================================
 
@@ -158,6 +159,11 @@ class Device {
     auto result = 0;
     CheckError(cuDriverGetVersion(&result));
     return "CUDA driver "+std::to_string(result);
+  }
+  size_t VersionNumber() const {
+    auto result = 0;
+    CheckError(cuDriverGetVersion(&result));
+    return static_cast<size_t>(result);
   }
   std::string Vendor() const { return "NVIDIA Corporation"; }
   std::string Name() const {
@@ -206,6 +212,14 @@ class Device {
     return true;
   }
 
+  // Query for a specific type of device or brand
+  bool IsCPU() const { return false; }
+  bool IsGPU() const { return true; }
+  bool IsAMD() const { return false; }
+  bool IsNVIDIA() const { return true; }
+  bool IsIntel() const { return false; }
+  bool IsARM() const { return false; }
+
   // Accessor to the private data-member
   const CUdevice& operator()() const { return device_; }
  private:
@@ -239,9 +253,13 @@ class Context {
 
   // Accessor to the private data-member
   const CUcontext& operator()() const { return *context_; }
+  CUcontext* pointer() const { return &(*context_); }
  private:
   std::shared_ptr<CUcontext> context_;
 };
+
+// Pointer to an OpenCL context
+using ContextPointer = CUcontext*;
 
 // =================================================================================================
 
@@ -253,7 +271,7 @@ class Program {
  public:
   // Note that there is no constructor based on the regular CUDA data-type because of extra state
 
-  // Regular constructor with memory management
+  // Source-based constructor with memory management
   explicit Program(const Context &, std::string source):
       program_(new nvrtcProgram, [](nvrtcProgram* p) { CheckError(nvrtcDestroyProgram(p));
                                                        delete p; }),
@@ -555,7 +573,7 @@ class Kernel {
 
   // Launches a kernel onto the specified queue
   void Launch(const Queue &queue, const std::vector<size_t> &global,
-              const std::vector<size_t> &local, Event &event) {
+              const std::vector<size_t> &local, EventPointer event) {
 
     // Creates the grid (number of threadblocks) and sets the block sizes (threads per block)
     auto grid = std::vector<size_t>{1, 1, 1};
@@ -571,16 +589,16 @@ class Kernel {
     }
 
     // Launches the kernel, its execution time is recorded by events
-    CheckError(cuEventRecord(event.start(), queue()));
+    CheckError(cuEventRecord(event->start(), queue()));
     CheckError(cuLaunchKernel(kernel_, grid[0], grid[1], grid[2], block[0], block[1], block[2],
                               0, queue(), pointers.data(), nullptr));
-    CheckError(cuEventRecord(event.end(), queue()));
+    CheckError(cuEventRecord(event->end(), queue()));
   }
 
   // As above, but with an event waiting list
   // TODO: Implement this function
   void Launch(const Queue &queue, const std::vector<size_t> &global,
-              const std::vector<size_t> &local, Event &event,
+              const std::vector<size_t> &local, EventPointer event,
               std::vector<Event>& waitForEvents) {
     if (waitForEvents.size() == 0) { return Launch(queue, global, local, event); }
     Error("launching with an event waiting list is not implemented for the CUDA back-end");
@@ -588,7 +606,7 @@ class Kernel {
 
   // As above, but with the default local workgroup size
   // TODO: Implement this function
-  void Launch(const Queue &, const std::vector<size_t> &, Event &) {
+  void Launch(const Queue &, const std::vector<size_t> &, EventPointer) {
     Error("launching with a default workgroup size is not implemented for the CUDA back-end");
   }
 
