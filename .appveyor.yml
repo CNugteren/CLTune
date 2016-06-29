@@ -56,8 +56,8 @@ build_script:
 
 after_build:
   - ps: pushd $env:CLTUNE_ROOT
-  - 7z a CLTune-Windows-$env:PLATFORM.zip .\install_dir\*
-  - ps: mv CLTune-Windows-$env:PLATFORM.zip $env:APPVEYOR_BUILD_FOLDER
+  - 7z a CLTune-Windows.zip .\install_dir\*
+  - ps: mv CLTune-Windows.zip $env:APPVEYOR_BUILD_FOLDER
 
 artifacts:
   - path: '*.zip'
