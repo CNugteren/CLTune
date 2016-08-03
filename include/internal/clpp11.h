@@ -86,12 +86,10 @@ class Event {
   // http://stackoverflow.com/questions/26145603/clgeteventprofilinginfo-bug-in-macosx
   float GetElapsedTime() const {
     WaitForCompletion();
-    auto bytes = size_t{0};
-    clGetEventProfilingInfo(event_, CL_PROFILING_COMMAND_START, 0, nullptr, &bytes);
-    auto time_start = size_t{0};
+    auto bytes = sizeof(cl_ulong);
+    auto time_start = cl_ulong{0};
     clGetEventProfilingInfo(event_, CL_PROFILING_COMMAND_START, bytes, &time_start, nullptr);
-    clGetEventProfilingInfo(event_, CL_PROFILING_COMMAND_END, 0, nullptr, &bytes);
-    auto time_end = size_t{0};
+    auto time_end = cl_ulong{0};
     clGetEventProfilingInfo(event_, CL_PROFILING_COMMAND_END, bytes, &time_end, nullptr);
     return (time_end - time_start) * 1.0e-6f;
   }
@@ -592,8 +590,7 @@ class Buffer {
 
   // Retrieves the actual allocated size in bytes
   size_t GetSize() const {
-    auto bytes = size_t{0};
-    CheckError(clGetMemObjectInfo(*buffer_, CL_MEM_SIZE, 0, nullptr, &bytes));
+    auto bytes = sizeof(size_t);
     auto result = size_t{0};
     CheckError(clGetMemObjectInfo(*buffer_, CL_MEM_SIZE, bytes, &result, nullptr));
     return result;
@@ -645,9 +642,8 @@ class Kernel {
 
   // Retrieves the amount of local memory used per work-group for this kernel
   size_t LocalMemUsage(const Device &device) const {
-    auto bytes = size_t{0};
+    auto bytes = sizeof(cl_ulong);
     auto query = cl_kernel_work_group_info{CL_KERNEL_LOCAL_MEM_SIZE};
-    CheckError(clGetKernelWorkGroupInfo(*kernel_, device(), query, 0, nullptr, &bytes));
     auto result = size_t{0};
     CheckError(clGetKernelWorkGroupInfo(*kernel_, device(), query, bytes, &result, nullptr));
     return result;
