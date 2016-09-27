@@ -52,6 +52,7 @@ int main() {
   tuner.AddArgumentOutput(vec_c);
 
   // Starts the tuner
+  tuner.SetNumRuns(10);
   tuner.Tune();
 
   // Prints the results to screen

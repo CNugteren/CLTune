@@ -1,6 +1,7 @@
 
 Next release (development version)
 - Updated to version 8.0 of the CLCudaAPI header
+- Made it possible to configure the number of times each kernel is run (to average results)
 
 Version 2.4.0
 - Made it possible to run the unit-tests independently of the provided OpenCL kernel samples
