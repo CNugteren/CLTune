@@ -441,5 +441,10 @@ void Tuner::SuppressOutput() {
   pimpl->suppress_output_ = true;
 }
 
+// Sets the number of runs to average time measurements.
+void Tuner::SetNumRuns(const size_t num_runs) {
+  pimpl->num_runs_ = num_runs;
+}
+
 // =================================================================================================
 } // namespace cltune

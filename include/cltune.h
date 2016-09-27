@@ -151,6 +151,9 @@ class Tuner {
   // Disables all further printing to stdout
   void PUBLIC_API SuppressOutput();
 
+  // Changes the number of times each kernel should be run. Used for averaging execution times.
+  void PUBLIC_API SetNumRuns(const size_t num_runs);
+
  private:
 
   // This implements the pointer to implementation idiom (pimpl) and hides all private functions and

@@ -68,6 +68,7 @@ TunerImpl::TunerImpl():
     device_(Device(platform_, size_t{0})),
     context_(Context(device_)),
     queue_(Queue(context_, device_)),
+    num_runs_(size_t{1}),
     has_reference_(false),
     suppress_output_(false),
     output_search_process_(false),
@@ -90,6 +91,7 @@ TunerImpl::TunerImpl(size_t platform_id, size_t device_id):
     device_(Device(platform_, device_id)),
     context_(Context(device_)),
     queue_(Queue(context_, device_)),
+    num_runs_(size_t{1}),
     has_reference_(false),
     suppress_output_(false),
     output_search_process_(false),
@@ -325,11 +327,11 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
     // Runs the kernel (this is the timed part)
     fprintf(stdout, "%s Running %s\n", kMessageRun.c_str(), kernel.name().c_str());
-    auto events = std::vector<Event>(kNumRuns);
-    for (auto t=size_t{0}; t<kNumRuns; ++t) {
+    auto events = std::vector<Event>(num_runs_);
+    for (auto t=size_t{0}; t<num_runs_; ++t) {
       #ifdef VERBOSE
         fprintf(stdout, "%s Launching kernel (%zu out of %zu for averaging)\n", kMessageVerbose.c_str(),
-                t + 1, kNumRuns);
+                t + 1, num_runs_);
       #endif
       tune_kernel.Launch(queue_, global, local, events[t].pointer());
       queue_.Finish(events[t]);
@@ -338,13 +340,13 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
     // Collects the timing information
     auto elapsed_time = std::numeric_limits<float>::max();
-    for (auto t=size_t{0}; t<kNumRuns; ++t) {
+    for (auto t=size_t{0}; t<num_runs_; ++t) {
       auto this_elapsed_time = events[t].GetElapsedTime();
       elapsed_time = std::min(elapsed_time, this_elapsed_time);
     }
 
     // Prints diagnostic information
-    fprintf(stdout, "%s Completed %s (%.0lf ms) - %zu out of %zu\n",
+    fprintf(stdout, "%s Completed %s (%.1lf ms) - %zu out of %zu\n",
             kMessageOK.c_str(), kernel.name().c_str(), elapsed_time,
             configuration_id+1, num_configurations);
 
@@ -620,7 +622,7 @@ void TunerImpl::ModelPrediction(const Model model_type, const float validation_f
 // Prints a result by looping over all its configuration parameters
 void TunerImpl::PrintResult(FILE* fp, const TunerResult &result, const std::string &message) const {
   fprintf(fp, "%s %s; ", message.c_str(), result.kernel_name.c_str());
-  fprintf(fp, "%6.0lf ms;", result.time);
+  fprintf(fp, "%8.1lf ms;", result.time);
   for (auto &setting: result.configuration) {
     fprintf(fp, "%9s;", setting.GetConfig().c_str());
   }
