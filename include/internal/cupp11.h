@@ -11,7 +11,8 @@
 // Portability here means that a similar header exists for OpenCL with the same classes and
 // interfaces. In other words, moving from the CUDA API to the OpenCL API becomes a one-line change.
 //
-// This is version 6.0 of CLCudaAPI <https://github.com/CNugteren/CLCudaAPI>.
+// This file is taken from the CLCudaAPI project <https://github.com/CNugteren/CLCudaAPI> and
+// therefore contains the following header copyright notice:
 //
 // =================================================================================================
 //
@@ -138,6 +139,12 @@ class Platform {
   size_t platform_id_;
 };
 
+// Retrieves a vector with all platforms. Note that there is just one platform in CUDA.
+inline std::vector<Platform> GetAllPlatforms() {
+  auto all_platforms = std::vector<Platform>{ Platform(size_t{0}) };
+  return all_platforms;
+}
+
 // =================================================================================================
 
 // C++11 version of 'CUdevice'
@@ -180,7 +187,9 @@ class Device {
                                GetInfo(CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Y),
                                GetInfo(CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Z)};
   }
-  size_t LocalMemSize() const { return GetInfo(CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK); }
+  unsigned long LocalMemSize() const {
+    return static_cast<unsigned long>(GetInfo(CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK));
+  }
   std::string Capabilities() const {
     auto major = GetInfo(CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR);
     auto minor = GetInfo(CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR);
@@ -188,12 +197,12 @@ class Device {
   }
   size_t CoreClock() const { return 1e-3*GetInfo(CU_DEVICE_ATTRIBUTE_CLOCK_RATE); }
   size_t ComputeUnits() const { return GetInfo(CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT); }
-  size_t MemorySize() const {
+  unsigned long MemorySize() const {
     auto result = size_t{0};
     CheckError(cuDeviceTotalMem(&result, device_));
-    return result;
+    return static_cast<unsigned long>(result);
   }
-  size_t MaxAllocSize() const { return MemorySize(); }
+  unsigned long MaxAllocSize() const { return MemorySize(); }
   size_t MemoryClock() const { return 1e-3*GetInfo(CU_DEVICE_ATTRIBUTE_MEMORY_CLOCK_RATE); }
   size_t MemoryBusWidth() const { return GetInfo(CU_DEVICE_ATTRIBUTE_GLOBAL_MEMORY_BUS_WIDTH); }
 
@@ -276,12 +285,22 @@ class Program {
       program_(new nvrtcProgram, [](nvrtcProgram* p) { CheckError(nvrtcDestroyProgram(p));
                                                        delete p; }),
       source_(std::move(source)),
-      source_ptr_(&source_[0]) {
+      source_ptr_(&source_[0]),
+      from_binary_(false) {
     CheckError(nvrtcCreateProgram(program_.get(), source_ptr_, nullptr, 0, nullptr, nullptr));
+  }
+
+  // PTX-based constructor
+  explicit Program(const Device &device, const Context &context, const std::string& binary):
+      program_(nullptr), // not used
+      source_(binary),
+      source_ptr_(&source_[0]), // not used
+      from_binary_(true) {
   }
 
   // Compiles the device program and returns whether or not there where any warnings/errors
   BuildStatus Build(const Device &, std::vector<std::string> &options) {
+    if (from_binary_) { return BuildStatus::kSuccess; }
     auto raw_options = std::vector<const char*>();
     for (const auto &option: options) {
       raw_options.push_back(option.c_str());
@@ -301,6 +320,7 @@ class Program {
 
   // Retrieves the warning/error message from the compiler (if any)
   std::string GetBuildInfo(const Device &) const {
+    if (from_binary_) { return std::string{}; }
     auto bytes = size_t{0};
     CheckError(nvrtcGetProgramLogSize(*program_, &bytes));
     auto result = std::string{};
@@ -311,6 +331,7 @@ class Program {
 
   // Retrieves an intermediate representation of the compiled program (i.e. PTX)
   std::string GetIR() const {
+    if (from_binary_) { return source_; } // holds the PTX
     auto bytes = size_t{0};
     CheckError(nvrtcGetPTXSize(*program_, &bytes));
     auto result = std::string{};
@@ -325,6 +346,7 @@ class Program {
   std::shared_ptr<nvrtcProgram> program_;
   std::string source_;
   const char* source_ptr_;
+  const bool from_binary_;
 };
 
 // =================================================================================================
@@ -565,10 +587,15 @@ class Kernel {
 
   // Retrieves the amount of local memory used per work-group for this kernel. Note that this the
   // shared memory in CUDA terminology.
-  size_t LocalMemUsage(const Device &) const {
+  unsigned long LocalMemUsage(const Device &) const {
     auto result = 0;
     CheckError(cuFuncGetAttribute(&result, CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, kernel_));
-    return static_cast<size_t>(result);
+    return static_cast<unsigned long>(result);
+  }
+
+  // Retrieves the name of the kernel
+  std::string GetFunctionName() const {
+    return std::string{"unknown"}; // Not implemented for the CUDA backend
   }
 
   // Launches a kernel onto the specified queue
@@ -600,14 +627,15 @@ class Kernel {
   void Launch(const Queue &queue, const std::vector<size_t> &global,
               const std::vector<size_t> &local, EventPointer event,
               std::vector<Event>& waitForEvents) {
-    if (waitForEvents.size() == 0) { return Launch(queue, global, local, event); }
-    Error("launching with an event waiting list is not implemented for the CUDA back-end");
-  }
-
-  // As above, but with the default local workgroup size
-  // TODO: Implement this function
-  void Launch(const Queue &, const std::vector<size_t> &, EventPointer) {
-    Error("launching with a default workgroup size is not implemented for the CUDA back-end");
+    if (local.size() == 0) {
+      Error("launching with a default workgroup size is not implemented for the CUDA back-end");
+    }
+    else if (waitForEvents.size() != 0) {
+      Error("launching with an event waiting list is not implemented for the CUDA back-end");
+    }
+    else {
+     return Launch(queue, global, local, event);
+    }
   }
 
   // Accessors to the private data-members

@@ -1,6 +1,6 @@
 
 Next release (development version)
-- Updated to version 7.0 of the CLCudaAPI header
+- Updated to version 8.0 of the CLCudaAPI header
 
 Version 2.4.0
 - Made it possible to run the unit-tests independently of the provided OpenCL kernel samples
