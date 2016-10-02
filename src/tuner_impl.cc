@@ -44,6 +44,7 @@
 #include <algorithm> // std::min
 #include <memory> // std::unique_ptr
 #include <tuple> // std::tuple
+#include <cstdlib> // std::getenv
 
 namespace cltune {
 // =================================================================================================
@@ -250,13 +251,19 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
   // In case of an exception, skip this run
   try {
-
-    // Compiles the kernel and prints the compiler errors/warnings
     #ifdef VERBOSE
       fprintf(stdout, "%s Starting compilation\n", kMessageVerbose.c_str());
     #endif
+
+     // Sets the build options from an environmental variable (if set)
+    auto options = std::vector<std::string>();
+    const auto environment_variable = std::getenv("CLTUNE_BUILD_OPTIONS");
+    if (environment_variable != nullptr) {
+      options.push_back(std::string(environment_variable));
+    }
+
+    // Compiles the kernel and prints the compiler errors/warnings
     auto program = Program(context_, source);
-    auto options = std::vector<std::string>{};
     auto build_status = program.Build(device_, options);
     if (build_status == BuildStatus::kError) {
       auto message = program.GetBuildInfo(device_);
