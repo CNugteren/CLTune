@@ -1,4 +1,7 @@
 
+Development version (next release)
+- Changed timing measurements to now also include the (varying) kernel launch overhead
+
 Version 2.5.0
 - Updated to version 8.0 of the CLCudaAPI header
 - Made it possible to configure the number of times each kernel is run (to average results)
