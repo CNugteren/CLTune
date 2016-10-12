@@ -36,10 +36,10 @@ namespace cltune {
 
 // Maximum number of successive visits to already visited states. If this number is exceeded, the
 // algorithm ends
-constexpr size_t Annealing::kMaxAlreadyVisitedStates = size_t{10};
+const size_t Annealing::kMaxAlreadyVisitedStates = size_t{10};
 
 // Maximum number of differences to consider this still a neighbour
-constexpr size_t Annealing::kMaxDifferences = size_t{3};
+const size_t Annealing::kMaxDifferences = size_t{3};
 
 // Initializes the simulated annealing searcher by specifying the fraction of the total search space
 // to consider and the maximum annealing 'temperature'.
