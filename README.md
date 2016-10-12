@@ -23,7 +23,7 @@ CLTune can be compiled as a shared library using CMake. The pre-requisites are:
   - Clang 3.3 or newer
   - AppleClang 5.0 or newer
   - ICC 14.0 or newer
-  - MSVC (Visual Studio) 2015 or newer
+  - MSVC (Visual Studio) 2013 or newer
 * An OpenCL library. CLTune has been tested with:
   - Apple OpenCL
   - NVIDIA CUDA SDK (requires version 7.5 or newer for the CUDA back-end)

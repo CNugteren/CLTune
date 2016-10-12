@@ -42,10 +42,10 @@ class Annealing: public Searcher {
 
   // Maximum number of successive visits to already visited states. If this number is exceeded, the
   // algorithm ends
-  static constexpr auto kMaxAlreadyVisitedStates = size_t{10};
+  static constexpr size_t kMaxAlreadyVisitedStates;
 
   // Maximum number of differences to consider this still a neighbour
-  static constexpr auto kMaxDifferences = size_t{3};
+  static constexpr size_t kMaxDifferences;
 
   // Takes additionally a fraction of configurations to consider
   Annealing(const Configurations &configurations,

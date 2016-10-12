@@ -37,8 +37,8 @@ int main() {
   #endif
 
   // Input/output sizes
-  constexpr auto kSizeX = size_t{8192}; // Matrix dimension X
-  constexpr auto kSizeY = size_t{4096}; // Matrix dimension Y
+  const auto kSizeX = size_t{8192}; // Matrix dimension X
+  const auto kSizeY = size_t{4096}; // Matrix dimension Y
 
   // Creates the input/output matrices and fills them with some example data
   std::vector<float> mat_a(kSizeX*kSizeY, 2.0f);

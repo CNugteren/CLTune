@@ -45,15 +45,15 @@ bool IsMultiple(size_t a, size_t b) {
 };
 
 // Constants
-constexpr auto kDefaultDevice = size_t{0};
-constexpr auto kDefaultPlatform = size_t{0};
-constexpr auto kDefaultSearchMethod = size_t{1};
-constexpr auto kDefaultSearchParameter1 = size_t{4};
+const auto kDefaultDevice = size_t{0};
+const auto kDefaultPlatform = size_t{0};
+const auto kDefaultSearchMethod = size_t{1};
+const auto kDefaultSearchParameter1 = size_t{4};
 
 // Settings (sizes)
-constexpr auto kSizeM = size_t{2048};
-constexpr auto kSizeN = size_t{2048};
-constexpr auto kSizeK = size_t{2048};
+const auto kSizeM = size_t{2048};
+const auto kSizeN = size_t{2048};
+const auto kSizeK = size_t{2048};
 
 // =================================================================================================
 
@@ -203,7 +203,7 @@ int main(int argc, char* argv[]) {
   tuner.PrintFormatted();
 
   // Also prints the performance of the best-case in terms of GFLOPS
-  constexpr auto kMGFLOP = (2*kSizeM*kSizeN*kSizeK) * 1.0e-6;
+  const auto kMGFLOP = (2*kSizeM*kSizeN*kSizeK) * 1.0e-6;
   if (time_ms != 0.0) {
     printf("[ -------> ] %.1lf ms or %.3lf GFLOPS\n", time_ms, kMGFLOP/time_ms);
   }

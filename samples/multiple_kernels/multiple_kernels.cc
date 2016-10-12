@@ -51,8 +51,8 @@ int main() {
   #endif
 
   // Matrix size
-  constexpr auto kSizeM = size_t{2048};
-  constexpr auto kSizeN = size_t{4096};
+  const auto kSizeM = size_t{2048};
+  const auto kSizeN = size_t{4096};
 
   // Creates data structures
   std::vector<float> mat_a(kSizeN*kSizeM); // Assumes matrix A is transposed

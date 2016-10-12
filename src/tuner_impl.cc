@@ -49,6 +49,9 @@
 namespace cltune {
 // =================================================================================================
 
+// This is the threshold for 'correctness'
+constexpr double TunerImpl::kMaxL2Norm = 1e-4;
+
 // Messages printed to stdout (in colours)
 const std::string TunerImpl::kMessageFull    = "\x1b[32m[==========]\x1b[0m";
 const std::string TunerImpl::kMessageHead    = "\x1b[32m[----------]\x1b[0m";

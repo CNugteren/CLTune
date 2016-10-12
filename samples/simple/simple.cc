@@ -28,7 +28,7 @@ int main() {
   #endif
 
   // Vector dimension
-  constexpr auto kVectorSize = size_t{16*1024*1024};
+  const auto kVectorSize = size_t{16*1024*1024};
 
   // Creates the vectors and fills them with some example data
   std::vector<float> vec_a(kVectorSize, 1.0f);
