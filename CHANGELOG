@@ -3,6 +3,7 @@ Development version (next release)
 - Changed timing measurements to now also include the (varying) kernel launch overhead
 - It is now possible to set OpenCL compiler options through the env variable CLTUNE_BUILD_OPTIONS
 - Added support for compilation under Visual Studio 2013 (MSVC++ 12.0)
+- Added an option to build a static version of the library
 
 Version 2.5.0
 - Updated to version 8.0 of the CLCudaAPI header

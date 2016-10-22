@@ -37,8 +37,12 @@
 
 // Exports library functions under Windows when building a DLL. See also:
 // https://msdn.microsoft.com/en-us/library/a90k134d.aspx
-#ifdef _WIN32
-  #define PUBLIC_API __declspec(dllexport)
+#if defined(_WIN32) && defined(CLTUNE_DLL)
+  #if defined(COMPILING_DLL)
+    #define PUBLIC_API __declspec(dllexport)
+  #else
+    #define PUBLIC_API __declspec(dllimport)
+  #endif
 #else
   #define PUBLIC_API
 #endif
