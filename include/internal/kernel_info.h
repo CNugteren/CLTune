@@ -45,6 +45,7 @@
 #endif
 
 #include "cltune.h"
+#include "internal/msvc.h"
 
 namespace cltune {
 // =================================================================================================
@@ -100,7 +101,7 @@ class KernelInfo {
   };
 
   // Initializes the class with a given name and a string of kernel source-code
-  explicit KernelInfo(const std::string name, const std::string source, const Device &device);
+  explicit PUBLIC_API KernelInfo(const std::string name, const std::string source, const Device &device);
 
   // Accessors (getters)
   std::string name() const { return name_; }
@@ -117,36 +118,36 @@ class KernelInfo {
   void set_local_base(IntRange local) { local_base_ = local; local_ = local; }
 
   // Prepend to the source-code
-  void PrependSource(const std::string &extra_source);
+  void PUBLIC_API PrependSource(const std::string &extra_source);
 
   // Adds a new parameter with a name and a vector of possible values
-  void AddParameter(const std::string &name, const std::vector<size_t> &values);
+  void PUBLIC_API AddParameter(const std::string &name, const std::vector<size_t> &values);
 
   // Checks wheter a parameter exists, returns "true" if it does exist
-  bool ParameterExists(const std::string parameter_name);
+  bool PUBLIC_API ParameterExists(const std::string parameter_name);
 
   // Specifies a modifier in the form of a StringRange to the global/local thread-sizes. This
   // modifier has to contain (per-dimension) the name of a single parameter or an empty string. The
   // supported modifiers are given by the ThreadSizeModifierType enumeration.
-  void AddModifier(const StringRange range, const ThreadSizeModifierType type);
+  void PUBLIC_API AddModifier(const StringRange range, const ThreadSizeModifierType type);
 
   // Adds a new constraint to the set of parameters (e.g. must be equal or larger than). The
   // constraints come in the form of a function object which takes a number of tuning parameters,
   // given as a vector of strings (parameter names). Their names are later substituted by actual
   // values.
-  void AddConstraint(ConstraintFunction valid_if, const std::vector<std::string> &parameters);
+  void PUBLIC_API AddConstraint(ConstraintFunction valid_if, const std::vector<std::string> &parameters);
 
   // As above, but for local memory usage
-  void SetLocalMemoryUsage(LocalMemoryFunction amount, const std::vector<std::string> &parameters);
+  void PUBLIC_API SetLocalMemoryUsage(LocalMemoryFunction amount, const std::vector<std::string> &parameters);
 
   // Computes the global/local ranges (in NDRange-form) based on all global/local thread-sizes (in
   // StringRange-form) and a single permutation (i.e. a configuration) containing a list of all
   // parameter names and their current values.
-  void ComputeRanges(const Configuration &config);
+  void PUBLIC_API ComputeRanges(const Configuration &config);
 
   // Computes all permutations based on the parameters and their values (the configuration list).
   // The result is stored as a member variable.
-  void SetConfigurations();
+  void PUBLIC_API SetConfigurations();
   
  private:
   // Called recursively internally by SetConfigurations 

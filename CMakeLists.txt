@@ -23,7 +23,7 @@
 #
 # ==================================================================================================
 
-cmake_minimum_required(VERSION 2.8.10)
+cmake_minimum_required(VERSION 2.8.11)
 
 # Overrides for MSVC static runtime
 set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/c_flag_overrides.cmake)
@@ -32,10 +32,11 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cxx_fla
 # CMake project details
 project("cltune" CXX)
 set(cltune_VERSION_MAJOR 2)
-set(cltune_VERSION_MINOR 5)
+set(cltune_VERSION_MINOR 6)
 set(cltune_VERSION_PATCH 0)
 
-# Options
+# Options and their default values
+option(BUILD_SHARED_LIBS "Build a shared (ON) or static library (OFF)" ON)
 option(SAMPLES "Enable compilation of sample programs" ON)
 option(TESTS "Enable compilation of the Google tests" OFF)
 
@@ -84,6 +85,13 @@ elseif(MSVC)
     message(FATAL_ERROR "MS Visual Studio version must be at least 18.0")
   endif()
 endif()
+
+# DLL Settings
+if(MSVC)
+  if(BUILD_SHARED_LIBS)
+    add_definitions(" /DCLTUNE_DLL")
+  endif()
+endif(MSVC)
 
 # C++ compiler settings
 if(MSVC)
@@ -143,12 +151,31 @@ set(TUNER
     src/ml_models/neural_network.cc)
 
 # Creates and links the library
-add_library(cltune SHARED ${TUNER})
+if(BUILD_SHARED_LIBS)
+  add_library(cltune SHARED ${TUNER})
+else(BUILD_SHARED_LIBS)
+  add_library(cltune STATIC ${TUNER})
+endif()
 target_link_libraries(cltune ${FRAMEWORK_LIBRARIES})
+
+# Sets the proper __declspec(dllexport) keyword for Visual Studio when the library is built
+if(MSVC)
+  if(BUILD_SHARED_LIBS)
+    target_compile_definitions(cltune PRIVATE COMPILING_DLL=1) # requires at least CMake 2.8.11
+  endif()
+endif()
 
 # Installs the library
 install(TARGETS cltune DESTINATION lib)
 install(FILES include/cltune.h DESTINATION include)
+
+# Install pkg-config file on Linux
+if(UNIX)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cltune.pc.in"
+                   "${CMAKE_CURRENT_BINARY_DIR}/cltune.pc" @ONLY IMMEDIATE)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cltune.pc
+            DESTINATION lib/pkgconfig)
+endif()
 
 # ==================================================================================================
 

@@ -44,9 +44,13 @@
 #include <algorithm> // std::min
 #include <memory> // std::unique_ptr
 #include <tuple> // std::tuple
+#include <cstdlib> // std::getenv
 
 namespace cltune {
 // =================================================================================================
+
+// This is the threshold for 'correctness'
+const double TunerImpl::kMaxL2Norm = 1e-4;
 
 // Messages printed to stdout (in colours)
 const std::string TunerImpl::kMessageFull    = "\x1b[32m[==========]\x1b[0m";
@@ -250,13 +254,19 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
 
   // In case of an exception, skip this run
   try {
-
-    // Compiles the kernel and prints the compiler errors/warnings
     #ifdef VERBOSE
       fprintf(stdout, "%s Starting compilation\n", kMessageVerbose.c_str());
     #endif
+
+     // Sets the build options from an environmental variable (if set)
+    auto options = std::vector<std::string>();
+    const auto environment_variable = std::getenv("CLTUNE_BUILD_OPTIONS");
+    if (environment_variable != nullptr) {
+      options.push_back(std::string(environment_variable));
+    }
+
+    // Compiles the kernel and prints the compiler errors/warnings
     auto program = Program(context_, source);
-    auto options = std::vector<std::string>{};
     auto build_status = program.Build(device_, options);
     if (build_status == BuildStatus::kError) {
       auto message = program.GetBuildInfo(device_);
@@ -325,25 +335,30 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     // Prepares the kernel
     queue_.Finish();
 
-    // Runs the kernel (this is the timed part)
+    // Multiple runs of the kernel to find the minimum execution time
     fprintf(stdout, "%s Running %s\n", kMessageRun.c_str(), kernel.name().c_str());
     auto events = std::vector<Event>(num_runs_);
+    auto elapsed_time = std::numeric_limits<float>::max();
     for (auto t=size_t{0}; t<num_runs_; ++t) {
       #ifdef VERBOSE
         fprintf(stdout, "%s Launching kernel (%zu out of %zu for averaging)\n", kMessageVerbose.c_str(),
                 t + 1, num_runs_);
       #endif
+      const auto start_time = std::chrono::steady_clock::now();
+
+      // Runs the kernel (this is the timed part)
       tune_kernel.Launch(queue_, global, local, events[t].pointer());
       queue_.Finish(events[t]);
+
+      // Collects the timing information
+      const auto cpu_timer = std::chrono::steady_clock::now() - start_time;
+      const auto cpu_timing = std::chrono::duration<float,std::milli>(cpu_timer).count();
+      #ifdef VERBOSE
+        fprintf(stdout, "%s Completed kernel in %.2lf ms\n", kMessageVerbose.c_str(), cpu_timing);
+      #endif
+      elapsed_time = std::min(elapsed_time, cpu_timing);
     }
     queue_.Finish();
-
-    // Collects the timing information
-    auto elapsed_time = std::numeric_limits<float>::max();
-    for (auto t=size_t{0}; t<num_runs_; ++t) {
-      auto this_elapsed_time = events[t].GetElapsedTime();
-      elapsed_time = std::min(elapsed_time, this_elapsed_time);
-    }
 
     // Prints diagnostic information
     fprintf(stdout, "%s Completed %s (%.1lf ms) - %zu out of %zu\n",

@@ -40,6 +40,7 @@
 #endif
 
 #include "internal/kernel_info.h"
+#include "internal/msvc.h"
 
 // Host data-type for half-precision floating-point (16-bit)
 #include "internal/half.h"
@@ -73,7 +74,7 @@ class TunerImpl {
  public:
 
   // Parameters
-  static constexpr auto kMaxL2Norm = 1e-4; // This is the threshold for 'correctness'
+  static const double kMaxL2Norm; // This is the threshold for 'correctness'
 
   // Messages printed to stdout (in colours)
   static const std::string kMessageFull;

@@ -45,18 +45,18 @@ bool IsMultiple(size_t a, size_t b) {
 };
 
 // Constants
-constexpr auto kDefaultDevice = size_t{0};
-constexpr auto kDefaultPlatform = size_t{0};
-constexpr auto kDefaultSearchMethod = size_t{1};
-constexpr auto kDefaultSearchParameter1 = size_t{4};
+const auto kDefaultDevice = size_t{0};
+const auto kDefaultPlatform = size_t{0};
+const auto kDefaultSearchMethod = size_t{1};
+const auto kDefaultSearchParameter1 = size_t{4};
 
 // Settings (synchronise these with "conv.cc", "conv.opencl" and "conv_reference.opencl")
 #define HFS (3)        // Half filter size
 #define FS (HFS+HFS+1) // Filter size
 
 // Settings (sizes)
-constexpr auto kSizeX = size_t{8192}; // Matrix dimension X
-constexpr auto kSizeY = size_t{4096}; // Matrix dimension Y
+const auto kSizeX = size_t{8192}; // Matrix dimension X
+const auto kSizeY = size_t{4096}; // Matrix dimension Y
 
 // =================================================================================================
 
@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Creates data structures
-  constexpr auto kExtraSize = size_t{FS*8};
+  const auto kExtraSize = size_t{FS*8};
   auto mat_a = std::vector<float>((kExtraSize+kSizeX)*(kExtraSize+kSizeY));
   auto mat_b = std::vector<float>(kSizeX*kSizeY);
   auto coeff = std::vector<float>(FS*FS);
@@ -230,8 +230,8 @@ int main(int argc, char* argv[]) {
   tuner.PrintJSON("output.json", {{"sample","convolution"}});
 
   // Also prints the performance of the best-case in terms of GB/s and GFLOPS
-  constexpr auto kMB = (sizeof(float)*2*kSizeX*kSizeY) * 1.0e-6;
-  constexpr auto kMFLOPS = ((1+2*FS*FS)*kSizeX*kSizeY) * 1.0e-6;
+  const auto kMB = (sizeof(float)*2*kSizeX*kSizeY) * 1.0e-6;
+  const auto kMFLOPS = ((1+2*FS*FS)*kSizeX*kSizeY) * 1.0e-6;
   if (time_ms != 0.0) {
     printf("[ -------> ] %.1lf ms or %.1lf GB/s or %1.lf GFLOPS\n",
            time_ms, kMB/time_ms, kMFLOPS/time_ms);
