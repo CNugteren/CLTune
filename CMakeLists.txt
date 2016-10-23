@@ -169,6 +169,14 @@ endif()
 install(TARGETS cltune DESTINATION lib)
 install(FILES include/cltune.h DESTINATION include)
 
+# Install pkg-config file on Linux
+if(UNIX)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cltune.pc.in"
+                   "${CMAKE_CURRENT_BINARY_DIR}/cltune.pc" @ONLY IMMEDIATE)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cltune.pc
+            DESTINATION lib/pkgconfig)
+endif()
+
 # ==================================================================================================
 
 # Optional: Enables compilation of sample programs
