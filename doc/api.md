@@ -23,7 +23,7 @@ Adds a new kernel to the list of tuning-kernels and returns a unique ID (to be u
 * `size_t AddKernelFromString(const std::string &source, const std::string &kernel_name, const IntRange &global, const IntRange &local)`:
 As above, but now the kernel is loaded from a string instead of from a file.
 
-* `void AddParameter(const size_t id, const std::string &parameter_name, const std::initializer_list<size_t> &values)`:
+* `void AddParameter(const size_t id, const std::string &parameter_name, const std::vector<size_t> &values)`:
 Adds a new tuning parameter for the kernel with the given `id`. The parameter has as a name `parameter_name`, and a list of tuneable integer values.
 
 * `void MulGlobalSize(const size_t id, const StringRange range)`:

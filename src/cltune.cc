@@ -95,7 +95,7 @@ void Tuner::SetReferenceFromString(const std::string &source, const std::string 
 
 // Adds parameters for a kernel to tune. Also checks whether this parameter already exists.
 void Tuner::AddParameter(const size_t id, const std::string &parameter_name,
-                         const std::initializer_list<size_t> &values) {
+                         const std::vector<size_t> &values) {
   if (id >= pimpl->kernels_.size()) { throw std::runtime_error("Invalid kernel ID"); }
   if (pimpl->kernels_[id].ParameterExists(parameter_name)) {
     throw std::runtime_error("Parameter already exists");

@@ -93,7 +93,7 @@ class Tuner {
   // Adds a new tuning parameter for a kernel with a specific ID. The parameter has a name, the
   // number of values, and a list of values.
   void PUBLIC_API AddParameter(const size_t id, const std::string &parameter_name,
-                               const std::initializer_list<size_t> &values);
+                               const std::vector<size_t> &values);
 
   // As above, but now adds a single valued parameter to the reference
   void PUBLIC_API AddParameterReference(const std::string &parameter_name, const size_t value);
