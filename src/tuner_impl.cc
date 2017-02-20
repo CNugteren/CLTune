@@ -646,6 +646,21 @@ void TunerImpl::PrintResult(FILE* fp, const TunerResult &result, const std::stri
 
 // =================================================================================================
 
+// Finds the best result
+TunerImpl::TunerResult TunerImpl::GetBestResult() const {
+  auto best_result = tuning_results_[0];
+  auto best_time = std::numeric_limits<double>::max();
+  for (auto &tuning_result: tuning_results_) {
+    if (tuning_result.status && best_time >= tuning_result.time) {
+      best_result = tuning_result;
+      best_time = tuning_result.time;
+    }
+  }
+  return best_result;
+}
+
+// =================================================================================================
+
 // Loads a file into a stringstream and returns the result as a string
 std::string TunerImpl::LoadFile(const std::string &filename) {
   std::ifstream file(filename);

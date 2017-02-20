@@ -89,6 +89,9 @@ Call this method *after* calling the `Tune()` method. Trains a machine learning 
 Output
 -------------
 
+* `std::unordered_map<std::string, size_t> GetBestResult()`:
+Retrieves the parameters of the best tuning result and returns them to the caller as a map of strings (parameter names) to integers (parameter values).
+
 * `void OutputSearchLog(const std::string &filename)`:
 Outputs the search process to the file `filename`.
 

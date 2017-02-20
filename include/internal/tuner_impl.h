@@ -136,6 +136,9 @@ class TunerImpl {
   // Prints results of a particular kernel run
   void PrintResult(FILE* fp, const TunerResult &result, const std::string &message) const;
 
+  // Retrieves the best tuning result
+  TunerResult GetBestResult() const;
+
   // Loads a file from disk into a string
   std::string LoadFile(const std::string &filename);
 
