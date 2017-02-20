@@ -2,6 +2,7 @@
 Development branch (next version)
 - Added GetBestResult() to the tuner's API to retrieve the best parameters programmatically
 - Changed std::initalizer_list in the AddParameters API to std::vector
+- Fixed a bug in the simulated annealing search method
 
 Version 2.6.0
 - Changed timing measurements to now also include the (varying) kernel launch overhead

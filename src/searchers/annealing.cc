@@ -75,7 +75,11 @@ KernelInfo::Configuration Annealing::GetConfiguration() {
 void Annealing::CalculateNextIndex() {
 
   // Computes the new temperature
-  auto progress = num_visited_states_ / static_cast<double>(NumConfigurations());
+  const auto num_configurations = static_cast<double>(NumConfigurations());
+  if (num_configurations == 0.0) {
+    throw std::runtime_error("Running annealing with 0 configurations, aborting");
+  }
+  auto progress = num_visited_states_ / num_configurations;
   auto temperature = max_temperature_ * (1.0 - progress);
 
   // Determines whether to continue with the neighbour or with the current ID
@@ -89,7 +93,8 @@ void Annealing::CalculateNextIndex() {
 
   // Computes the new neighbour state
   auto neighbours = GetNeighboursOf(current_state_);
-  neighbour_state_ = neighbours[static_cast<size_t>(int_distribution_(generator_))%neighbours.size()];
+  const auto random_integer = static_cast<size_t>(std::abs(int_distribution_(generator_)));
+  neighbour_state_ = neighbours[random_integer % neighbours.size()];
 
   // Checks whether this neighbour was already visited. If so, calculate a new neighbour instead.
   // This continues up to a maximum number, because all neighbours might already be visited. In
@@ -109,7 +114,7 @@ void Annealing::CalculateNextIndex() {
 
 // The number of configurations is equal to all possible configurations
 size_t Annealing::NumConfigurations() {
-  return std::max(size_t{1}, static_cast<size_t>(configurations_.size()*fraction_));
+  return std::max(size_t{1}, static_cast<size_t>(static_cast<double>(configurations_.size())*fraction_));
 }
 
 // =================================================================================================
@@ -142,10 +147,13 @@ std::vector<size_t> Annealing::GetNeighboursOf(const size_t reference_id) const 
     }
 
     // Consider this configuration a neighbour if there is at most a certain amount of differences
-    if (differences == kMaxDifferences) {
+    if (differences <= kMaxDifferences) {
       neighbours.push_back(other_id);
     }
     ++other_id;
+  }
+  if (neighbours.size() == 0) {
+    throw std::runtime_error("Running annealing and found no neighbours, aborting");
   }
   return neighbours;
 }
