@@ -326,6 +326,13 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     auto global = kernel.global();
     auto local = kernel.local();
 
+    // Makes sure that the global size is a multiple of the local
+    for (auto i=size_t{0}; i<global.size(); ++i) {
+      printf("Global size at index %d: %zu ", i, global[i]);
+      global[i] = Ceil(global[i], local[i]);
+      printf("%zu\n", global[i]);
+    }
+
     // Verifies the local memory usage of the kernel
     auto local_mem_usage = tune_kernel.LocalMemUsage(device_);
     if (!device_.IsLocalMemoryValid(local_mem_usage)) {
