@@ -1,5 +1,5 @@
 
-Development branch (next version)
+Version 2.7.0
 - CLTune now automatically ensures global size is a multiple of the local workgroup size
 - Added GetBestResult() to the tuner's API to retrieve the best parameters programmatically
 - Changed std::initalizer_list in the AddParameters API to std::vector
