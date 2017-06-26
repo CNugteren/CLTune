@@ -34,6 +34,7 @@
 #include <memory> // std::unique_ptr
 #include <functional> // std::function
 #include <utility> // std::pair
+#include <unordered_map> // std::unordered_map
 
 // Exports library functions under Windows when building a DLL. See also:
 // https://msdn.microsoft.com/en-us/library/a90k134d.aspx
@@ -93,7 +94,7 @@ class Tuner {
   // Adds a new tuning parameter for a kernel with a specific ID. The parameter has a name, the
   // number of values, and a list of values.
   void PUBLIC_API AddParameter(const size_t id, const std::string &parameter_name,
-                               const std::initializer_list<size_t> &values);
+                               const std::vector<size_t> &values);
 
   // As above, but now adds a single valued parameter to the reference
   void PUBLIC_API AddParameterReference(const std::string &parameter_name, const size_t value);
@@ -143,6 +144,9 @@ class Tuner {
   // the search space is explored, as is the case when doing random-search.
   void PUBLIC_API ModelPrediction(const Model model_type, const float validation_fraction,
                                   const size_t test_top_x_configurations);
+
+  // Retrieves the parameters of the best tuning result
+  std::unordered_map<std::string, size_t> GetBestResult() const;
 
   // Prints the results of the tuning either to screen (stdout) or to a specific output-file.
   // Returns the execution time in miliseconds.

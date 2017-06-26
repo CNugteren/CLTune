@@ -95,7 +95,7 @@ void Tuner::SetReferenceFromString(const std::string &source, const std::string 
 
 // Adds parameters for a kernel to tune. Also checks whether this parameter already exists.
 void Tuner::AddParameter(const size_t id, const std::string &parameter_name,
-                         const std::initializer_list<size_t> &values) {
+                         const std::vector<size_t> &values) {
   if (id >= pimpl->kernels_.size()) { throw std::runtime_error("Invalid kernel ID"); }
   if (pimpl->kernels_[id].ParameterExists(parameter_name)) {
     throw std::runtime_error("Parameter already exists");
@@ -283,19 +283,27 @@ void Tuner::ModelPrediction(const Model model_type, const float validation_fract
 
 // =================================================================================================
 
+
+// Retrieves the parameters of the best tuning result
+std::unordered_map<std::string, size_t> Tuner::GetBestResult() const {
+  const auto best_result = pimpl->GetBestResult();
+  const auto best_configuration = best_result.configuration;
+
+  // Converts the std::vector<KernelInfo::Setting> into an unordere map of strings and integers
+  auto parameters = std::unordered_map<std::string, size_t>{};
+  for (const auto &parameter_setting : best_configuration) {
+    parameters[parameter_setting.name] = parameter_setting.value;
+  }
+  return parameters;
+}
+
 // Iterates over all tuning results and prints each parameter configuration and the corresponding
 // timing-results. Printing is to stdout.
 double Tuner::PrintToScreen() const {
 
   // Finds the best result
-  auto best_result = pimpl->tuning_results_[0];
-  auto best_time = std::numeric_limits<double>::max();
-  for (auto &tuning_result: pimpl->tuning_results_) {
-    if (tuning_result.status && best_time >= tuning_result.time) {
-      best_result = tuning_result;
-      best_time = tuning_result.time;
-    }
-  }
+  const auto best_result = pimpl->GetBestResult();
+  const auto best_time = best_result.time;
 
   // Aborts if there was no best time found
   if (best_time == std::numeric_limits<double>::max()) {
@@ -321,14 +329,8 @@ double Tuner::PrintToScreen() const {
 void Tuner::PrintFormatted() const {
 
   // Finds the best result
-  auto best_result = pimpl->tuning_results_[0];
-  auto best_time = std::numeric_limits<double>::max();
-  for (auto &tuning_result: pimpl->tuning_results_) {
-    if (tuning_result.status && best_time >= tuning_result.time) {
-      best_result = tuning_result;
-      best_time = tuning_result.time;
-    }
-  }
+  const auto best_result = pimpl->GetBestResult();
+  const auto best_time = best_result.time;
 
   // Prints the best result in C++ database format
   auto count = size_t{0};

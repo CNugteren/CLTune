@@ -326,6 +326,11 @@ TunerImpl::TunerResult TunerImpl::RunKernel(const std::string &source, const Ker
     auto global = kernel.global();
     auto local = kernel.local();
 
+    // Makes sure that the global size is a multiple of the local
+    for (auto i=size_t{0}; i<global.size(); ++i) {
+      global[i] = Ceil(global[i], local[i]);
+    }
+
     // Verifies the local memory usage of the kernel
     auto local_mem_usage = tune_kernel.LocalMemUsage(device_);
     if (!device_.IsLocalMemoryValid(local_mem_usage)) {
@@ -642,6 +647,21 @@ void TunerImpl::PrintResult(FILE* fp, const TunerResult &result, const std::stri
     fprintf(fp, "%9s;", setting.GetConfig().c_str());
   }
   fprintf(fp, "\n");
+}
+
+// =================================================================================================
+
+// Finds the best result
+TunerImpl::TunerResult TunerImpl::GetBestResult() const {
+  auto best_result = tuning_results_[0];
+  auto best_time = std::numeric_limits<double>::max();
+  for (auto &tuning_result: tuning_results_) {
+    if (tuning_result.status && best_time >= tuning_result.time) {
+      best_result = tuning_result;
+      best_time = tuning_result.time;
+    }
+  }
+  return best_result;
 }
 
 // =================================================================================================

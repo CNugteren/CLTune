@@ -136,6 +136,9 @@ class TunerImpl {
   // Prints results of a particular kernel run
   void PrintResult(FILE* fp, const TunerResult &result, const std::string &message) const;
 
+  // Retrieves the best tuning result
+  TunerResult GetBestResult() const;
+
   // Loads a file from disk into a string
   std::string LoadFile(const std::string &filename);
 
@@ -145,6 +148,14 @@ class TunerImpl {
   // Specific implementations of the helper structure to get the memory-type based on a template
   // argument. Supports all enumerations of MemType.
   template <typename T> MemType GetType();
+
+  // Rounding functions performing ceiling and division operations
+  size_t CeilDiv(const size_t x, const size_t y) {
+    return 1 + ((x - 1) / y);
+  }
+  size_t Ceil(const size_t x, const size_t y) {
+    return CeilDiv(x,y)*y;
+  }
 
   // Accessors to device data-types
   const Device device() const { return device_; }
