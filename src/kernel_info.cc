@@ -33,6 +33,11 @@
 namespace cltune {
 // =================================================================================================
 
+// Rounding functions performing ceiling and division operations
+size_t CeilDiv(const size_t x, const size_t y) {
+  return 1 + ((x - 1) / y);
+}
+
 // Initializes the name and kernel source-code, creates empty containers for all other member
 // variables.
 KernelInfo::KernelInfo(const std::string name, const std::string source, const Device &device):
@@ -120,9 +125,9 @@ void KernelInfo::ComputeRanges(const Configuration &config) {
         if (modifier_string == setting.name) {
           switch (modifier.type) {
             case ThreadSizeModifierType::kGlobalMul: global_values[dim] *= setting.value; break;
-            case ThreadSizeModifierType::kGlobalDiv: global_values[dim] /= setting.value; break;
+            case ThreadSizeModifierType::kGlobalDiv: global_values[dim] = CeilDiv(global_values[dim], setting.value); break;
             case ThreadSizeModifierType::kLocalMul: local_values[dim] *= setting.value; break;
-            case ThreadSizeModifierType::kLocalDiv: local_values[dim] /= setting.value; break;
+            case ThreadSizeModifierType::kLocalDiv: local_values[dim] = CeilDiv(local_values[dim], setting.value); break;
             default: assert(0 && "Invalid modifier type");
           }
           found_string = true;

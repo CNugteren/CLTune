@@ -1,4 +1,7 @@
 
+Next version (work in progress)
+- Global and local thread size dividers now perform a ceiled division by default
+
 Version 2.7.0
 - CLTune now automatically ensures global size is a multiple of the local workgroup size
 - Added GetBestResult() to the tuner's API to retrieve the best parameters programmatically
