@@ -1,6 +1,7 @@
 
 Next version (work in progress)
 - Global and local thread size dividers now perform a ceiled division by default
+- Verbose mode now always prints the parameter configuration before compiling and running
 
 Version 2.7.0
 - CLTune now automatically ensures global size is a multiple of the local workgroup size

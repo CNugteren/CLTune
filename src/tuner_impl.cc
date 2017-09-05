@@ -196,10 +196,18 @@ void TunerImpl::Tune() {
       // Iterates over all possible configurations (the permutations of the tuning parameters)
       for (auto p=size_t{0}; p<search->NumConfigurations(); ++p) {
         #ifdef VERBOSE
-          fprintf(stdout, "%s Exploring configuration (%zu out of %zu)\n", kMessageVerbose.c_str(),
+          fprintf(stdout, "%s Exploring configuration (%zu out of %zu):\n", kMessageVerbose.c_str(),
                   p + 1, search->NumConfigurations());
         #endif
         auto permutation = search->GetConfiguration();
+        #ifdef VERBOSE
+          fprintf(stdout, "%s ", kMessageVerbose.c_str());
+          for (auto &config: permutation) {
+            fprintf(stdout, "%9s;", config.GetConfig().c_str());
+          }
+          fprintf(stdout, "\n");
+        #endif
+
 
         // Adds the parameters to the source-code string as defines
         auto source = std::string{};
