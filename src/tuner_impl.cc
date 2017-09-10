@@ -66,31 +66,8 @@ const std::string TunerImpl::kMessageBest    = "\x1b[35m[     BEST ]\x1b[0m";
   
 // =================================================================================================
 
-// Initializes the platform and device to the default 0
-TunerImpl::TunerImpl():
-    platform_(Platform(size_t{0})),
-    device_(Device(platform_, size_t{0})),
-    context_(Context(device_)),
-    queue_(Queue(context_, device_)),
-    num_runs_(size_t{1}),
-    has_reference_(false),
-    suppress_output_(false),
-    output_search_process_(false),
-    search_log_filename_(std::string{}),
-    search_method_(SearchMethod::FullSearch),
-    search_args_(0),
-    argument_counter_(0) {
-  if (!suppress_output_) {
-    fprintf(stdout, "\n%s Initializing on platform 0 device 0\n", kMessageFull.c_str());
-    auto opencl_version = device_.Version();
-    auto device_name = device_.Name();
-    fprintf(stdout, "%s Device name: '%s' (%s)\n", kMessageFull.c_str(),
-            device_name.c_str(), opencl_version.c_str());
-  }
-}
-
 // Initializes with a custom platform and device
-TunerImpl::TunerImpl(size_t platform_id, size_t device_id):
+TunerImpl::TunerImpl(const size_t platform_id, const size_t device_id):
     platform_(Platform(platform_id)),
     device_(Device(platform_, device_id)),
     context_(Context(device_)),
@@ -106,10 +83,14 @@ TunerImpl::TunerImpl(size_t platform_id, size_t device_id):
   if (!suppress_output_) {
     fprintf(stdout, "\n%s Initializing on platform %zu device %zu\n",
             kMessageFull.c_str(), platform_id, device_id);
-    auto opencl_version = device_.Version();
-    auto device_name = device_.Name();
-    fprintf(stdout, "%s Device name: '%s' (%s)\n", kMessageFull.c_str(),
-            device_name.c_str(), opencl_version.c_str());
+    const auto device_name = device_.Name();
+    const auto device_vendor = platform_.Vendor();
+    const auto device_info = device_.GetExtraInfo();
+    const auto platform_version = platform_.Version();
+    fprintf(stdout, "%s Device vendor: '%s'\n", kMessageInfo.c_str(), device_vendor.c_str());
+    fprintf(stdout, "%s Device name: '%s'\n", kMessageInfo.c_str(), device_name.c_str());
+    fprintf(stdout, "%s Device extra info: '%s'\n", kMessageInfo.c_str(), device_info.c_str());
+    fprintf(stdout, "%s Platform version: '%s'\n", kMessageInfo.c_str(), platform_version.c_str());
   }
 }
 

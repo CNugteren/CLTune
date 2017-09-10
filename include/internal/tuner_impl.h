@@ -106,8 +106,7 @@ class TunerImpl {
   };
 
   // Initialize either with platform 0 and device 0 or with a custom platform/device
-  explicit TunerImpl();
-  explicit TunerImpl(size_t platform_id, size_t device_id);
+  explicit TunerImpl(const size_t platform_id = 0, const size_t device_id = 0);
   ~TunerImpl();
 
   // Starts the tuning process. This function is called directly from the Tuner API.
@@ -158,6 +157,7 @@ class TunerImpl {
   }
 
   // Accessors to device data-types
+  const Platform platform() const { return platform_; }
   const Device device() const { return device_; }
   const Context context() const { return context_; }
   Queue queue() const { return queue_; }

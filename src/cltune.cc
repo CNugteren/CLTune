@@ -330,7 +330,6 @@ void Tuner::PrintFormatted() const {
 
   // Finds the best result
   const auto best_result = pimpl->GetBestResult();
-  const auto best_time = best_result.time;
 
   // Prints the best result in C++ database format
   auto count = size_t{0};
@@ -359,10 +358,12 @@ void Tuner::PrintJSON(const std::string &filename,
     fprintf(file, "  \"%s\": \"%s\",\n", description.first.c_str(), description.second.c_str());
   }
   fprintf(file, "  \"device\": \"%s\",\n", pimpl->device().Name().c_str());
-  fprintf(file, "  \"device_vendor\": \"%s\",\n", pimpl->device().Vendor().c_str());
+  fprintf(file, "  \"platform_version\": \"%s\",\n", pimpl->platform().Version().c_str());
+  fprintf(file, "  \"device_vendor\": \"%s\",\n", pimpl->platform().Vendor().c_str());
   fprintf(file, "  \"device_type\": \"%s\",\n", device_type.c_str());
   fprintf(file, "  \"device_core_clock\": \"%zu\",\n", pimpl->device().CoreClock());
   fprintf(file, "  \"device_compute_units\": \"%zu\",\n", pimpl->device().ComputeUnits());
+  fprintf(file, "  \"device_extra_info\": \"%s\",\n", pimpl->device().GetExtraInfo().c_str());
   fprintf(file, "  \"results\": [\n");
 
   // Filters failed configurations

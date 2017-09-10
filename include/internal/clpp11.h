@@ -42,8 +42,10 @@
 #include <memory>    // std::shared_ptr
 #include <stdexcept> // std::runtime_error
 #include <numeric>   // std::accumulate
+#include <cstring>   // std::strlen
 
 // OpenCL
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS // to disable deprecation warnings
 #if defined(__APPLE__) || defined(__MACOSX)
   #include <OpenCL/opencl.h>
 #else
@@ -136,6 +138,11 @@ class Platform {
     platform_ = platforms[platform_id];
   }
 
+  // Methods to retrieve platform information
+  std::string Name() const { return GetInfoString(CL_PLATFORM_NAME); }
+  std::string Vendor() const { return GetInfoString(CL_PLATFORM_VENDOR); }
+  std::string Version() const { return GetInfoString(CL_PLATFORM_VERSION); }
+
   // Returns the number of devices on this platform
   size_t NumDevices() const {
     auto result = cl_uint{0};
@@ -147,6 +154,17 @@ class Platform {
   const cl_platform_id& operator()() const { return platform_; }
  private:
   cl_platform_id platform_;
+
+  // Private helper functions
+  std::string GetInfoString(const cl_device_info info) const {
+    auto bytes = size_t{0};
+    CheckError(clGetPlatformInfo(platform_, info, 0, nullptr, &bytes));
+    auto result = std::string{};
+    result.resize(bytes);
+    CheckError(clGetPlatformInfo(platform_, info, bytes, &result[0], nullptr));
+    result.resize(strlen(result.c_str())); // Removes any trailing '\0'-characters
+    return result;
+  }
 };
 
 // Retrieves a vector with all platforms
@@ -213,6 +231,11 @@ class Device {
     return static_cast<unsigned long>(GetInfo<cl_ulong>(CL_DEVICE_LOCAL_MEM_SIZE));
   }
   std::string Capabilities() const { return GetInfoString(CL_DEVICE_EXTENSIONS); }
+  bool HasExtension(const std::string &extension) const {
+    const auto extensions = Capabilities();
+    return extensions.find(extension) != std::string::npos;
+  }
+
   size_t CoreClock() const {
     return static_cast<size_t>(GetInfo<cl_uint>(CL_DEVICE_MAX_CLOCK_FREQUENCY));
   }
@@ -246,12 +269,32 @@ class Device {
   // Query for a specific type of device or brand
   bool IsCPU() const { return Type() == "CPU"; }
   bool IsGPU() const { return Type() == "GPU"; }
-  bool IsAMD() const { return Vendor() == "AMD" || Vendor() == "Advanced Micro Devices, Inc." ||
-                              Vendor() == "AuthenticAMD";; }
-  bool IsNVIDIA() const { return Vendor() == "NVIDIA" || Vendor() == "NVIDIA Corporation"; }
-  bool IsIntel() const { return Vendor() == "INTEL" || Vendor() == "Intel" ||
-                                Vendor() == "GenuineIntel"; }
+  bool IsAMD() const { return Vendor() == "AMD" ||
+                              Vendor() == "Advanced Micro Devices, Inc." ||
+                              Vendor() == "AuthenticAMD"; }
+  bool IsNVIDIA() const { return Vendor() == "NVIDIA" ||
+                                 Vendor() == "NVIDIA Corporation"; }
+  bool IsIntel() const { return Vendor() == "INTEL" ||
+                                Vendor() == "Intel" ||
+                                Vendor() == "GenuineIntel" ||
+                                Vendor() == "Intel(R) Corporation"; }
   bool IsARM() const { return Vendor() == "ARM"; }
+
+  // Platform specific extensions
+  std::string AMDBoardName() const { // check for 'cl_amd_device_attribute_query' first
+    return GetInfoString(CL_DEVICE_BOARD_NAME_AMD);
+  }
+  std::string NVIDIAComputeCapability() const { // check for 'cl_nv_device_attribute_query' first
+    return std::string{"SM"} + GetInfoString(CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV) +
+           std::string{"."} + GetInfoString(CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV);
+  }
+
+  // Retrieves the above extra information (if present)
+  std::string GetExtraInfo() const {
+    if (HasExtension("cl_amd_device_attribute_query")) { return AMDBoardName(); }
+    if (HasExtension("cl_nv_device_attribute_query")) { return NVIDIAComputeCapability(); }
+    else { return std::string{""}; }
+  }
 
   // Accessor to the private data-member
   const cl_device_id& operator()() const { return device_; }

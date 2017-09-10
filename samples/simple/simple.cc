@@ -57,6 +57,7 @@ int main() {
 
   // Prints the results to screen
   tuner.PrintToScreen();
+  tuner.PrintJSON("test.json", {});
   return 0;
 }
 
