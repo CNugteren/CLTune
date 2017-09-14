@@ -2,10 +2,10 @@
 CLTune: Automatic OpenCL kernel tuning
 ================
 
-| | master | development |
+| | master |
 |-----|-----|-----|
-| Linux/OS X | [![Build Status](https://travis-ci.org/CNugteren/CLTune.svg?branch=master)](https://travis-ci.org/CNugteren/CLTune/branches) | [![Build Status](https://travis-ci.org/CNugteren/CLTune.svg?branch=development)](https://travis-ci.org/CNugteren/CLTune/branches) |
-| Windows | [![Build Status](https://ci.appveyor.com/api/projects/status/github/cnugteren/cltune?branch=master&svg=true)](https://ci.appveyor.com/project/CNugteren/cltune) | [![Build Status](https://ci.appveyor.com/api/projects/status/github/cnugteren/cltune?branch=development&svg=true)](https://ci.appveyor.com/project/CNugteren/cltune) |
+| Linux/OS X | [![Build Status](https://travis-ci.org/CNugteren/CLTune.svg?branch=master)](https://travis-ci.org/CNugteren/CLTune/branches) |
+| Windows | [![Build Status](https://ci.appveyor.com/api/projects/status/github/cnugteren/cltune?branch=master&svg=true)](https://ci.appveyor.com/project/CNugteren/cltune) |
 
 CLTune is a C++ library which can be used to automatically tune your OpenCL and CUDA kernels. The only thing you'll need to provide is a tuneable kernel and a list of allowed parameters and values.
 
