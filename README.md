@@ -3,7 +3,7 @@ CLTune: Automatic OpenCL kernel tuning
 ================
 
 | | master |
-|-----|-----|-----|
+|-----|-----|
 | Linux/OS X | [![Build Status](https://travis-ci.org/CNugteren/CLTune.svg?branch=master)](https://travis-ci.org/CNugteren/CLTune/branches) |
 | Windows | [![Build Status](https://ci.appveyor.com/api/projects/status/github/cnugteren/cltune?branch=master&svg=true)](https://ci.appveyor.com/project/CNugteren/cltune) |
 
