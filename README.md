@@ -166,3 +166,5 @@ Related projects
 -------------
 
 A simpler but perhaps easier-to-use Python-based OpenCL auto-tuner was made by Ben van Werkhoven and is [also available on GitHub](https://github.com/benvanwerkhoven/kernel_tuner).
+
+KTT is another C++ kernel tuner with a similar API to CLTune but with more advanced features including online autotuning and more. It is [available on GitHub](https://github.com/Fillo7/KTT).
