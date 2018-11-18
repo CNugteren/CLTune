@@ -129,9 +129,9 @@ inline void LoadLocalPlusHalo(__local float *lmem, const int loff,
 
       // Computes the conditionals
       const bool xst = lx < HFS;
-      const bool xlt = lx >= TBX-HFS;
+      const bool xlt = lx >= TBX*WPTX-HFS;
       const bool yst = ly < HFS;
-      const bool ylt = ly >= TBY-HFS;
+      const bool ylt = ly >= TBY*WPTY-HFS;
 
       // In the centre
                         lmem[(ly+1*HFS)*loff + (lx+1*HFS)] = src[(gy+1*HFS)*goff + (gx+1*HFS)];
