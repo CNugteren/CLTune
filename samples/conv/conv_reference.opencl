@@ -55,7 +55,7 @@ __kernel void conv_reference(const int size_x, const int size_y,
 
       // Performs the accumulation
       float coefficient = coeff[(fy+HFS)*FS + (fx+HFS)];
-      acc += coefficient * src[index_y*size_x + index_x];
+      acc += coefficient * src[index_y*(size_x+2*HFS) + index_x];
     }
   }
 
