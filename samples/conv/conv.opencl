@@ -129,9 +129,9 @@ inline void LoadLocalPlusHalo(__local float *lmem, const int loff,
 
       // Computes the conditionals
       const bool xst = lx < HFS;
-      const bool xlt = lx >= TBX-HFS;
+      const bool xlt = lx >= TBX*WPTX-HFS;
       const bool yst = ly < HFS;
-      const bool ylt = ly >= TBY-HFS;
+      const bool ylt = ly >= TBY*WPTY-HFS;
 
       // In the centre
                         lmem[(ly+1*HFS)*loff + (lx+1*HFS)] = src[(gy+1*HFS)*goff + (gx+1*HFS)];
@@ -285,7 +285,7 @@ __kernel void conv(const int goff, const int dummy,
   InitAccRegisters(acc);
 
   // Accumulates in global memory
-  AccumulateGlobal(src, goff, coeff, acc, gid_x, gid_y);
+  AccumulateGlobal(src, goff+2*HFS, coeff, acc, gid_x, gid_y);
 
   // Computes and stores the result
   StoreResult(dest, goff, acc, gid_x, gid_y);
@@ -313,7 +313,7 @@ __kernel void conv(const int goff, const int dummy,
   const int loff = TBX*WPTX + 2*HFS + PADDING;
 
   // Caches data into local memory
-  LoadLocalPlusHalo(lmem, loff, src, goff, gid_x, gid_y, lid_x, lid_y);
+  LoadLocalPlusHalo(lmem, loff, src, goff+2*HFS, gid_x, gid_y, lid_x, lid_y);
 
   // Synchronizes all threads in a workgroup
   barrier(CLK_LOCAL_MEM_FENCE);
@@ -351,7 +351,7 @@ __kernel void conv(const int goff, const int dummy,
   const int loff = TBX*WPTX + 2*HFS + PADDING;
 
   // Caches data into local memory
-  LoadLocalFull(lmem, loff, src, goff, gid_x, gid_y, lid_x, lid_y);
+  LoadLocalFull(lmem, loff, src, goff+2*HFS, gid_x, gid_y, lid_x, lid_y);
 
   // Synchronizes all threads in a workgroup
   barrier(CLK_LOCAL_MEM_FENCE);

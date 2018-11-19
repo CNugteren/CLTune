@@ -91,9 +91,8 @@ int main(int argc, char* argv[]) {
   }
 
   // Creates data structures
-  const auto kExtraSize = size_t{FS*8};
-  auto mat_a = std::vector<float>((kExtraSize+kSizeX)*(kExtraSize+kSizeY));
-  auto mat_b = std::vector<float>(kSizeX*kSizeY);
+  auto mat_a = std::vector<float>((kSizeX+2*HFS)*(kSizeY+2*HFS), 0.0f);
+  auto mat_b = std::vector<float>(kSizeX*kSizeY, 0.0f);
   auto coeff = std::vector<float>(FS*FS);
 
   // Create a random number generator
@@ -101,9 +100,10 @@ int main(int argc, char* argv[]) {
   std::default_random_engine generator(static_cast<unsigned int>(random_seed));
   std::uniform_real_distribution<float> distribution(-2.0f, 2.0f);
 
-  // Populates input data structures
-  for (auto &item: mat_a) { item = distribution(generator); }
-  for (auto &item: mat_b) { item = 0.0f; }
+  // Populates input data structure by padded data
+  for (size_t i = 0; i < kSizeY; i++)
+    for (size_t j = 0; j < kSizeX; j++)
+      mat_a[(i + HFS) * (kSizeX + 2 * HFS) + j + HFS] = distribution(generator);
 
   // Creates the filter coefficients (gaussian blur)
   auto sigma = 1.0f;
