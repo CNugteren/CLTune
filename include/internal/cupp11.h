@@ -128,6 +128,15 @@ class Platform {
     CheckError(cuInit(0));
   }
 
+  // Methods to retrieve platform information
+  std::string Name() const { return "CUDA"; }
+  std::string Vendor() const { return "NVIDIA Corporation"; }
+  std::string Version() const {
+    auto result = 0;
+    CheckError(cuDriverGetVersion(&result));
+    return "CUDA driver "+std::to_string(result);
+  }
+
   // Returns the number of devices on this platform
   size_t NumDevices() const {
     auto result = 0;
@@ -228,6 +237,8 @@ class Device {
   bool IsNVIDIA() const { return true; }
   bool IsIntel() const { return false; }
   bool IsARM() const { return false; }
+
+  std::string GetExtraInfo() const { return Capabilities(); }
 
   // Accessor to the private data-member
   const CUdevice& operator()() const { return device_; }
