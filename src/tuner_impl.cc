@@ -38,7 +38,8 @@
 #include "internal/ml_models/linear_regression.h"
 #include "internal/ml_models/neural_network.h"
 
-#include <fstream> // std::ifstream, std::stringstream
+#include <sstream> // std::stringstream
+#include <fstream> // std::ifstream
 #include <iostream> // FILE
 #include <limits> // std::numeric_limits
 #include <algorithm> // std::min
