@@ -35,6 +35,9 @@ set(cltune_VERSION_MAJOR 2)
 set(cltune_VERSION_MINOR 7)
 set(cltune_VERSION_PATCH 0)
 
+set(cltune_VERSION "${cltune_VERSION_MAJOR}.${cltune_VERSION_MINOR}.${cltune_VERSION_PATCH}")
+set(cltune_SOVERSION 2 )
+
 # Options and their default values
 option(BUILD_SHARED_LIBS "Build a shared (ON) or static library (OFF)" ON)
 option(SAMPLES "Enable compilation of sample programs" ON)
@@ -153,6 +156,8 @@ set(TUNER
 # Creates and links the library
 if(BUILD_SHARED_LIBS)
   add_library(cltune SHARED ${TUNER})
+  set_target_properties(cltune PROPERTIES VERSION ${cltune_VERSION})
+  set_target_properties(cltune PROPERTIES SOVERSION ${cltune_SOVERSION})
 else(BUILD_SHARED_LIBS)
   add_library(cltune STATIC ${TUNER})
 endif()
