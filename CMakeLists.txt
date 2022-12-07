@@ -172,16 +172,20 @@ if(MSVC)
   endif()
 endif()
 
-# Installs the library
-install(TARGETS cltune DESTINATION lib)
-install(FILES include/cltune.h DESTINATION include)
-
-# Install pkg-config file on Linux
 if(UNIX)
+    # Installs the library
+    include("GNUInstallDirs")
+    install(TARGETS cltune DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    install(FILES include/cltune.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    # Install pkg-config file on Linux
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cltune.pc.in"
                    "${CMAKE_CURRENT_BINARY_DIR}/cltune.pc" @ONLY IMMEDIATE)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cltune.pc
-            DESTINATION lib/pkgconfig)
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+else(UNIX)
+     # Installs the library
+     install(TARGETS cltune DESTINATION lib)
+     install(FILES include/cltune.h DESTINATION include)
 endif()
 
 # ==================================================================================================
