@@ -102,6 +102,8 @@ if(MSVC)
   set(FLAGS "${FLAGS} /wd4715 /wd4996")
 else()
   set(FLAGS "-O3 -std=c++11")
+  # Silence warnings about not specifying ocl version
+  set(FLAGS "${FLAGS} -DCL_TARGET_OPENCL_VERSION=120")
   if(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
     set(FLAGS "${FLAGS} -Wall -Wno-comment")
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8.4)
