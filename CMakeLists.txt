@@ -35,6 +35,9 @@ set(cltune_VERSION_MAJOR 2)
 set(cltune_VERSION_MINOR 7)
 set(cltune_VERSION_PATCH 0)
 
+set(cltune_VERSION "${cltune_VERSION_MAJOR}.${cltune_VERSION_MINOR}.${cltune_VERSION_PATCH}")
+set(cltune_SOVERSION 2 )
+
 # Options and their default values
 option(BUILD_SHARED_LIBS "Build a shared (ON) or static library (OFF)" ON)
 option(SAMPLES "Enable compilation of sample programs" ON)
@@ -99,6 +102,8 @@ if(MSVC)
   set(FLAGS "${FLAGS} /wd4715 /wd4996")
 else()
   set(FLAGS "-O3 -std=c++11")
+  # Silence warnings about not specifying ocl version
+  set(FLAGS "${FLAGS} -DCL_TARGET_OPENCL_VERSION=120")
   if(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
     set(FLAGS "${FLAGS} -Wall -Wno-comment")
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8.4)
@@ -153,6 +158,8 @@ set(TUNER
 # Creates and links the library
 if(BUILD_SHARED_LIBS)
   add_library(cltune SHARED ${TUNER})
+  set_target_properties(cltune PROPERTIES VERSION ${cltune_VERSION})
+  set_target_properties(cltune PROPERTIES SOVERSION ${cltune_SOVERSION})
 else(BUILD_SHARED_LIBS)
   add_library(cltune STATIC ${TUNER})
 endif()
@@ -165,16 +172,20 @@ if(MSVC)
   endif()
 endif()
 
-# Installs the library
-install(TARGETS cltune DESTINATION lib)
-install(FILES include/cltune.h DESTINATION include)
-
-# Install pkg-config file on Linux
 if(UNIX)
+    # Installs the library
+    include("GNUInstallDirs")
+    install(TARGETS cltune DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    install(FILES include/cltune.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    # Install pkg-config file on Linux
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cltune.pc.in"
                    "${CMAKE_CURRENT_BINARY_DIR}/cltune.pc" @ONLY IMMEDIATE)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cltune.pc
-            DESTINATION lib/pkgconfig)
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+else(UNIX)
+     # Installs the library
+     install(TARGETS cltune DESTINATION lib)
+     install(FILES include/cltune.h DESTINATION include)
 endif()
 
 # ==================================================================================================
